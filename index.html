@@ -1,147 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shopee Performance Dashboard V38 - Daily Archive</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shopee Ledger Dashboard V39</title>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#12213d;--muted:#64748b;--line:#e7eaf0;--orange:#ff6a1a;--green:#16a34a;--red:#dc2626;--blue:#2563eb;--yellow:#f59e0b;--shadow:0 16px 42px rgba(15,23,42,.08);--radius:20px}
-    *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#fff7ed 0,#f6f7fb 240px);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text)}
-    .app{max-width:1500px;margin:0 auto;padding:24px}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}.brand{display:flex;gap:14px;align-items:center}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#ff7a1a,#ffb66b);display:grid;place-items:center;color:#fff;font-weight:900;box-shadow:var(--shadow)}
-    h1{margin:0;font-size:28px}.subtitle{margin:5px 0 0;color:var(--muted);line-height:1.5}.toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.btn{border:0;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer;background:#fff;color:var(--text);box-shadow:0 8px 22px rgba(15,23,42,.08)}.btn.primary{background:var(--green);color:#fff}.btn.orange{background:var(--orange);color:#fff}.btn.danger{background:#fee2e2;color:#991b1b}.btn:disabled{opacity:.55;cursor:not-allowed}
-    .panel{background:rgba(255,255,255,.9);border:1px solid #fed7aa;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px}.grid{display:grid;gap:14px}.filters{grid-template-columns:1.2fr 1fr 1fr 1fr 1fr;align-items:end}.field label{display:block;font-size:13px;font-weight:800;margin:0 0 8px}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;font-size:14px;color:var(--text)}.hint{font-size:13px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:12px 14px;margin-top:12px}.status{font-size:13px;color:#475569;line-height:1.7}.error{color:var(--red);font-weight:800}.ok{color:var(--green);font-weight:800}.warn{color:#b45309;font-weight:800}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .cards{display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:14px;margin-bottom:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;min-height:130px}.card .label{color:var(--muted);font-size:13px;margin-bottom:8px}.card .value{font-size:28px;font-weight:950;letter-spacing:-.5px}.delta{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;margin-top:10px}.delta.up{background:#dcfce7;color:#047857}.delta.down{background:#fee2e2;color:#b91c1c}.delta.flat{background:#f1f5f9;color:#475569}.small{font-size:12px;color:var(--muted);line-height:1.45;margin-top:7px}
-    .two{display:grid;grid-template-columns:1.35fr .85fr;gap:18px;margin-bottom:18px}.section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;overflow:hidden}.section h2{margin:0 0 12px;font-size:20px}.section p{color:var(--muted);margin:0 0 14px}.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:16px}table{border-collapse:collapse;width:100%;min-width:860px;background:#fff}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:14px;vertical-align:top}th{background:#f8fafc;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#334155}tr:last-child td{border-bottom:0}.pill{display:inline-flex;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900}.pill.green{background:#dcfce7;color:#047857}.pill.red{background:#fee2e2;color:#b91c1c}.pill.yellow{background:#fef3c7;color:#92400e}.pill.blue{background:#dbeafe;color:#1d4ed8}.progress{height:9px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:7px}.bar{height:100%;background:linear-gradient(90deg,#ff7a1a,#16a34a);border-radius:999px}.chart{width:100%;height:310px}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-weight:900;cursor:pointer}.tab.active{background:#ffedd5;border-color:#fdba74;color:#c2410c}.hidden{display:none!important}.footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0}.spinner{display:inline-block;width:14px;height:14px;border:2px solid #e2e8f0;border-top-color:#16a34a;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}@keyframes spin{to{transform:rotate(360deg)}}
-    @media (max-width:1100px){.filters{grid-template-columns:1fr 1fr}.cards{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}}@media (max-width:680px){.app{padding:14px}.top{display:block}.toolbar{justify-content:flex-start;margin-top:12px}.filters,.cards{grid-template-columns:1fr}.card .value{font-size:24px}}
+    :root{--bg:#f6f7fb;--card:#fff;--text:#14213d;--muted:#6b7280;--brand:#ff6b35;--line:#e5e7eb;--ok:#0f766e;--bad:#b91c1c}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:linear-gradient(135deg,#ff8a3d,#ffb067);color:#fff;padding:24px 28px;border-bottom-left-radius:24px;border-bottom-right-radius:24px;box-shadow:0 12px 30px rgba(255,107,53,.18)}
+    h1{margin:0;font-size:28px}.sub{opacity:.95;margin-top:6px}.wrap{max-width:1280px;margin:22px auto;padding:0 16px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 10px 24px rgba(15,23,42,.04)}
+    .metric .label{color:var(--muted);font-size:13px}.metric .val{font-size:28px;font-weight:800;margin-top:8px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted)}input,select,button{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:#fff}button{background:var(--brand);color:#fff;border:none;font-weight:700;cursor:pointer}button.secondary{background:#111827}.muted{color:var(--muted)}.ok{color:var(--ok)}.bad{color:var(--bad)}
+    table{border-collapse:collapse;width:100%;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:700}pre{white-space:pre-wrap;background:#0b1020;color:#e5e7eb;padding:12px;border-radius:12px;max-height:360px;overflow:auto}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:900px){.grid,.two{grid-template-columns:1fr}.metric .val{font-size:22px}}
   </style>
 </head>
 <body>
-<div class="app">
-  <div class="top">
-    <div class="brand"><div class="logo">SP</div><div><h1>Shopee Performance Dashboard</h1><div class="subtitle">Web riêng để xem <b>GMV</b>, hiệu quả shop, hiệu quả sản phẩm và tình trạng vận hành theo dữ liệu đơn hàng Shopee.</div></div></div>
-    <div class="toolbar"><button class="btn" onclick="openConfig()">Cấu hình Worker</button><button id="autoBtn" class="btn danger" onclick="toggleAuto()">Tắt auto</button><button class="btn primary" onclick="syncNow()">Cập nhật ngay</button></div>
-  </div>
-
-  <div class="panel">
-    <div class="grid filters">
-      <div class="field"><label>Shop / kênh bán</label><select id="channelSelect"></select></div>
-      <div class="field"><label>Kiểu thời gian</label><select id="periodMode" onchange="renderDateInputs()"><option value="day">Theo ngày</option><option value="range">Khoảng ngày</option><option value="month">Theo tháng</option></select></div>
-      <div class="field" id="dateABox"><label id="dateALabel">Chọn ngày</label><input id="dateA" type="date"></div>
-      <div class="field" id="dateBBox"><label>Đến ngày</label><input id="dateB" type="date"></div>
-      <div class="field"><label>So sánh</label><select id="compareMode"><option value="previous">So với kỳ trước</option><option value="none">Không so sánh</option></select></div>
-    </div>
-    <div class="grid" style="grid-template-columns:1fr auto;align-items:center;margin-top:14px;gap:14px">
-      <div class="status" id="syncStatus">Chưa tải dữ liệu.</div>
-      <button class="btn orange" onclick="syncAllChannels()">Đồng bộ tất cả shop & lưu snapshot</button><button class="btn" onclick="archiveSelectedDay()">Lưu cố định ngày đang chọn</button>
-    </div>
-    <div class="hint">Logic V38: dữ liệu hôm nay tự cập nhật 1 phút/lần. Sau khi qua ngày mới, Worker Cron sẽ tự lưu cố định dữ liệu ngày hôm qua thành snapshot khóa. Khi chọn ngày cũ, web đọc snapshot đã lưu ngay, không gọi lại API Shopee nếu snapshot đã có.</div>
-  </div>
-
-  <div class="tabs"><button class="tab active" onclick="showTab('overview', this)">Tổng quan GMV</button><button class="tab" onclick="showTab('products', this)">Hiệu quả sản phẩm</button><button class="tab" onclick="showTab('shop', this)">Tình trạng shop</button><button class="tab" onclick="showTab('logs', this)">Kho dữ liệu / Log</button></div>
-
-  <div id="tab-overview">
-    <div class="cards" id="summaryCards"></div>
-    <div class="two">
-      <div class="section"><h2>GMV theo giờ</h2><p>Dựa theo giờ tạo đơn của đơn hàng trong kỳ đang xem.</p><canvas id="hourlyChart" class="chart"></canvas></div>
-      <div class="section"><h2>Trạng thái vận hành</h2><div id="healthBox"></div></div>
-    </div>
-    <div class="section"><h2>Chi tiết từng shop</h2><div class="tableWrap"><table id="channelTable"></table></div></div>
-  </div>
-
-  <div id="tab-products" class="hidden">
-    <div class="section"><h2>Top sản phẩm theo GMV</h2><p>Cộng từ item_list trong đơn hợp lệ. Có thể lọc tổng tất cả shop hoặc từng shop riêng.</p><div class="tableWrap"><table id="productTable"></table></div></div>
-  </div>
-
-  <div id="tab-shop" class="hidden">
-    <div class="two"><div class="section"><h2>Chỉ số hoạt động shop</h2><div id="operationBox"></div></div><div class="section"><h2>Cảnh báo vận hành</h2><div id="alertBox"></div></div></div>
-    <div class="section"><h2>Trạng thái kết nối API</h2><div class="tableWrap"><table id="connectionTable"></table></div></div>
-  </div>
-
-  <div id="tab-logs" class="hidden">
-    <div class="section"><h2>Snapshot đã lưu</h2><p>Dùng để xem lại lịch sử, so sánh ngày/tháng/khoảng ngày mà không cần gọi Shopee lại quá nhiều.</p><div class="tableWrap"><table id="snapshotTable"></table></div></div>
-    <div class="section" style="margin-top:18px"><h2>Log đồng bộ</h2><div class="tableWrap"><table id="logTable"></table></div></div>
-  </div>
-
-  <div class="footer">V38 Product · Shop · GMV Performance Dashboard · Daily Archive Snapshots</div>
-</div>
-
+  <header>
+    <h1>Shopee Ledger Dashboard V39</h1>
+    <div class="sub">Webhook + Cron 1 phút + Supabase PostgreSQL · Tính theo thời gian tạo đơn</div>
+  </header>
+  <main class="wrap">
+    <section class="card">
+      <div class="toolbar">
+        <div class="field" style="flex:1;min-width:320px"><label>Worker URL</label><input id="workerUrl" placeholder="https://shopee-ledger-sync.xxx.workers.dev"></div>
+        <div class="field"><label>Ngày</label><input type="date" id="date"></div>
+        <div class="field"><label>Shop</label><select id="shop"><option value="all">Tất cả shop</option></select></div>
+        <button onclick="saveWorker()">Lưu Worker</button>
+        <button onclick="loadAll()">Tải dữ liệu</button>
+        <button class="secondary" onclick="syncToday()">Sync hôm nay</button>
+        <button class="secondary" onclick="syncDate()">Sync ngày chọn</button>
+      </div>
+      <p class="muted">Webhook URL: <code id="pushUrl"></code><br>OAuth callback URL: <code id="callbackUrl"></code></p>
+    </section>
+    <section class="grid" style="margin-top:14px">
+      <div class="card metric"><div class="label">GMV</div><div class="val" id="gmv">-</div></div>
+      <div class="card metric"><div class="label">Tổng đơn</div><div class="val" id="orders">-</div></div>
+      <div class="card metric"><div class="label">GMV hủy</div><div class="val" id="cancelGmv">-</div></div>
+      <div class="card metric"><div class="label">AOV</div><div class="val" id="aov">-</div></div>
+    </section>
+    <section class="two" style="margin-top:14px">
+      <div class="card">
+        <h3>Kết nối Shopee</h3>
+        <div class="toolbar">
+          <div class="field" style="flex:1"><label>Tên kênh/shop</label><input id="channel" placeholder="Gooby"></div>
+          <button onclick="connectShop()">Tạo link OAuth</button>
+        </div>
+        <div id="oauthBox" class="muted" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h3>Trạng thái</h3>
+        <div id="status" class="muted">Chưa tải</div>
+      </div>
+    </section>
+    <section class="card" style="margin-top:14px">
+      <h3>Top sản phẩm</h3>
+      <div style="overflow:auto"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th>SL</th><th>GMV</th><th>Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
+    </section>
+    <section class="card" style="margin-top:14px">
+      <h3>GMV theo giờ</h3>
+      <div style="overflow:auto"><table><thead><tr><th>Giờ</th><th>GMV</th><th>Đơn</th></tr></thead><tbody id="hourly"></tbody></table></div>
+    </section>
+    <section class="two" style="margin-top:14px">
+      <div class="card"><h3>Logs</h3><button class="secondary" onclick="loadLogs()">Tải logs</button><pre id="logs"></pre></div>
+      <div class="card"><h3>Webhook events</h3><button class="secondary" onclick="loadWebhookEvents()">Tải webhook events</button><pre id="events"></pre></div>
+    </section>
+  </main>
 <script>
-const DEFAULT_WORKER = 'https://shopee-performance-sync.vuhailong4405.workers.dev';
-let state = {connections:{}, current:null, currentRange:'', snapshots:[], logs:[], auto:true, autoTimer:null, syncing:false, activeTab:'overview', workerUrl:''};
-const $ = id => document.getElementById(id);
-function workerBase(){ return (state.workerUrl || localStorage.getItem('perfWorkerUrl') || DEFAULT_WORKER).replace(/\/$/,''); }
-function setStatus(msg, cls=''){ $('syncStatus').innerHTML = `<span class="${cls}">${msg}</span>`; }
-function money(v){v=Number(v||0); if(Math.abs(v)>=1e9) return (v/1e9).toFixed(2).replace(/\.00$/,'')+' tỷ'; if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1).replace(/\.0$/,'')+'tr'; return v.toLocaleString('vi-VN')+'đ'}
-function n(v){return Number(v||0).toLocaleString('vi-VN')}
-function pct(v){v=Number(v||0); const c=v>0?'up':v<0?'down':'flat'; const sign=v>0?'+':''; return `<span class="delta ${c}">${sign}${v}%</span>`}
-function todayVN(){ const d=new Date(); const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d); const o=Object.fromEntries(p.map(x=>[x.type,x.value])); return `${o.year}-${o.month}-${o.day}`; }
-function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function qs(params){return new URLSearchParams(params).toString()}
-function rangeFromInputs(){ const mode=$('periodMode').value; let a=$('dateA').value || todayVN(), b=$('dateB').value || a; if(mode==='day'){b=a} if(mode==='month'){ const [y,m]=a.slice(0,7).split('-').map(Number); const last=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); a=`${y}-${String(m).padStart(2,'0')}-01`; b=last; } return {mode,date_from:a,date_to:b}; }
-function rangeKey(r){ return `${r.date_from}|${r.date_to}|${r.mode}`; }
-function isPastRange(r){ return r.date_to < todayVN(); }
-function hasSnapshotForCurrentRange(){ const r=rangeFromInputs(); return state.snapshots.some(s=>s.date_from===r.date_from&&s.date_to===r.date_to) || state.snapshots.length>0; }
-
-function renderDateInputs(){ const mode=$('periodMode').value; $('dateBBox').style.display = mode==='range'?'block':'none'; $('dateALabel').textContent = mode==='month'?'Chọn tháng':'Chọn ngày'; $('dateA').type = mode==='month'?'month':'date'; if(!$('dateA').value){ $('dateA').value = mode==='month'?todayVN().slice(0,7):todayVN(); } }
-async function loadGlobalWorkerConfig(){ const saved=(localStorage.getItem('perfWorkerUrl')||'').replace(/\/$/,''); const candidates=[saved, DEFAULT_WORKER].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i); for(const base of candidates){ try{ const res=await fetch(base.replace(/\/$/,'')+'/api/performance/config'); const data=await res.json(); if(res.ok && data && data.config && data.config.workerUrl){ state.workerUrl=String(data.config.workerUrl).replace(/\/$/,''); localStorage.setItem('perfWorkerUrl', state.workerUrl); return state.workerUrl; } if(res.ok){ state.workerUrl=base.replace(/\/$/,''); return state.workerUrl; } }catch(e){} } state.workerUrl=(saved||DEFAULT_WORKER).replace(/\/$/,''); return state.workerUrl; }
-async function saveGlobalWorkerConfig(url){ const clean=String(url||'').trim().replace(/\/$/,''); if(!clean) throw new Error('Worker URL trống'); const data=await fetchJSON(clean+'/api/performance/config',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({workerUrl:clean})}); state.workerUrl=clean; localStorage.setItem('perfWorkerUrl', clean); return data; }
-async function openConfig(){ const cur=workerBase(); const next=prompt('Dán Worker URL dùng chung cho tất cả máy:', cur); if(next){ try{ await saveGlobalWorkerConfig(next); setStatus('Đã lưu Worker URL dùng chung lên Firebase. Máy khác mở web sẽ tự dùng Worker này.','ok'); await loadConnections(); await loadSnapshots(false); }catch(e){ const clean=String(next).trim().replace(/\/$/,''); state.workerUrl=clean; localStorage.setItem('perfWorkerUrl', clean); setStatus('Đã lưu Worker trên máy này, nhưng chưa lưu được cấu hình chung: '+e.message,'error'); await loadConnections(); await loadSnapshots(false); } }}
-function showTab(tab, btn){ state.activeTab=tab; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); ['overview','products','shop','logs'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==tab)); }
-async function fetchJSON(url, opts={}){ const res=await fetch(url, opts); const text=await res.text(); let data; try{data=JSON.parse(text)}catch(e){throw new Error(text.slice(0,200)||`HTTP ${res.status}`)} if(!res.ok || data.error) throw new Error(data.error || data.message || `HTTP ${res.status}`); return data; }
-async function loadConnections(){ try{ const data=await fetchJSON(workerBase()+'/api/shopee/connections'); state.connections=data.connections||{}; const channels=Object.keys(state.connections).filter(k=>state.connections[k]?.status==='connected'||state.connections[k]?.hasAccessToken); const prev=$('channelSelect').value; $('channelSelect').innerHTML = `<option value="all">Tổng tất cả shop</option>` + channels.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(prev && [...$('channelSelect').options].some(o=>o.value===prev)) $('channelSelect').value=prev; renderConnections(); }catch(e){setStatus('Không tải được kết nối Worker: '+e.message,'error')} }
-async function loadSnapshots(render=true){
-  const r=rangeFromInputs();
-  try{
-    const data=await fetchJSON(workerBase()+'/api/shopee/performance-snapshots?'+qs({date_from:r.date_from,date_to:r.date_to}));
-    state.snapshots=data.snapshots||[];
-    state.logs=data.logs||[];
-    if(render){
-      renderAll();
-      if(isPastRange(r) && state.snapshots.length){ setStatus(`Đang xem dữ liệu đã lưu cố định ${r.date_from} → ${r.date_to}. Không gọi lại API Shopee.`, 'ok'); }
-      else if(isPastRange(r)){ setStatus(`Chưa có snapshot cố định cho ${r.date_from} → ${r.date_to}. Bấm “Lưu cố định ngày đang chọn” để lưu một lần.`, 'warn'); }
-    }
-  }catch(e){ state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi tải snapshot', error:e.message}); if(render) renderAll(); }
-}
-async function archiveSelectedDay(){
-  if(state.syncing) return;
-  const r=rangeFromInputs();
-  if(r.date_from!==r.date_to){ setStatus('Chức năng lưu cố định chỉ áp dụng từng ngày. Hãy chọn kiểu Theo ngày.', 'warn'); return; }
-  state.syncing=true;
-  setStatus(`<span class="spinner"></span> Đang lưu cố định dữ liệu ngày ${esc(r.date_from)} cho tất cả shop...`);
-  try{
-    const data=await fetchJSON(workerBase()+'/api/shopee/archive-day?'+qs({date:r.date_from}));
-    await loadSnapshots(false);
-    const ok=(data.results||[]).filter(x=>x.ok).length;
-    const fail=(data.results||[]).filter(x=>!x.ok).length;
-    setStatus(`Đã lưu cố định ngày ${esc(r.date_from)}: ${ok} shop thành công${fail?`, ${fail} shop lỗi`:''}.`, fail?'warn':'ok');
-    renderAll();
-  }catch(e){ setStatus('Lỗi lưu cố định: '+esc(e.message),'error'); }
-  finally{state.syncing=false;}
-}
-async function syncNow(){ const channel=$('channelSelect').value; if(channel==='all') return syncAllChannels(); return syncChannel(channel); }
-async function syncChannel(channel){ if(state.syncing) return; state.syncing=true; const r=rangeFromInputs(); setStatus(`<span class="spinner"></span> Đang đồng bộ ${esc(channel)} từ Shopee...`); try{ const data=await fetchJSON(workerBase()+'/api/shopee/performance-sync?'+qs({channel,date_from:r.date_from,date_to:r.date_to,period:r.mode,save:1})); state.current = data.data; state.currentRange=rangeKey(r); state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Đồng bộ '+channel, error:data.data?.lastError||''}); await loadSnapshots(false); setStatus(`Đã đồng bộ ${esc(channel)} lúc ${esc(data.data?.lastSyncAt||'')}`,'ok'); renderAll(); }catch(e){ state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi đồng bộ '+channel, error:e.message}); setStatus(`Lỗi đồng bộ ${esc(channel)}: ${esc(e.message)}`,'error'); renderAll(); }finally{state.syncing=false;} }
-async function syncAllChannels(){ if(state.syncing) return; state.syncing=true; const r=rangeFromInputs(); const channels=Object.keys(state.connections).filter(k=>state.connections[k]?.status==='connected'||state.connections[k]?.hasAccessToken); const results=[]; for(const ch of channels){ setStatus(`<span class="spinner"></span> Đang đồng bộ ${esc(ch)} (${results.length+1}/${channels.length})...`); try{ const data=await fetchJSON(workerBase()+'/api/shopee/performance-sync?'+qs({channel:ch,date_from:r.date_from,date_to:r.date_to,period:r.mode,save:1})); results.push(data.data); state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Đồng bộ '+ch, error:data.data?.lastError||''}); }catch(e){ results.push({channel:ch,lastError:e.message,summary:{gmv:0,totalOrders:0,validOrders:0,cancelGmv:0,cancelOrders:0,aov:0},topProducts:[],hourly:[]}); state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi đồng bộ '+ch, error:e.message}); }}
-  state.current = mergeClient(results); state.currentRange=rangeKey(r); await loadSnapshots(false); setStatus(`Đã đồng bộ ${results.length} shop lúc ${new Date().toLocaleString('vi-VN')}`,'ok'); renderAll(); state.syncing=false; }
-function mergeClient(rows){ const sum={gmv:0,totalOrders:0,validOrders:0,cancelGmv:0,cancelOrders:0,aov:0,cancelRate:0}; const hours={}; const products={}; for(let i=0;i<24;i++) hours[String(i).padStart(2,'0')+':00']={hour:String(i).padStart(2,'0')+':00',gmv:0,orders:0}; rows.forEach(row=>{ const s=row.summary||row; sum.gmv+=+s.gmv||0; sum.totalOrders+=+s.totalOrders||0; sum.validOrders+=+s.validOrders||0; sum.cancelGmv+=+s.cancelGmv||0; sum.cancelOrders+=+s.cancelOrders||0; (row.hourly||[]).forEach(h=>{ if(!hours[h.hour]) hours[h.hour]={hour:h.hour,gmv:0,orders:0}; hours[h.hour].gmv+=+h.gmv||0; hours[h.hour].orders+=+h.orders||0; }); (row.topProducts||[]).forEach(p=>{ const key=[p.item_id,p.model_id,p.sku].join('|'); if(!products[key]) products[key]={...p,qty:0,gmv:0,orders:0,cancelOrders:0}; products[key].qty+=+p.qty||0; products[key].gmv+=+p.gmv||0; products[key].orders+=+p.orders||0; products[key].cancelOrders+=+p.cancelOrders||0; }); }); sum.aov=sum.validOrders?Math.round(sum.gmv/sum.validOrders):0; sum.cancelRate=sum.totalOrders?Math.round(sum.cancelOrders/sum.totalOrders*1000)/10:0; return {channel:'all',summary:sum,channels:rows,hourly:Object.values(hours),topProducts:Object.values(products).sort((a,b)=>b.gmv-a.gmv).slice(0,100),lastSyncAt:new Date().toLocaleString('vi-VN')}; }
-function currentData(){ const ch=$('channelSelect').value; const curRangeKey=rangeKey(rangeFromInputs()); if(state.current && state.currentRange===curRangeKey){ if(ch==='all') return state.current; const row=(state.current.channels||[]).find(x=>x.channel===ch); if(row) return {channel:ch,summary:row.summary||row,channels:[row],hourly:row.hourly||[],topProducts:row.topProducts||[],lastSyncAt:row.lastSyncAt||row.syncedAt}; }
-  const r=rangeFromInputs(); const snaps=state.snapshots.filter(s=>s.date_from===r.date_from&&s.date_to===r.date_to); if(ch==='all') return mergeClient(snaps.map(s=>s.data||s)); const snap=snaps.find(s=>s.channel===ch); return snap?.data || null; }
-function previousData(){ const ch=$('channelSelect').value; const r=rangeFromInputs(); const prev=prevRange(r.date_from,r.date_to,r.mode); const snaps=state.snapshots.filter(s=>s.date_from===prev.date_from&&s.date_to===prev.date_to); if(ch==='all') return mergeClient(snaps.map(s=>s.data||s)); const snap=snaps.find(s=>s.channel===ch); return snap?.data || null; }
-function prevRange(from,to,mode){ if(mode==='month'){ let [y,m]=from.slice(0,7).split('-').map(Number); m--; if(m===0){m=12;y--} const first=`${y}-${String(m).padStart(2,'0')}-01`; const last=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); return {date_from:first,date_to:last}; } const ms=86400000; const days=Math.max(1,Math.round((Date.parse(to)-Date.parse(from))/ms)+1); const prevTo=new Date(Date.parse(from)-ms).toISOString().slice(0,10); const prevFrom=new Date(Date.parse(prevTo)-(days-1)*ms).toISOString().slice(0,10); return {date_from:prevFrom,date_to:prevTo}; }
-function delta(cur,prev){ cur=+cur||0; prev=+prev||0; if(!prev&&!cur) return 0; if(!prev&&cur) return 100; return Math.round((cur-prev)/Math.abs(prev)*1000)/10; }
-function renderCards(data, prev){ const s=data?.summary||{}; const p=prev?.summary||{}; const cards=[['GMV hợp lệ',money(s.gmv),delta(s.gmv,p.gmv),'Đơn hợp lệ, không tính hủy/UNPAID'],['Tổng đơn',n(s.totalOrders),delta(s.totalOrders,p.totalOrders),'Tất cả đơn tạo trong kỳ'],['Đơn hợp lệ',n(s.validOrders),delta(s.validOrders,p.validOrders),'Đơn được tính vào GMV'],['GMV hủy',money(s.cancelGmv),delta(s.cancelGmv,p.cancelGmv),'Đơn hủy/đang hủy'],['Đơn hủy',n(s.cancelOrders),delta(s.cancelOrders,p.cancelOrders),'Tỷ lệ hủy: '+(s.cancelRate||0)+'%'],['AOV',money(s.aov),delta(s.aov,p.aov),'GMV hợp lệ / đơn hợp lệ']]; $('summaryCards').innerHTML=cards.map(c=>`<div class="card"><div class="label">${c[0]}</div><div class="value">${c[1]}</div>${pct(c[2])}<div class="small">${c[3]}</div></div>`).join(''); }
-function renderHealth(data){ const s=data?.summary||{}; const score=Math.max(0,Math.min(100,Math.round(100-(s.cancelRate||0)*2))); const cls=score>=85?'green':score>=65?'yellow':'red'; $('healthBox').innerHTML=`<div class="card" style="box-shadow:none"><div class="label">Điểm vận hành ước tính</div><div class="value">${score}/100</div><span class="pill ${cls}">${score>=85?'Ổn định':score>=65?'Cần theo dõi':'Rủi ro'}</span><div class="progress"><div class="bar" style="width:${score}%"></div></div><div class="small">Dựa trên tỷ lệ hủy, lỗi sync và dữ liệu đơn hàng. Không phải điểm chính thức của Shopee.</div></div>`; }
-function renderChannelTable(data){ const rows=data?.channels||[]; $('channelTable').innerHTML=`<thead><tr><th>Kênh</th><th>GMV</th><th>Tổng đơn</th><th>Đơn hợp lệ</th><th>GMV hủy</th><th>Đơn hủy</th><th>AOV</th><th>Lần sync</th><th>Lỗi</th></tr></thead><tbody>${rows.map(r=>{const s=r.summary||r;return `<tr><td><b>${esc(r.channel)}</b><div class="small">Shop ID: ${esc(r.shop_id||'')}</div></td><td>${money(s.gmv)}</td><td>${n(s.totalOrders)}</td><td>${n(s.validOrders)}</td><td>${money(s.cancelGmv)}</td><td>${n(s.cancelOrders)}</td><td>${money(s.aov)}</td><td>${esc(r.lastSyncAt||r.syncedAt||'-')}</td><td class="${r.lastError?'error':''}">${esc(r.lastError||'-')}</td></tr>`}).join('')}</tbody>`; }
-function renderProducts(data){ const total=+data?.summary?.gmv||1; const products=data?.topProducts||[]; $('productTable').innerHTML=`<thead><tr><th>#</th><th>Sản phẩm</th><th>SKU/Phân loại</th><th>SL bán</th><th>Đơn</th><th>GMV</th><th>Tỷ trọng</th><th>Hủy</th></tr></thead><tbody>${products.map((p,i)=>{const share=Math.round((+p.gmv||0)/total*1000)/10;return `<tr><td>${i+1}</td><td><b>${esc(p.item_name||'-')}</b><div class="small">Item: ${esc(p.item_id||'')}</div></td><td>${esc(p.sku||'-')}<div class="small">${esc(p.model_name||'-')}</div></td><td>${n(p.qty)}</td><td>${n(p.orders)}</td><td>${money(p.gmv)}</td><td>${share}%<div class="progress"><div class="bar" style="width:${Math.min(100,share)}%"></div></div></td><td>${n(p.cancelOrders||0)}</td></tr>`}).join('')}</tbody>`; }
-function renderOperation(data){ const s=data?.summary||{}; const total=s.totalOrders||0; const cancel=s.cancelOrders||0; const valid=s.validOrders||0; $('operationBox').innerHTML=`<div class="cards" style="grid-template-columns:repeat(2,1fr);margin:0"><div class="card"><div class="label">Tỷ lệ hủy</div><div class="value">${s.cancelRate||0}%</div><div class="small">${cancel}/${total} đơn</div></div><div class="card"><div class="label">Tỷ lệ đơn hợp lệ</div><div class="value">${total?Math.round(valid/total*1000)/10:0}%</div><div class="small">${valid}/${total} đơn</div></div></div>`; }
-function renderAlerts(data){ const alerts=[]; const s=data?.summary||{}; if((s.cancelRate||0)>10) alerts.push(['red','Tỷ lệ hủy cao','Tỷ lệ hủy hiện tại '+s.cancelRate+'%, cần kiểm tra nguyên nhân.']); if(!data) alerts.push(['yellow','Chưa có dữ liệu','Hãy bấm Đồng bộ để lấy dữ liệu mới.']); (data?.channels||[]).filter(x=>x.lastError).forEach(x=>alerts.push(['red','Lỗi '+x.channel,x.lastError])); if(!alerts.length) alerts.push(['green','Không có cảnh báo lớn','Các chỉ số vận hành đang ổn định theo dữ liệu hiện có.']); $('alertBox').innerHTML=alerts.map(a=>`<div style="padding:12px 0;border-bottom:1px solid var(--line)"><span class="pill ${a[0]}">${esc(a[1])}</span><div class="small">${esc(a[2])}</div></div>`).join(''); }
-function renderConnections(){ const con=state.connections||{}; $('connectionTable').innerHTML=`<thead><tr><th>Kênh</th><th>Shop ID</th><th>Trạng thái</th><th>Token hết hạn</th><th>Lần sync</th><th>Lỗi</th></tr></thead><tbody>${Object.entries(con).map(([ch,c])=>`<tr><td><b>${esc(ch)}</b></td><td>${esc(c.shop_id||'-')}</td><td><span class="pill ${c.status==='connected'?'green':'yellow'}">${esc(c.status||'-')}</span></td><td>${esc(c.expire_at?new Date(c.expire_at*1000).toLocaleString('vi-VN'):'-')}</td><td>${esc(c.lastAllChannelSyncAt||c.updatedAt||'-')}</td><td class="${c.lastError?'error':''}">${esc(c.lastError||'-')}</td></tr>`).join('')}</tbody>`; }
-function renderSnapshots(){ $('snapshotTable').innerHTML=`<thead><tr><th>Kỳ</th><th>Kênh</th><th>GMV</th><th>Đơn</th><th>Hủy</th><th>Lưu lúc</th><th>Lỗi</th></tr></thead><tbody>${state.snapshots.slice().reverse().slice(0,80).map(s=>{const d=s.data||{};const sum=d.summary||d;return `<tr><td>${esc(s.date_from)} → ${esc(s.date_to)}</td><td><b>${esc(s.channel)}</b></td><td>${money(sum.gmv)}</td><td>${n(sum.totalOrders)}</td><td>${n(sum.cancelOrders)}</td><td>${esc(s.savedAt||d.lastSyncAt||'-')}</td><td class="${d.lastError?'error':''}">${esc(d.lastError||'-')}</td></tr>`}).join('')}</tbody>`; $('logTable').innerHTML=`<thead><tr><th>Thời gian</th><th>Hành động</th><th>Lỗi</th></tr></thead><tbody>${state.logs.slice(0,100).map(l=>`<tr><td>${esc(l.time||l.savedAt||'-')}</td><td>${esc(l.action||'-')}</td><td class="${l.error?'error':''}">${esc(l.error||'-')}</td></tr>`).join('')}</tbody>`; }
-function drawHourly(data){ const c=$('hourlyChart'), ctx=c.getContext('2d'); const DPR=window.devicePixelRatio||1; const w=c.clientWidth,h=c.clientHeight; c.width=w*DPR;c.height=h*DPR;ctx.scale(DPR,DPR);ctx.clearRect(0,0,w,h); const arr=data?.hourly||[]; const max=Math.max(1,...arr.map(x=>+x.gmv||0)); ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;for(let i=0;i<5;i++){let y=20+(h-50)*i/4;ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(w-10,y);ctx.stroke()} const bw=(w-50)/24; arr.forEach((x,i)=>{const val=+x.gmv||0;const bh=(h-70)*val/max;const x0=35+i*bw;const y=h-35-bh;const g=ctx.createLinearGradient(0,y,0,h-35);g.addColorStop(0,'#ff7a1a');g.addColorStop(1,'#16a34a');ctx.fillStyle=g;ctx.fillRect(x0,y,Math.max(3,bw-4),bh); if(i%3===0){ctx.fillStyle='#64748b';ctx.font='11px system-ui';ctx.fillText(String(i).padStart(2,'0'),x0,h-12)}}); ctx.fillStyle='#334155';ctx.font='12px system-ui';ctx.fillText('Max '+money(max),35,16); }
-function renderAll(){ const data=currentData(); const prev=$('compareMode').value==='previous'?previousData():null; renderCards(data,prev); renderHealth(data); renderChannelTable(data); renderProducts(data); renderOperation(data); renderAlerts(data); renderConnections(); renderSnapshots(); drawHourly(data); }
-function toggleAuto(){ state.auto=!state.auto; $('autoBtn').textContent=state.auto?'Tắt auto':'Bật auto'; $('autoBtn').classList.toggle('danger', state.auto); if(state.auto){ autoLoop(); } else if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer=null; } }
-async function autoLoop(){ if(!state.auto) return; const r=rangeFromInputs(); const today=todayVN(); if(r.date_from<=today && r.date_to>=today && !state.syncing){ try{ await syncNow(); }catch(e){} } state.autoTimer=setTimeout(autoLoop, 60*1000); }
-['channelSelect','periodMode','dateA','dateB','compareMode'].forEach(id=>document.addEventListener('change',e=>{ if(e.target?.id===id) { state.current=null; state.currentRange=''; loadSnapshots(true); }}));
-(async function init(){ $('dateA').value=todayVN(); $('dateB').value=todayVN(); renderDateInputs(); await loadGlobalWorkerConfig(); await loadConnections(); await loadSnapshots(true); setStatus('Sẵn sàng. Worker dùng chung: '+workerBase()+'. Hôm nay auto 1 phút/lần. Ngày cũ đọc snapshot cố định đã lưu.'); if(state.auto){ autoLoop(); } })();
+const DEFAULT_WORKER = 'https://shopee-ledger-sync.vuhailong4405.workers.dev';
+function $(id){return document.getElementById(id)}
+function fmt(n){return Number(n||0).toLocaleString('vi-VN')}
+function todayVN(){const d=new Date(); d.setHours(d.getHours()+7); return d.toISOString().slice(0,10)}
+function getWorker(){return ($('workerUrl').value||localStorage.getItem('v39_worker')||DEFAULT_WORKER).replace(/\/$/,'')}
+function setStatus(t, cls='muted'){$('status').className=cls; $('status').textContent=t}
+function init(){ $('date').value=todayVN(); $('workerUrl').value=localStorage.getItem('v39_worker')||DEFAULT_WORKER; updateUrls(); loadShops().then(loadAll).catch(e=>setStatus(e.message,'bad')); setInterval(()=>loadAll().catch(()=>{}), 60000); }
+function updateUrls(){const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'}
+function saveWorker(){localStorage.setItem('v39_worker',getWorker()); updateUrls(); setStatus('Đã lưu Worker URL','ok')}
+async function api(path, opts={}){const res=await fetch(getWorker()+path,opts); const data=await res.json().catch(()=>null); if(!res.ok||!data?.ok) throw new Error(data?.error||('HTTP '+res.status)); return data}
+async function loadShops(){updateUrls(); const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op)} if([...sel.options].some(o=>o.value===cur)) sel.value=cur;}
+async function loadAll(){setStatus('Đang tải database...'); updateUrls(); const date=$('date').value||todayVN(); const shop=$('shop').value||'all'; const data=await api('/api/dashboard?date='+encodeURIComponent(date)+'&shop_id='+encodeURIComponent(shop)); render(data.data); setStatus('Đã tải dữ liệu · '+new Date().toLocaleTimeString('vi-VN'),'ok')}
+function render(d){const s=d.summary||{}; $('gmv').textContent=fmt(s.gmv)+'đ'; $('orders').textContent=fmt(s.total_orders); $('cancelGmv').textContent=fmt(s.cancel_gmv)+'đ'; $('aov').textContent=fmt(s.aov)+'đ'; $('topProducts').innerHTML=(d.top_products||[]).slice(0,30).map(p=>`<tr><td>${p.item_name||'-'}</td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td>${fmt(p.qty)}</td><td>${fmt(p.gmv)}đ</td><td>${fmt(p.orders)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Chưa có dữ liệu</td></tr>'; $('hourly').innerHTML=(d.hourly_gmv||[]).map(h=>`<tr><td>${h.hour}</td><td>${fmt(h.gmv)}đ</td><td>${fmt(h.orders)}</td></tr>`).join('')}
+async function syncToday(){setStatus('Đang sync hôm nay từ Shopee API...'); const data=await api('/api/sync/today?shop_id='+encodeURIComponent($('shop').value||'all')); await loadShops(); await loadAll(); setStatus('Sync xong hôm nay','ok')}
+async function syncDate(){const date=$('date').value||todayVN(); setStatus('Đang sync ngày '+date+' từ Shopee API...'); const data=await api('/api/sync/date?date='+encodeURIComponent(date)+'&shop_id='+encodeURIComponent($('shop').value||'all')); await loadShops(); await loadAll(); setStatus('Sync xong ngày '+date,'ok')}
+async function connectShop(){const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Nếu Shopee yêu cầu Redirect URL, dùng: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'}
+async function loadLogs(){const data=await api('/api/logs?limit=80'); $('logs').textContent=JSON.stringify(data.logs,null,2)}
+async function loadWebhookEvents(){const data=await api('/api/webhook-events?limit=80'); $('events').textContent=JSON.stringify(data.events,null,2)}
+init();
 </script>
 </body>
 </html>
