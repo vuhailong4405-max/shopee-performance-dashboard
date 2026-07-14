@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shopee Performance Dashboard V35</title>
+  <title>Shopee Performance Dashboard V36</title>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--text:#12213d;--muted:#64748b;--line:#e7eaf0;--orange:#ff6a1a;--green:#16a34a;--red:#dc2626;--blue:#2563eb;--yellow:#f59e0b;--shadow:0 16px 42px rgba(15,23,42,.08);--radius:20px}
     *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#fff7ed 0,#f6f7fb 240px);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text)}
@@ -62,14 +62,14 @@
     <div class="section" style="margin-top:18px"><h2>Log đồng bộ</h2><div class="tableWrap"><table id="logTable"></table></div></div>
   </div>
 
-  <div class="footer">V35 Product · Shop · GMV Performance Dashboard</div>
+  <div class="footer">V36 Product · Shop · GMV Performance Dashboard · Global Worker Config</div>
 </div>
 
 <script>
-const DEFAULT_WORKER = 'https://shopee-sync.vuhailong4405.workers.dev';
-let state = {connections:{}, current:null, snapshots:[], logs:[], auto:false, autoTimer:null, syncing:false, activeTab:'overview'};
+const DEFAULT_WORKER = 'https://shopee-performance-sync.vuhailong4405.workers.dev';
+let state = {connections:{}, current:null, snapshots:[], logs:[], auto:false, autoTimer:null, syncing:false, activeTab:'overview', workerUrl:''};
 const $ = id => document.getElementById(id);
-function workerBase(){ return (localStorage.getItem('perfWorkerUrl') || DEFAULT_WORKER).replace(/\/$/,''); }
+function workerBase(){ return (state.workerUrl || localStorage.getItem('perfWorkerUrl') || DEFAULT_WORKER).replace(/\/$/,''); }
 function setStatus(msg, cls=''){ $('syncStatus').innerHTML = `<span class="${cls}">${msg}</span>`; }
 function money(v){v=Number(v||0); if(Math.abs(v)>=1e9) return (v/1e9).toFixed(2).replace(/\.00$/,'')+' tỷ'; if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1).replace(/\.0$/,'')+'tr'; return v.toLocaleString('vi-VN')+'đ'}
 function n(v){return Number(v||0).toLocaleString('vi-VN')}
@@ -79,7 +79,9 @@ function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt
 function qs(params){return new URLSearchParams(params).toString()}
 function rangeFromInputs(){ const mode=$('periodMode').value; let a=$('dateA').value || todayVN(), b=$('dateB').value || a; if(mode==='day'){b=a} if(mode==='month'){ const [y,m]=a.slice(0,7).split('-').map(Number); const last=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); a=`${y}-${String(m).padStart(2,'0')}-01`; b=last; } return {mode,date_from:a,date_to:b}; }
 function renderDateInputs(){ const mode=$('periodMode').value; $('dateBBox').style.display = mode==='range'?'block':'none'; $('dateALabel').textContent = mode==='month'?'Chọn tháng':'Chọn ngày'; $('dateA').type = mode==='month'?'month':'date'; if(!$('dateA').value){ $('dateA').value = mode==='month'?todayVN().slice(0,7):todayVN(); } }
-function openConfig(){ const cur=workerBase(); const next=prompt('Dán Worker URL:', cur); if(next){ localStorage.setItem('perfWorkerUrl', next.replace(/\/$/,'')); loadConnections().then(()=>loadSnapshots(false)); }}
+async function loadGlobalWorkerConfig(){ const saved=(localStorage.getItem('perfWorkerUrl')||'').replace(/\/$/,''); const candidates=[saved, DEFAULT_WORKER].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i); for(const base of candidates){ try{ const res=await fetch(base.replace(/\/$/,'')+'/api/performance/config'); const data=await res.json(); if(res.ok && data && data.config && data.config.workerUrl){ state.workerUrl=String(data.config.workerUrl).replace(/\/$/,''); localStorage.setItem('perfWorkerUrl', state.workerUrl); return state.workerUrl; } if(res.ok){ state.workerUrl=base.replace(/\/$/,''); return state.workerUrl; } }catch(e){} } state.workerUrl=(saved||DEFAULT_WORKER).replace(/\/$/,''); return state.workerUrl; }
+async function saveGlobalWorkerConfig(url){ const clean=String(url||'').trim().replace(/\/$/,''); if(!clean) throw new Error('Worker URL trống'); const data=await fetchJSON(clean+'/api/performance/config',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({workerUrl:clean})}); state.workerUrl=clean; localStorage.setItem('perfWorkerUrl', clean); return data; }
+async function openConfig(){ const cur=workerBase(); const next=prompt('Dán Worker URL dùng chung cho tất cả máy:', cur); if(next){ try{ await saveGlobalWorkerConfig(next); setStatus('Đã lưu Worker URL dùng chung lên Firebase. Máy khác mở web sẽ tự dùng Worker này.','ok'); await loadConnections(); await loadSnapshots(false); }catch(e){ const clean=String(next).trim().replace(/\/$/,''); state.workerUrl=clean; localStorage.setItem('perfWorkerUrl', clean); setStatus('Đã lưu Worker trên máy này, nhưng chưa lưu được cấu hình chung: '+e.message,'error'); await loadConnections(); await loadSnapshots(false); } }}
 function showTab(tab, btn){ state.activeTab=tab; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); ['overview','products','shop','logs'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==tab)); }
 async function fetchJSON(url, opts={}){ const res=await fetch(url, opts); const text=await res.text(); let data; try{data=JSON.parse(text)}catch(e){throw new Error(text.slice(0,200)||`HTTP ${res.status}`)} if(!res.ok || data.error) throw new Error(data.error || data.message || `HTTP ${res.status}`); return data; }
 async function loadConnections(){ try{ const data=await fetchJSON(workerBase()+'/api/shopee/connections'); state.connections=data.connections||{}; const channels=Object.keys(state.connections).filter(k=>state.connections[k]?.status==='connected'||state.connections[k]?.hasAccessToken); const prev=$('channelSelect').value; $('channelSelect').innerHTML = `<option value="all">Tổng tất cả shop</option>` + channels.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(prev && [...$('channelSelect').options].some(o=>o.value===prev)) $('channelSelect').value=prev; renderConnections(); }catch(e){setStatus('Không tải được kết nối Worker: '+e.message,'error')} }
@@ -107,7 +109,7 @@ function renderAll(){ const data=currentData(); const prev=$('compareMode').valu
 function toggleAuto(){ state.auto=!state.auto; $('autoBtn').textContent=state.auto?'Tắt auto':'Bật auto'; $('autoBtn').classList.toggle('danger', state.auto); if(state.auto){ autoLoop(); } else if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer=null; } }
 async function autoLoop(){ if(!state.auto) return; const r=rangeFromInputs(); const today=todayVN(); if(r.date_from<=today && r.date_to>=today && !state.syncing){ try{ await syncNow(); }catch(e){} } state.autoTimer=setTimeout(autoLoop, 5*60*1000); }
 ['channelSelect','periodMode','dateA','dateB','compareMode'].forEach(id=>document.addEventListener('change',e=>{ if(e.target?.id===id) {loadSnapshots(true)}}));
-(async function init(){ $('dateA').value=todayVN(); $('dateB').value=todayVN(); renderDateInputs(); await loadConnections(); await loadSnapshots(true); setStatus('Sẵn sàng. Bấm Cập nhật ngay hoặc Đồng bộ tất cả shop để lấy dữ liệu.'); })();
+(async function init(){ $('dateA').value=todayVN(); $('dateB').value=todayVN(); renderDateInputs(); await loadGlobalWorkerConfig(); await loadConnections(); await loadSnapshots(true); setStatus('Sẵn sàng. Worker dùng chung: '+workerBase()+'. Bấm Cập nhật ngay hoặc Đồng bộ tất cả shop để lấy dữ liệu.'); })();
 </script>
 </body>
 </html>
