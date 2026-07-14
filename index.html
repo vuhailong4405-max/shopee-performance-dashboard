@@ -3,86 +3,117 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopee Ledger Dashboard V39</title>
+  <title>Shopee Ledger Dashboard V41</title>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#14213d;--muted:#6b7280;--brand:#ff6b35;--line:#e5e7eb;--ok:#0f766e;--bad:#b91c1c}
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    header{background:linear-gradient(135deg,#ff8a3d,#ffb067);color:#fff;padding:24px 28px;border-bottom-left-radius:24px;border-bottom-right-radius:24px;box-shadow:0 12px 30px rgba(255,107,53,.18)}
-    h1{margin:0;font-size:28px}.sub{opacity:.95;margin-top:6px}.wrap{max-width:1280px;margin:22px auto;padding:0 16px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 10px 24px rgba(15,23,42,.04)}
-    .metric .label{color:var(--muted);font-size:13px}.metric .val{font-size:28px;font-weight:800;margin-top:8px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted)}input,select,button{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:#fff}button{background:var(--brand);color:#fff;border:none;font-weight:700;cursor:pointer}button.secondary{background:#111827}.muted{color:var(--muted)}.ok{color:var(--ok)}.bad{color:var(--bad)}
-    table{border-collapse:collapse;width:100%;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:700}pre{white-space:pre-wrap;background:#0b1020;color:#e5e7eb;padding:12px;border-radius:12px;max-height:360px;overflow:auto}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:900px){.grid,.two{grid-template-columns:1fr}.metric .val{font-size:22px}}
+    :root{
+      --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
+      --brand:#ff6b35;--brand2:#ff9f43;--good:#0f9f6e;--bad:#d92d20;--warn:#b7791f;--ink:#1d2939;
+      --shadow:0 18px 45px rgba(16,24,40,.08);--shadow2:0 8px 24px rgba(16,24,40,.06);--radius:22px;
+    }
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:radial-gradient(circle at 15% 0%,#fff1e8 0,#f4f6fb 32%,#f7f8fc 100%);color:var(--text)}
+    .app{max-width:1440px;margin:0 auto;padding:22px 22px 44px}.hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;padding:28px 30px;border-radius:30px;background:linear-gradient(135deg,#ff6b35,#ff9f43 62%,#ffd3a8);color:#fff;box-shadow:0 22px 60px rgba(255,107,53,.24);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-90px;top:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.22)}.hero h1{position:relative;margin:0;font-size:34px;letter-spacing:-.04em}.hero p{position:relative;margin:8px 0 0;opacity:.92;font-size:15px}.pill{display:inline-flex;gap:8px;align-items:center;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);font-weight:700;font-size:13px}.dot{width:9px;height:9px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 4px rgba(18,183,106,.18)}
+    .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:18px}.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}input,select,button{height:44px;border:1px solid var(--line);border-radius:14px;padding:0 13px;font:inherit;background:#fff;color:var(--text)}select,input[type=date]{min-width:170px}button{border:0;background:var(--brand);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,107,53,.2)}button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}.status{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.card{background:rgba(255,255,255,.92);border:1px solid rgba(230,234,242,.9);border-radius:var(--radius);box-shadow:var(--shadow2);padding:18px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:16px}.metric{min-height:132px;position:relative;overflow:hidden}.metric:after{content:"";position:absolute;right:-34px;bottom:-38px;width:104px;height:104px;border-radius:50%;background:#fff3ec}.metric .label{position:relative;color:var(--muted);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.metric .value{position:relative;font-size:30px;line-height:1.08;font-weight:900;letter-spacing:-.04em;margin-top:12px}.metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}.delta{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:12px}.delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f2f4f7;color:#475467}.grid2{display:grid;grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.section-title h2{margin:0;font-size:20px;letter-spacing:-.02em}.section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.chart-wrap{height:370px;border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcff);border:1px solid var(--line);padding:14px 12px 8px}.chart{width:100%;height:100%}.bar{fill:url(#barGrad)}.bar-compare{fill:#d0d5dd;opacity:.75}.axis{font-size:11px;fill:#667085}.gridline{stroke:#edf0f5;stroke-width:1}.tooltip{position:fixed;pointer-events:none;background:#101828;color:white;border-radius:12px;padding:9px 10px;font-size:12px;box-shadow:0 12px 30px rgba(16,24,40,.22);display:none;z-index:10}.legend{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}.legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:11px;height:11px;border-radius:4px;background:var(--brand)}.sw.gray{background:#d0d5dd}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.04em;background:#fbfcff}td:first-child{white-space:normal;min-width:280px}.muted{color:var(--muted)}.right{text-align:right}.product-name{font-weight:800}.settings{margin-top:16px}.settings summary{cursor:pointer;color:var(--muted);font-weight:800}.settings-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:14px}.notice{display:flex;gap:10px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:18px;padding:13px 14px;font-size:13px;margin-top:16px}.empty{padding:30px;text-align:center;color:var(--muted)}
+    @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
+    @media(max-width:760px){.app{padding:12px}.hero{padding:22px;border-radius:24px}.hero h1{font-size:28px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:24px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:330px}}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Shopee Ledger Dashboard V39</h1>
-    <div class="sub">Webhook + Cron 1 phút + Supabase PostgreSQL · Tính theo thời gian tạo đơn</div>
-  </header>
-  <main class="wrap">
-    <section class="card">
-      <div class="toolbar">
-        <div class="field" style="flex:1;min-width:320px"><label>Worker URL</label><input id="workerUrl" placeholder="https://shopee-ledger-sync.xxx.workers.dev"></div>
-        <div class="field"><label>Ngày</label><input type="date" id="date"></div>
+  <div class="app">
+    <section class="hero">
+      <div>
+        <h1>Shopee Ledger Dashboard</h1>
+        <p>Dashboard đọc dữ liệu đã lưu trong Supabase · Tính theo thời gian tạo đơn · Webhook + Cron chạy nền</p>
+      </div>
+      <div class="pill"><span class="dot"></span><span id="runMode">Auto nền đang bật</span></div>
+    </section>
+
+    <section class="topbar">
+      <div class="filters">
+        <div class="field"><label>Ngày xem</label><input type="date" id="date"></div>
         <div class="field"><label>Shop</label><select id="shop"><option value="all">Tất cả shop</option></select></div>
-        <button onclick="saveWorker()">Lưu Worker</button>
-        <button onclick="loadAll()">Tải dữ liệu</button>
-        <button class="secondary" onclick="syncToday()">Sync hôm nay</button>
-        <button class="secondary" onclick="syncDate()">Sync ngày chọn</button>
+        <div class="field"><label>So sánh</label><select id="compare"><option value="prev_day">So với hôm trước</option><option value="prev_week">So với 7 ngày trước</option><option value="prev_2days">So với 2 ngày trước</option></select></div>
       </div>
-      <p class="muted">Webhook URL: <code id="pushUrl"></code><br>OAuth callback URL: <code id="callbackUrl"></code></p>
+      <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
     </section>
-    <section class="grid" style="margin-top:14px">
-      <div class="card metric"><div class="label">GMV</div><div class="val" id="gmv">-</div></div>
-      <div class="card metric"><div class="label">Tổng đơn</div><div class="val" id="orders">-</div></div>
-      <div class="card metric"><div class="label">GMV hủy</div><div class="val" id="cancelGmv">-</div></div>
-      <div class="card metric"><div class="label">AOV</div><div class="val" id="aov">-</div></div>
+
+    <section class="metrics">
+      <div class="card metric"><div class="label">GMV</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
+      <div class="card metric"><div class="label">Tổng đơn</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
+      <div class="card metric"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
+      <div class="card metric"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
+      <div class="card metric"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div></div>
+      <div class="card metric"><div class="label">Tỷ lệ hủy</div><div class="value" id="mCancelRate">-</div><div class="subline"><span id="dCancelRate" class="delta neutral">-</span><span id="cCancelRate">so sánh</span></div></div>
     </section>
-    <section class="two" style="margin-top:14px">
+
+    <section class="grid2">
       <div class="card">
-        <h3>Kết nối Shopee</h3>
-        <div class="toolbar">
-          <div class="field" style="flex:1"><label>Tên kênh/shop</label><input id="channel" placeholder="Gooby"></div>
-          <button onclick="connectShop()">Tạo link OAuth</button>
+        <div class="section-title">
+          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột có mốc GMV, lấy từ snapshot ngày đã lưu.</p></div>
+          <div class="legend"><span><i class="sw"></i>Ngày chọn</span><span><i class="sw gray"></i>Ngày so sánh</span></div>
         </div>
-        <div id="oauthBox" class="muted" style="margin-top:10px"></div>
+        <div class="chart-wrap"><svg id="hourlyChart" class="chart" role="img"></svg></div>
       </div>
       <div class="card">
-        <h3>Trạng thái</h3>
-        <div id="status" class="muted">Chưa tải</div>
+        <div class="section-title"><div><h2>Tổng quan lưu trữ</h2><p>Không gọi Shopee API khi đổi ngày.</p></div></div>
+        <div id="storageBox" class="notice">Đang đọc snapshot từ database...</div>
+        <div class="table-wrap" style="margin-top:14px"><table><tbody id="statusTable"></tbody></table></div>
       </div>
     </section>
-    <section class="card" style="margin-top:14px">
-      <h3>Top sản phẩm</h3>
-      <div style="overflow:auto"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th>SL</th><th>GMV</th><th>Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
+
+    <section class="card" style="margin-top:16px">
+      <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo GMV hợp lệ trong ngày chọn.</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
     </section>
-    <section class="card" style="margin-top:14px">
-      <h3>GMV theo giờ</h3>
-      <div style="overflow:auto"><table><thead><tr><th>Giờ</th><th>GMV</th><th>Đơn</th></tr></thead><tbody id="hourly"></tbody></table></div>
-    </section>
-    <section class="two" style="margin-top:14px">
-      <div class="card"><h3>Logs</h3><button class="secondary" onclick="loadLogs()">Tải logs</button><pre id="logs"></pre></div>
-      <div class="card"><h3>Webhook events</h3><button class="secondary" onclick="loadWebhookEvents()">Tải webhook events</button><pre id="events"></pre></div>
-    </section>
-  </main>
+
+    <details class="card settings">
+      <summary>Cài đặt kỹ thuật / kết nối shop</summary>
+      <div class="settings-panel">
+        <div class="filters">
+          <div class="field" style="flex:1;min-width:300px"><label>Worker URL</label><input id="workerUrl" placeholder="https://shopee-ledger-sync.xxx.workers.dev"></div>
+          <div class="field"><label>Tên kênh/shop</label><input id="channel" placeholder="Gooby"></div>
+          <button class="ghost" id="saveWorkerBtn">Lưu Worker</button>
+          <button class="ghost" id="oauthBtn">Tạo link OAuth</button>
+        </div>
+        <p class="muted">Webhook URL: <code id="pushUrl"></code><br>OAuth callback URL: <code id="callbackUrl"></code></p>
+        <div id="oauthBox" class="muted"></div>
+      </div>
+    </details>
+  </div>
+  <div id="tip" class="tooltip"></div>
 <script>
 const DEFAULT_WORKER = 'https://shopee-ledger-sync.vuhailong4405.workers.dev';
-function $(id){return document.getElementById(id)}
-function fmt(n){return Number(n||0).toLocaleString('vi-VN')}
-function todayVN(){const d=new Date(); d.setHours(d.getHours()+7); return d.toISOString().slice(0,10)}
-function getWorker(){return ($('workerUrl').value||localStorage.getItem('v39_worker')||DEFAULT_WORKER).replace(/\/$/,'')}
-function setStatus(t, cls='muted'){$('status').className=cls; $('status').textContent=t}
-function init(){ $('date').value=todayVN(); $('workerUrl').value=localStorage.getItem('v39_worker')||DEFAULT_WORKER; updateUrls(); loadShops().then(loadAll).catch(e=>setStatus(e.message,'bad')); setInterval(()=>loadAll().catch(()=>{}), 60000); }
-function updateUrls(){const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'}
-function saveWorker(){localStorage.setItem('v39_worker',getWorker()); updateUrls(); setStatus('Đã lưu Worker URL','ok')}
-async function api(path, opts={}){const res=await fetch(getWorker()+path,opts); const data=await res.json().catch(()=>null); if(!res.ok||!data?.ok) throw new Error(data?.error||('HTTP '+res.status)); return data}
-async function loadShops(){updateUrls(); const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op)} if([...sel.options].some(o=>o.value===cur)) sel.value=cur;}
-async function loadAll(){setStatus('Đang tải database...'); updateUrls(); const date=$('date').value||todayVN(); const shop=$('shop').value||'all'; const data=await api('/api/dashboard?date='+encodeURIComponent(date)+'&shop_id='+encodeURIComponent(shop)); render(data.data); setStatus('Đã tải dữ liệu · '+new Date().toLocaleTimeString('vi-VN'),'ok')}
-function render(d){const s=d.summary||{}; $('gmv').textContent=fmt(s.gmv)+'đ'; $('orders').textContent=fmt(s.total_orders); $('cancelGmv').textContent=fmt(s.cancel_gmv)+'đ'; $('aov').textContent=fmt(s.aov)+'đ'; $('topProducts').innerHTML=(d.top_products||[]).slice(0,30).map(p=>`<tr><td>${p.item_name||'-'}</td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td>${fmt(p.qty)}</td><td>${fmt(p.gmv)}đ</td><td>${fmt(p.orders)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Chưa có dữ liệu</td></tr>'; $('hourly').innerHTML=(d.hourly_gmv||[]).map(h=>`<tr><td>${h.hour}</td><td>${fmt(h.gmv)}đ</td><td>${fmt(h.orders)}</td></tr>`).join('')}
-async function syncToday(){setStatus('Đang sync hôm nay từ Shopee API...'); const data=await api('/api/sync/today?shop_id='+encodeURIComponent($('shop').value||'all')); await loadShops(); await loadAll(); setStatus('Sync xong hôm nay','ok')}
-async function syncDate(){const date=$('date').value||todayVN(); setStatus('Đang sync ngày '+date+' từ Shopee API...'); const data=await api('/api/sync/date?date='+encodeURIComponent(date)+'&shop_id='+encodeURIComponent($('shop').value||'all')); await loadShops(); await loadAll(); setStatus('Sync xong ngày '+date,'ok')}
-async function connectShop(){const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Nếu Shopee yêu cầu Redirect URL, dùng: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'}
-async function loadLogs(){const data=await api('/api/logs?limit=80'); $('logs').textContent=JSON.stringify(data.logs,null,2)}
-async function loadWebhookEvents(){const data=await api('/api/webhook-events?limit=80'); $('events').textContent=JSON.stringify(data.events,null,2)}
+const $ = id => document.getElementById(id);
+let timer = null;
+function todayVN(){ return new Date(Date.now()+7*3600*1000).toISOString().slice(0,10); }
+function getWorker(){ return (($('workerUrl')?.value)||localStorage.getItem('ledger_worker_v41')||DEFAULT_WORKER).replace(/\/$/,''); }
+function money(n){ n=Number(n||0); if(Math.abs(n)>=1e9) return (n/1e9).toFixed(n>=1e10?1:2).replace('.',',')+' tỷ'; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n>=1e7?1:2).replace('.',',')+' tr'; return n.toLocaleString('vi-VN')+'đ'; }
+function num(n){ return Number(n||0).toLocaleString('vi-VN'); }
+function percent(n){ return (Number(n||0)).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%'; }
+function compareLabel(){ const v=$('compare').value; return v==='prev_week'?'7 ngày trước':v==='prev_2days'?'2 ngày trước':'hôm trước'; }
+function updateUrls(){ const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'; }
+async function api(path){ const res=await fetch(getWorker()+path,{cache:'no-store'}); const data=await res.json().catch(()=>null); if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status)); return data; }
+async function loadShops(){ const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){ const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op); } if([...sel.options].some(o=>o.value===cur)) sel.value=cur; }
+function deltaClass(value, reverse=false){ if(value===null || value===undefined || !isFinite(value) || value===0) return 'delta neutral'; const good = reverse ? value<0 : value>0; return 'delta '+(good?'up':'down'); }
+function deltaText(d){ if(!d || d.percent===null || d.percent===undefined) return 'mới'; const sign=d.percent>0?'+':''; return sign+percent(d.percent); }
+function setMetric(valueId, deltaId, compId, value, delta, type='money', reverse=false){ $(valueId).textContent = type==='money'?money(value):type==='percent'?percent(value):num(value); const el=$(deltaId); el.className=deltaClass(delta?.percent, reverse); el.textContent=deltaText(delta); $(compId).textContent='vs '+compareLabel(); }
+function normalizeHourly(arr){ const out={}; for(let i=0;i<24;i++){ const h=String(i).padStart(2,'0')+':00'; out[h]={hour:h,gmv:0,orders:0}; } for(const r of arr||[]){ const h=r.hour||String(r.h||'').padStart(2,'0')+':00'; out[h]={hour:h,gmv:Number(r.gmv||0),orders:Number(r.orders||0)}; } return Object.values(out); }
+function compactAxis(n){ n=Number(n||0); if(n>=1e9) return (n/1e9).toFixed(1).replace('.',',')+' tỷ'; if(n>=1e6) return Math.round(n/1e6)+' tr'; if(n>=1e3) return Math.round(n/1e3)+'k'; return String(Math.round(n)); }
+function renderChart(current, previous){
+  const svg=$('hourlyChart'); const tip=$('tip'); const cur=normalizeHourly(current), prev=normalizeHourly(previous); const W=svg.clientWidth||900,H=svg.clientHeight||340; const m={l:62,r:18,t:22,b:42}; const cw=W-m.l-m.r,ch=H-m.t-m.b; const max=Math.max(1,...cur.map(x=>x.gmv),...prev.map(x=>x.gmv)); const nice=Math.ceil(max/1000000)*1000000 || max; const step=cw/24; const bw=Math.max(7,step*.5); let html=`<defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a37"/><stop offset="1" stop-color="#ffb067"/></linearGradient></defs>`;
+  for(let i=0;i<=4;i++){ const v=nice*i/4; const y=m.t+ch-(v/nice)*ch; html+=`<line class="gridline" x1="${m.l}" y1="${y}" x2="${W-m.r}" y2="${y}"/><text class="axis" x="${m.l-10}" y="${y+4}" text-anchor="end">${compactAxis(v)}</text>`; }
+  cur.forEach((d,i)=>{ const x=m.l+i*step+step/2; const hp=(prev[i]?.gmv||0)/nice*ch; const yp=m.t+ch-hp; html+=`<rect class="bar-compare" x="${x-bw*.52}" y="${yp}" width="${bw}" height="${Math.max(0,hp)}" rx="5"/>`; });
+  cur.forEach((d,i)=>{ const x=m.l+i*step+step/2; const h=d.gmv/nice*ch; const y=m.t+ch-h; html+=`<rect class="bar" data-hour="${d.hour}" data-gmv="${d.gmv}" data-orders="${d.orders}" x="${x+bw*.08}" y="${y}" width="${bw}" height="${Math.max(0,h)}" rx="5"/>`; if(i%2===0) html+=`<text class="axis" x="${x}" y="${H-15}" text-anchor="middle">${String(i).padStart(2,'0')}</text>`; });
+  html+=`<text class="axis" x="${m.l}" y="${H-2}">Giờ</text>`; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=html;
+  svg.querySelectorAll('.bar').forEach(b=>{ b.addEventListener('mousemove',ev=>{ tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px'; tip.innerHTML=`<b>${b.dataset.hour}</b><br>GMV: ${money(b.dataset.gmv)}<br>Đơn: ${num(b.dataset.orders)}`; }); b.addEventListener('mouseleave',()=>tip.style.display='none'); });
+}
+function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho ngày này.</td></tr>'; }
+function renderStatus(payload){ const s=payload.data?.summary||{}, p=payload.compare?.data?.summary||{}; const rows=payload.rows||0; const compareRows=payload.compare?.rows||0; const date=$('date').value; const isOld=date<todayVN(); $('storageBox').innerHTML = isOld ? '✅ Đây là ngày cũ: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi API Shopee để đồng bộ lại.' : '🟢 Hôm nay đang được cập nhật nền bằng Webhook + Cron. Giao diện chỉ đọc database và tự làm mới mỗi 60 giây.'; $('statusTable').innerHTML=`<tr><td>Ngày chọn</td><td class="right"><b>${payload.date}</b></td></tr><tr><td>Ngày so sánh</td><td class="right"><b>${payload.compare?.date||'-'}</b></td></tr><tr><td>Snapshot ngày chọn</td><td class="right">${rows} shop</td></tr><tr><td>Snapshot so sánh</td><td class="right">${compareRows} shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
+function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); renderChart(payload.data?.hourly_gmv||[], payload.compare?.data?.hourly_gmv||[]); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent=($('date').value<todayVN())?'Đang xem snapshot cố định':'Đang xem dữ liệu hôm nay'; }
+async function loadDashboard(){ try{ const date=$('date').value||todayVN(); const shop=$('shop').value||'all'; const compare=$('compare').value||'prev_day'; $('snapshotText').textContent='Đang đọc database...'; const data=await api('/api/dashboard/compare?date='+encodeURIComponent(date)+'&shop_id='+encodeURIComponent(shop)+'&compare='+encodeURIComponent(compare)); render(data); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message; console.error(e); } }
+function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ if(($('date').value||todayVN())===todayVN()) loadDashboard(); },60000); }
+async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
+function saveWorker(){ localStorage.setItem('ledger_worker_v41',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
+async function init(){ $('date').value=todayVN(); $('workerUrl').value=localStorage.getItem('ledger_worker_v41')||DEFAULT_WORKER; updateUrls(); $('date').addEventListener('change',loadDashboard); $('shop').addEventListener('change',loadDashboard); $('compare').addEventListener('change',loadDashboard); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); window.addEventListener('resize',()=>loadDashboard()); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
