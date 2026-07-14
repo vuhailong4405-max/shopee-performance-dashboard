@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopee Ledger Dashboard V43</title>
+  <title>Shopee Ledger Dashboard V44</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -24,10 +24,10 @@
     <section class="hero">
       <div>
         <h1>Shopee Ledger Dashboard</h1>
-        <p>Dashboard chỉ đọc dữ liệu đã lưu · Có kiểm tra lỗi, độ phủ dữ liệu và đối chiếu snapshot với ledger</p>
+        <p>Dashboard doanh số đã đặt · Tối ưu quét đơn mới + cập nhật trạng thái bằng update_time</p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
-        <div class="pill"><span class="dot"></span><span id="runMode">Webhook + Cron chạy nền</span></div>
+        <div class="pill"><span class="dot"></span><span id="runMode">Webhook + Cron nền tối ưu</span></div>
         <div class="range-note" id="heroRange">-</div>
       </div>
     </section>
@@ -47,7 +47,7 @@
     </section>
 
     <section class="metrics">
-      <div class="card metric"><div class="label">GMV</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
+      <div class="card metric"><div class="label">Doanh số đã đặt</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
       <div class="card metric"><div class="label">Tổng đơn</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
       <div class="card metric"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
       <div class="card metric"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
@@ -157,7 +157,7 @@ function renderChart(current, previous){
   svg.querySelectorAll('.bar').forEach(b=>{ b.addEventListener('mousemove',ev=>{ tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px'; tip.innerHTML=`<b>${b.dataset.hour}</b><br>GMV: ${money(b.dataset.gmv)}<br>Đơn: ${num(b.dataset.orders)}`; }); b.addEventListener('mouseleave',()=>tip.style.display='none'); });
 }
 function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho khoảng thời gian này.</td></tr>'; }
-function renderStatus(payload){ const r={from:payload.date_from,to:payload.date_to}; const cr={from:payload.compare?.date_from,to:payload.compare?.date_to}; const rows=payload.rows||0; const isCurrent = r.to>=todayVN(); $('storageBox').innerHTML = isCurrent ? '🟢 Khoảng thời gian có hôm nay: số liệu hôm nay được Worker cập nhật nền bằng Cron/Webhook, giao diện chỉ đọc database.' : '✅ Đây là dữ liệu lịch sử: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi lại API Shopee.'; $('statusTable').innerHTML=`<tr><td>Kiểu xem</td><td class="right"><b>Theo ${periodName()}</b></td></tr><tr><td>Kỳ đang xem</td><td class="right"><b>${rangeLabel(r)}</b></td></tr><tr><td>Kỳ so sánh</td><td class="right"><b>${rangeLabel(cr)}</b></td></tr><tr><td>Snapshot đã đọc</td><td class="right">${rows} dòng ngày/shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
+function renderStatus(payload){ const r={from:payload.date_from,to:payload.date_to}; const cr={from:payload.compare?.date_from,to:payload.compare?.date_to}; const rows=payload.rows||0; const isCurrent = r.to>=todayVN(); $('storageBox').innerHTML = isCurrent ? '🟢 Khoảng thời gian có hôm nay: số liệu hôm nay được Worker cập nhật nền bằng Cron/Webhook, giao diện chỉ đọc database.' : '✅ Đây là dữ liệu lịch sử: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi lại API Shopee.'; $('statusTable').innerHTML=`<tr><td>Kiểu xem</td><td class="right"><b>Theo ${periodName()}</b></td></tr><tr><td>Kỳ đang xem</td><td class="right"><b>${rangeLabel(r)}</b></td></tr><tr><td>Kỳ so sánh</td><td class="right"><b>${rangeLabel(cr)}</b></td></tr><tr><td>Snapshot đã đọc</td><td class="right">${rows} dòng ngày/shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time · Đơn hàng đã đặt</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
 function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); renderChart(payload.data?.hourly_gmv||[], payload.compare?.data?.hourly_gmv||[]); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
 function shortMoney(n){ return money(n||0); }
@@ -168,9 +168,9 @@ function renderDiagnostics(d){
   const hasWarn=issues.some(x=>x.level==='warn');
   $('diagSummary').innerHTML = hasError ? '🔴 Có lỗi đang ảnh hưởng đến đồng bộ hoặc số liệu. Xem danh sách bên dưới.' : hasWarn ? '🟠 Có cảnh báo dữ liệu. Số liệu có thể chưa đủ hoặc snapshot đang lệch ledger.' : '🟢 Kiểm tra nhanh chưa phát hiện lỗi rõ ràng.';
   $('diagSnapshot').textContent = num(d.snapshot?.rows||0);
-  $('diagSnapshotSub').textContent = 'GMV snapshot: '+money(d.snapshot?.aggregate?.gmv||0);
+  $('diagSnapshotSub').textContent = 'Doanh số đặt snapshot: '+money(d.snapshot?.aggregate?.gmv||0);
   $('diagOrders').textContent = num(d.ledger?.orders||0);
-  $('diagOrdersSub').textContent = 'GMV ledger: '+money(d.ledger?.aggregate?.gmv||0);
+  $('diagOrdersSub').textContent = 'Doanh số đặt ledger: '+money(d.ledger?.aggregate?.gmv||0);
   const diff=d.diff_snapshot_minus_ledger?.gmv?.diff||0;
   $('diagDiffGmv').textContent = (diff>0?'+':'')+money(diff);
   $('diagErrors').textContent = num((d.recent_error_logs||[]).length);
@@ -201,8 +201,8 @@ async function recomputeFromLedger(){
 async function loadDashboard(){ try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard(); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
-function saveWorker(){ localStorage.setItem('ledger_worker_v43',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
-function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
+function saveWorker(){ localStorage.setItem('ledger_worker_v44',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
+function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
 async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('recomputeBtn').addEventListener('click',recomputeFromLedger); window.addEventListener('resize',()=>loadDashboard()); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
