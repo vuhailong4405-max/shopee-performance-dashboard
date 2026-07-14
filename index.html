@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopee Ledger Dashboard V41</title>
+  <title>Shopee Ledger Dashboard V43</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -12,7 +12,9 @@
     }
     *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:radial-gradient(circle at 15% 0%,#fff1e8 0,#f4f6fb 32%,#f7f8fc 100%);color:var(--text)}
     .app{max-width:1440px;margin:0 auto;padding:22px 22px 44px}.hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;padding:28px 30px;border-radius:30px;background:linear-gradient(135deg,#ff6b35,#ff9f43 62%,#ffd3a8);color:#fff;box-shadow:0 22px 60px rgba(255,107,53,.24);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-90px;top:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.22)}.hero h1{position:relative;margin:0;font-size:34px;letter-spacing:-.04em}.hero p{position:relative;margin:8px 0 0;opacity:.92;font-size:15px}.pill{display:inline-flex;gap:8px;align-items:center;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);font-weight:700;font-size:13px}.dot{width:9px;height:9px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 4px rgba(18,183,106,.18)}
-    .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:18px}.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}input,select,button{height:44px;border:1px solid var(--line);border-radius:14px;padding:0 13px;font:inherit;background:#fff;color:var(--text)}select,input[type=date]{min-width:170px}button{border:0;background:var(--brand);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,107,53,.2)}button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}.status{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.card{background:rgba(255,255,255,.92);border:1px solid rgba(230,234,242,.9);border-radius:var(--radius);box-shadow:var(--shadow2);padding:18px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:16px}.metric{min-height:132px;position:relative;overflow:hidden}.metric:after{content:"";position:absolute;right:-34px;bottom:-38px;width:104px;height:104px;border-radius:50%;background:#fff3ec}.metric .label{position:relative;color:var(--muted);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.metric .value{position:relative;font-size:30px;line-height:1.08;font-weight:900;letter-spacing:-.04em;margin-top:12px}.metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}.delta{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:12px}.delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f2f4f7;color:#475467}.grid2{display:grid;grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.section-title h2{margin:0;font-size:20px;letter-spacing:-.02em}.section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.chart-wrap{height:370px;border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcff);border:1px solid var(--line);padding:14px 12px 8px}.chart{width:100%;height:100%}.bar{fill:url(#barGrad)}.bar-compare{fill:#d0d5dd;opacity:.75}.axis{font-size:11px;fill:#667085}.gridline{stroke:#edf0f5;stroke-width:1}.tooltip{position:fixed;pointer-events:none;background:#101828;color:white;border-radius:12px;padding:9px 10px;font-size:12px;box-shadow:0 12px 30px rgba(16,24,40,.22);display:none;z-index:10}.legend{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}.legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:11px;height:11px;border-radius:4px;background:var(--brand)}.sw.gray{background:#d0d5dd}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.04em;background:#fbfcff}td:first-child{white-space:normal;min-width:280px}.muted{color:var(--muted)}.right{text-align:right}.product-name{font-weight:800}.settings{margin-top:16px}.settings summary{cursor:pointer;color:var(--muted);font-weight:800}.settings-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:14px}.notice{display:flex;gap:10px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:18px;padding:13px 14px;font-size:13px;margin-top:16px}.empty{padding:30px;text-align:center;color:var(--muted)}
+    .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:18px}.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}input,select,button{height:44px;border:1px solid var(--line);border-radius:14px;padding:0 13px;font:inherit;background:#fff;color:var(--text)}select,input[type=date]{min-width:170px}button{border:0;background:var(--brand);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,107,53,.2)}button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}.status{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.card{background:rgba(255,255,255,.92);border:1px solid rgba(230,234,242,.9);border-radius:var(--radius);box-shadow:var(--shadow2);padding:18px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:16px}.metric{min-height:132px;position:relative;overflow:hidden}.metric:after{content:"";position:absolute;right:-34px;bottom:-38px;width:104px;height:104px;border-radius:50%;background:#fff3ec}.metric .label{position:relative;color:var(--muted);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.metric .value{position:relative;font-size:30px;line-height:1.08;font-weight:900;letter-spacing:-.04em;margin-top:12px}.metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}.delta{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:12px}.delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f2f4f7;color:#475467}.grid2{display:grid;grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.section-title h2{margin:0;font-size:20px;letter-spacing:-.02em}.section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.chart-wrap{height:370px;border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcff);border:1px solid var(--line);padding:14px 12px 8px}.chart{width:100%;height:100%}.bar{fill:url(#barGrad)}.bar-compare{fill:#d0d5dd;opacity:.75}.axis{font-size:11px;fill:#667085}.gridline{stroke:#edf0f5;stroke-width:1}.tooltip{position:fixed;pointer-events:none;background:#101828;color:white;border-radius:12px;padding:9px 10px;font-size:12px;box-shadow:0 12px 30px rgba(16,24,40,.22);display:none;z-index:10}.legend{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}.legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:11px;height:11px;border-radius:4px;background:var(--brand)}.sw.gray{background:#d0d5dd}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.04em;background:#fbfcff}td:first-child{white-space:normal;min-width:280px}.muted{color:var(--muted)}.right{text-align:right}.product-name{font-weight:800}.settings{margin-top:16px}.settings summary{cursor:pointer;color:var(--muted);font-weight:800}.settings-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:14px}.hidden{display:none!important}.range-note{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#fff;color:var(--ink);border:1px solid rgba(255,255,255,.45);font-weight:800;font-size:13px}.notice{display:flex;gap:10px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:18px;padding:13px 14px;font-size:13px;margin-top:16px}.empty{padding:30px;text-align:center;color:var(--muted)}
+
+    .diag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}.diag-card{border:1px solid var(--line);background:#fbfcff;border-radius:18px;padding:14px}.diag-card .k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:900}.diag-card .v{font-size:22px;font-weight:900;margin-top:8px;letter-spacing:-.03em}.issue-list{display:grid;gap:10px;margin-top:12px}.issue{display:flex;gap:10px;align-items:flex-start;border-radius:16px;padding:12px 13px;border:1px solid var(--line);background:#fff}.issue .tag{min-width:76px;text-align:center;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900}.issue.ok .tag{background:#ecfdf3;color:#067647}.issue.warn .tag{background:#fffaeb;color:#b54708}.issue.error .tag{background:#fef3f2;color:#b42318}.issue .area{font-weight:900}.diag-raw{max-height:360px;overflow:auto;background:#0b1220;color:#e5e7eb;border-radius:16px;padding:14px;font-size:12px;line-height:1.5}.mini-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.progress{height:8px;background:#eef2f6;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#ff7a37,#ffb067);border-radius:999px}.log-table td:first-child{min-width:120px}.log-error{color:#b42318;font-weight:800}
     @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
     @media(max-width:760px){.app{padding:12px}.hero{padding:22px;border-radius:24px}.hero h1{font-size:28px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:24px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:330px}}
   </style>
@@ -22,16 +24,24 @@
     <section class="hero">
       <div>
         <h1>Shopee Ledger Dashboard</h1>
-        <p>Dashboard đọc dữ liệu đã lưu trong Supabase · Tính theo thời gian tạo đơn · Webhook + Cron chạy nền</p>
+        <p>Dashboard chỉ đọc dữ liệu đã lưu · Có kiểm tra lỗi, độ phủ dữ liệu và đối chiếu snapshot với ledger</p>
       </div>
-      <div class="pill"><span class="dot"></span><span id="runMode">Auto nền đang bật</span></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
+        <div class="pill"><span class="dot"></span><span id="runMode">Webhook + Cron chạy nền</span></div>
+        <div class="range-note" id="heroRange">-</div>
+      </div>
     </section>
 
     <section class="topbar">
       <div class="filters">
-        <div class="field"><label>Ngày xem</label><input type="date" id="date"></div>
+        <div class="field"><label>Kiểu xem</label><select id="period"><option value="day">Theo ngày</option><option value="week">Theo tuần</option><option value="month">Theo tháng</option><option value="custom">Tùy chọn</option></select></div>
+        <div class="field" data-period-field="day"><label>Ngày xem</label><input type="date" id="dayDate"></div>
+        <div class="field hidden" data-period-field="week"><label>Tuần xem</label><input type="week" id="weekInput"></div>
+        <div class="field hidden" data-period-field="month"><label>Tháng xem</label><input type="month" id="monthInput"></div>
+        <div class="field hidden" data-period-field="custom"><label>Từ ngày</label><input type="date" id="fromDate"></div>
+        <div class="field hidden" data-period-field="custom"><label>Đến ngày</label><input type="date" id="toDate"></div>
         <div class="field"><label>Shop</label><select id="shop"><option value="all">Tất cả shop</option></select></div>
-        <div class="field"><label>So sánh</label><select id="compare"><option value="prev_day">So với hôm trước</option><option value="prev_week">So với 7 ngày trước</option><option value="prev_2days">So với 2 ngày trước</option></select></div>
+        <div class="field"><label>So sánh</label><select id="compare"><option value="previous_period">So với kỳ liền trước</option></select></div>
       </div>
       <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
     </section>
@@ -48,21 +58,46 @@
     <section class="grid2">
       <div class="card">
         <div class="section-title">
-          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột có mốc GMV, lấy từ snapshot ngày đã lưu.</p></div>
-          <div class="legend"><span><i class="sw"></i>Ngày chọn</span><span><i class="sw gray"></i>Ngày so sánh</span></div>
+          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột gom GMV theo giờ trong khoảng thời gian đang chọn.</p></div>
+          <div class="legend"><span><i class="sw"></i>Kỳ đang xem</span><span><i class="sw gray"></i>Kỳ so sánh</span></div>
         </div>
         <div class="chart-wrap"><svg id="hourlyChart" class="chart" role="img"></svg></div>
       </div>
       <div class="card">
-        <div class="section-title"><div><h2>Tổng quan lưu trữ</h2><p>Không gọi Shopee API khi đổi ngày.</p></div></div>
+        <div class="section-title"><div><h2>Tổng quan lưu trữ</h2><p>Đổi ngày/tuần/tháng chỉ đọc snapshot đã lưu trong Supabase.</p></div></div>
         <div id="storageBox" class="notice">Đang đọc snapshot từ database...</div>
         <div class="table-wrap" style="margin-top:14px"><table><tbody id="statusTable"></tbody></table></div>
       </div>
     </section>
 
     <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo GMV hợp lệ trong ngày chọn.</p></div></div>
+      <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo GMV hợp lệ trong khoảng thời gian đang chọn.</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
+    </section>
+
+
+    <section class="card" style="margin-top:16px">
+      <div class="section-title">
+        <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: Worker, Supabase, Shopee API, Cron/Webhook, snapshot hay dữ liệu đơn hàng ledger.</p></div>
+        <button class="ghost" id="diagBtn">Kiểm tra lỗi</button>
+      </div>
+      <div id="diagSummary" class="notice">Đang chờ kiểm tra dữ liệu...</div>
+      <div class="diag-grid">
+        <div class="diag-card"><div class="k">Snapshot đã lưu</div><div class="v" id="diagSnapshot">-</div><div class="muted" id="diagSnapshotSub">daily_shop_stats</div></div>
+        <div class="diag-card"><div class="k">Đơn trong ledger</div><div class="v" id="diagOrders">-</div><div class="muted" id="diagOrdersSub">shopee_orders</div></div>
+        <div class="diag-card"><div class="k">Lệch GMV</div><div class="v" id="diagDiffGmv">-</div><div class="muted">snapshot - ledger</div></div>
+        <div class="diag-card"><div class="k">Sync lỗi gần nhất</div><div class="v" id="diagErrors">-</div><div class="muted">sync_logs</div></div>
+      </div>
+      <div id="issuesList" class="issue-list"></div>
+      <div class="mini-actions">
+        <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
+        <span class="muted">Nút này chỉ tính lại từ dữ liệu đã lưu trong Supabase, không gọi Shopee API.</span>
+      </div>
+      <details style="margin-top:14px">
+        <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
+        <pre id="diagRaw" class="diag-raw">-</pre>
+      </details>
+      <div class="table-wrap" style="margin-top:14px"><table class="log-table"><thead><tr><th>Khu vực</th><th>Nội dung lỗi/cảnh báo</th></tr></thead><tbody id="diagLogRows"></tbody></table></div>
     </section>
 
     <details class="card settings">
@@ -84,15 +119,30 @@
 const DEFAULT_WORKER = 'https://shopee-ledger-sync.vuhailong4405.workers.dev';
 const $ = id => document.getElementById(id);
 let timer = null;
+function isoDate(d){ return d.toISOString().slice(0,10); }
 function todayVN(){ return new Date(Date.now()+7*3600*1000).toISOString().slice(0,10); }
-function getWorker(){ return (($('workerUrl')?.value)||localStorage.getItem('ledger_worker_v41')||DEFAULT_WORKER).replace(/\/$/,''); }
+function addDaysISO(date, delta){ return isoDate(new Date(Date.parse(date+'T00:00:00Z') + delta*86400000)); }
+function daysInclusive(from,to){ return Math.max(1, Math.round((Date.parse(to+'T00:00:00Z')-Date.parse(from+'T00:00:00Z'))/86400000)+1); }
+function monthLastDay(ym){ const [y,m]=ym.split('-').map(Number); return isoDate(new Date(Date.UTC(y,m,0))); }
+function prevMonthRange(ym){ let [y,m]=ym.split('-').map(Number); m--; if(m===0){m=12;y--;} const mm=String(m).padStart(2,'0'); return {from:`${y}-${mm}-01`, to:monthLastDay(`${y}-${mm}`)}; }
+function getMonday(date){ const d=new Date(Date.parse(date+'T00:00:00Z')); const day=d.getUTCDay(); const diff=(day+6)%7; return isoDate(new Date(d.getTime()-diff*86400000)); }
+function isoWeekString(date){ const d=new Date(Date.parse(date+'T00:00:00Z')); const tmp=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); const day=tmp.getUTCDay()||7; tmp.setUTCDate(tmp.getUTCDate()+4-day); const yearStart=new Date(Date.UTC(tmp.getUTCFullYear(),0,1)); const week=Math.ceil((((tmp-yearStart)/86400000)+1)/7); return tmp.getUTCFullYear()+'-W'+String(week).padStart(2,'0'); }
+function weekToRange(w){ const [y,ww]=w.split('-W'); const year=Number(y), week=Number(ww); const jan4=new Date(Date.UTC(year,0,4)); const jan4Day=jan4.getUTCDay()||7; const monday=new Date(jan4.getTime()-(jan4Day-1)*86400000+(week-1)*7*86400000); return {from:isoDate(monday), to:isoDate(new Date(monday.getTime()+6*86400000))}; }
+function getWorker(){ return (($('workerUrl')?.value)||localStorage.getItem('ledger_worker_v43')||DEFAULT_WORKER).replace(/\/$/,''); }
 function money(n){ n=Number(n||0); if(Math.abs(n)>=1e9) return (n/1e9).toFixed(n>=1e10?1:2).replace('.',',')+' tỷ'; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n>=1e7?1:2).replace('.',',')+' tr'; return n.toLocaleString('vi-VN')+'đ'; }
 function num(n){ return Number(n||0).toLocaleString('vi-VN'); }
 function percent(n){ return (Number(n||0)).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%'; }
-function compareLabel(){ const v=$('compare').value; return v==='prev_week'?'7 ngày trước':v==='prev_2days'?'2 ngày trước':'hôm trước'; }
+function vnDateLabel(date){ const [y,m,d]=date.split('-'); return `${d}/${m}/${y}`; }
+function rangeLabel(r){ return r.from===r.to ? vnDateLabel(r.from) : vnDateLabel(r.from)+' → '+vnDateLabel(r.to); }
+function periodName(){ return $('period').value==='week'?'tuần':$('period').value==='month'?'tháng':$('period').value==='custom'?'khoảng tùy chọn':'ngày'; }
+function compareLabel(){ return 'kỳ trước'; }
 function updateUrls(){ const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'; }
 async function api(path){ const res=await fetch(getWorker()+path,{cache:'no-store'}); const data=await res.json().catch(()=>null); if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status)); return data; }
 async function loadShops(){ const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){ const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op); } if([...sel.options].some(o=>o.value===cur)) sel.value=cur; }
+function updatePeriodFields(){ const p=$('period').value; document.querySelectorAll('[data-period-field]').forEach(el=>el.classList.toggle('hidden', el.dataset.periodField!==p)); const r=getRangeSafe(); $('heroRange').textContent=r?rangeLabel(r):'-'; }
+function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
+function getRange(){ const p=$('period').value; if(p==='day'){ const d=$('dayDate').value||todayVN(); return {period:p,from:d,to:d}; } if(p==='week'){ return {period:p,...weekToRange($('weekInput').value||isoWeekString(todayVN()))}; } if(p==='month'){ const ym=$('monthInput').value||todayVN().slice(0,7); return {period:p,from:ym+'-01',to:monthLastDay(ym)}; } let from=$('fromDate').value||todayVN(), to=$('toDate').value||from; if(from>to) [from,to]=[to,from]; return {period:p,from,to}; }
+function getCompareRange(r){ if(r.period==='day') return {from:addDaysISO(r.from,-1),to:addDaysISO(r.to,-1)}; if(r.period==='week') return {from:addDaysISO(r.from,-7),to:addDaysISO(r.to,-7)}; if(r.period==='month') return prevMonthRange(r.from.slice(0,7)); const span=daysInclusive(r.from,r.to); const to=addDaysISO(r.from,-1); const from=addDaysISO(to,-(span-1)); return {from,to}; }
 function deltaClass(value, reverse=false){ if(value===null || value===undefined || !isFinite(value) || value===0) return 'delta neutral'; const good = reverse ? value<0 : value>0; return 'delta '+(good?'up':'down'); }
 function deltaText(d){ if(!d || d.percent===null || d.percent===undefined) return 'mới'; const sign=d.percent>0?'+':''; return sign+percent(d.percent); }
 function setMetric(valueId, deltaId, compId, value, delta, type='money', reverse=false){ $(valueId).textContent = type==='money'?money(value):type==='percent'?percent(value):num(value); const el=$(deltaId); el.className=deltaClass(delta?.percent, reverse); el.textContent=deltaText(delta); $(compId).textContent='vs '+compareLabel(); }
@@ -106,14 +156,54 @@ function renderChart(current, previous){
   html+=`<text class="axis" x="${m.l}" y="${H-2}">Giờ</text>`; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=html;
   svg.querySelectorAll('.bar').forEach(b=>{ b.addEventListener('mousemove',ev=>{ tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px'; tip.innerHTML=`<b>${b.dataset.hour}</b><br>GMV: ${money(b.dataset.gmv)}<br>Đơn: ${num(b.dataset.orders)}`; }); b.addEventListener('mouseleave',()=>tip.style.display='none'); });
 }
-function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho ngày này.</td></tr>'; }
-function renderStatus(payload){ const s=payload.data?.summary||{}, p=payload.compare?.data?.summary||{}; const rows=payload.rows||0; const compareRows=payload.compare?.rows||0; const date=$('date').value; const isOld=date<todayVN(); $('storageBox').innerHTML = isOld ? '✅ Đây là ngày cũ: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi API Shopee để đồng bộ lại.' : '🟢 Hôm nay đang được cập nhật nền bằng Webhook + Cron. Giao diện chỉ đọc database và tự làm mới mỗi 60 giây.'; $('statusTable').innerHTML=`<tr><td>Ngày chọn</td><td class="right"><b>${payload.date}</b></td></tr><tr><td>Ngày so sánh</td><td class="right"><b>${payload.compare?.date||'-'}</b></td></tr><tr><td>Snapshot ngày chọn</td><td class="right">${rows} shop</td></tr><tr><td>Snapshot so sánh</td><td class="right">${compareRows} shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
-function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); renderChart(payload.data?.hourly_gmv||[], payload.compare?.data?.hourly_gmv||[]); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent=($('date').value<todayVN())?'Đang xem snapshot cố định':'Đang xem dữ liệu hôm nay'; }
-async function loadDashboard(){ try{ const date=$('date').value||todayVN(); const shop=$('shop').value||'all'; const compare=$('compare').value||'prev_day'; $('snapshotText').textContent='Đang đọc database...'; const data=await api('/api/dashboard/compare?date='+encodeURIComponent(date)+'&shop_id='+encodeURIComponent(shop)+'&compare='+encodeURIComponent(compare)); render(data); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message; console.error(e); } }
-function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ if(($('date').value||todayVN())===todayVN()) loadDashboard(); },60000); }
+function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho khoảng thời gian này.</td></tr>'; }
+function renderStatus(payload){ const r={from:payload.date_from,to:payload.date_to}; const cr={from:payload.compare?.date_from,to:payload.compare?.date_to}; const rows=payload.rows||0; const isCurrent = r.to>=todayVN(); $('storageBox').innerHTML = isCurrent ? '🟢 Khoảng thời gian có hôm nay: số liệu hôm nay được Worker cập nhật nền bằng Cron/Webhook, giao diện chỉ đọc database.' : '✅ Đây là dữ liệu lịch sử: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi lại API Shopee.'; $('statusTable').innerHTML=`<tr><td>Kiểu xem</td><td class="right"><b>Theo ${periodName()}</b></td></tr><tr><td>Kỳ đang xem</td><td class="right"><b>${rangeLabel(r)}</b></td></tr><tr><td>Kỳ so sánh</td><td class="right"><b>${rangeLabel(cr)}</b></td></tr><tr><td>Snapshot đã đọc</td><td class="right">${rows} dòng ngày/shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
+function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); renderChart(payload.data?.hourly_gmv||[], payload.compare?.data?.hourly_gmv||[]); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
+
+function shortMoney(n){ return money(n||0); }
+function issueClass(level){ return level==='error'?'issue error':level==='warn'?'issue warn':'issue ok'; }
+function renderDiagnostics(d){
+  const issues=d.issues||[];
+  const hasError=issues.some(x=>x.level==='error');
+  const hasWarn=issues.some(x=>x.level==='warn');
+  $('diagSummary').innerHTML = hasError ? '🔴 Có lỗi đang ảnh hưởng đến đồng bộ hoặc số liệu. Xem danh sách bên dưới.' : hasWarn ? '🟠 Có cảnh báo dữ liệu. Số liệu có thể chưa đủ hoặc snapshot đang lệch ledger.' : '🟢 Kiểm tra nhanh chưa phát hiện lỗi rõ ràng.';
+  $('diagSnapshot').textContent = num(d.snapshot?.rows||0);
+  $('diagSnapshotSub').textContent = 'GMV snapshot: '+money(d.snapshot?.aggregate?.gmv||0);
+  $('diagOrders').textContent = num(d.ledger?.orders||0);
+  $('diagOrdersSub').textContent = 'GMV ledger: '+money(d.ledger?.aggregate?.gmv||0);
+  const diff=d.diff_snapshot_minus_ledger?.gmv?.diff||0;
+  $('diagDiffGmv').textContent = (diff>0?'+':'')+money(diff);
+  $('diagErrors').textContent = num((d.recent_error_logs||[]).length);
+  $('issuesList').innerHTML = issues.map(x=>`<div class="${issueClass(x.level)}"><div class="tag">${(x.level||'ok').toUpperCase()}</div><div><div class="area">${x.area||'-'}</div><div>${x.message||''}</div></div></div>`).join('');
+  const rows=[];
+  for(const i of issues) rows.push(`<tr><td>${i.area||'-'}</td><td class="${i.level==='error'?'log-error':''}">${i.message||''}</td></tr>`);
+  const badCursors=(d.cursors||[]).filter(c=>!c.completed).slice(0,8);
+  for(const c of badCursors) rows.push(`<tr><td>Cursor ${c.shop_name||c.shop_id}</td><td>${c.date}: đã quét ${c.next_minute}/${c.latest_allowed_minute+1} phút <div class="progress"><i style="width:${Math.max(0,Math.min(100,c.progress_percent||0))}%"></i></div></td></tr>`);
+  for(const l of (d.recent_error_logs||[]).slice(0,6)) rows.push(`<tr><td>Sync log ${l.shop_id||''}</td><td class="log-error">${l.stat_date||''} · ${l.sync_type||''}: ${l.message||''}</td></tr>`);
+  $('diagLogRows').innerHTML=rows.join('') || '<tr><td colspan="2" class="empty">Không có lỗi/cảnh báo.</td></tr>';
+  $('diagRaw').textContent=JSON.stringify(d,null,2);
+}
+async function loadDiagnostics(){
+  const r=getRange(); const shop=$('shop').value||'all';
+  const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
+  const data=await api('/api/diagnostics?'+qs.toString());
+  renderDiagnostics(data);
+}
+async function recomputeFromLedger(){
+  const r=getRange(); const shop=$('shop').value||'all';
+  if(daysInclusive(r.from,r.to)>31){ alert('Chỉ tính lại tối đa 31 ngày/lần. Hãy chọn khoảng ngắn hơn.'); return; }
+  if(!confirm('Tính lại snapshot từ shopee_orders cho khoảng '+rangeLabel(r)+'? Thao tác này không gọi Shopee API.')) return;
+  $('diagSummary').innerHTML='Đang tính lại snapshot từ ledger...';
+  const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
+  await api('/api/recompute/range?'+qs.toString());
+  await loadDashboard();
+}
+async function loadDashboard(){ try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message; console.error(e); } }
+function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard(); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
-function saveWorker(){ localStorage.setItem('ledger_worker_v41',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
-async function init(){ $('date').value=todayVN(); $('workerUrl').value=localStorage.getItem('ledger_worker_v41')||DEFAULT_WORKER; updateUrls(); $('date').addEventListener('change',loadDashboard); $('shop').addEventListener('change',loadDashboard); $('compare').addEventListener('change',loadDashboard); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); window.addEventListener('resize',()=>loadDashboard()); await loadShops(); await loadDashboard(); schedule(); }
+function saveWorker(){ localStorage.setItem('ledger_worker_v43',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
+function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('recomputeBtn').addEventListener('click',recomputeFromLedger); window.addEventListener('resize',()=>loadDashboard()); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
