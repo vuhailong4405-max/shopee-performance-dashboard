@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopee Ledger Dashboard V44</title>
+  <title>Shopee Ledger Dashboard V45</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -24,10 +24,10 @@
     <section class="hero">
       <div>
         <h1>Shopee Ledger Dashboard</h1>
-        <p>Dashboard doanh số đã đặt · Tối ưu quét đơn mới + cập nhật trạng thái bằng update_time</p>
+        <p>Dashboard Data Center · GMV theo item subtotal + lọc trạng thái đơn đặt + cảnh báo lệch số</p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
-        <div class="pill"><span class="dot"></span><span id="runMode">Webhook + Cron nền tối ưu</span></div>
+        <div class="pill"><span class="dot"></span><span id="runMode">Webhook + Cron · DataCenter calibrated</span></div>
         <div class="range-note" id="heroRange">-</div>
       </div>
     </section>
@@ -47,8 +47,8 @@
     </section>
 
     <section class="metrics">
-      <div class="card metric"><div class="label">Doanh số đã đặt</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Tổng đơn</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
+      <div class="card metric"><div class="label">Doanh số đã đặt / Data Center</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
+      <div class="card metric"><div class="label">Đơn đã đặt</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
       <div class="card metric"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
       <div class="card metric"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
       <div class="card metric"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div></div>
@@ -58,7 +58,7 @@
     <section class="grid2">
       <div class="card">
         <div class="section-title">
-          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột gom GMV theo giờ trong khoảng thời gian đang chọn.</p></div>
+          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột theo doanh số Data Center, gom theo create_time.</p></div>
           <div class="legend"><span><i class="sw"></i>Kỳ đang xem</span><span><i class="sw gray"></i>Kỳ so sánh</span></div>
         </div>
         <div class="chart-wrap"><svg id="hourlyChart" class="chart" role="img"></svg></div>
@@ -71,14 +71,14 @@
     </section>
 
     <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo GMV hợp lệ trong khoảng thời gian đang chọn.</p></div></div>
+      <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo doanh số sản phẩm đã đặt trong khoảng thời gian đang chọn.</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
     </section>
 
 
     <section class="card" style="margin-top:16px">
       <div class="section-title">
-        <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: Worker, Supabase, Shopee API, Cron/Webhook, snapshot hay dữ liệu đơn hàng ledger.</p></div>
+        <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, công thức GMV, trạng thái đơn hoặc nguồn tiền total_amount/item_subtotal.</p></div>
         <button class="ghost" id="diagBtn">Kiểm tra lỗi</button>
       </div>
       <div id="diagSummary" class="notice">Đang chờ kiểm tra dữ liệu...</div>
@@ -168,15 +168,20 @@ function renderDiagnostics(d){
   const hasWarn=issues.some(x=>x.level==='warn');
   $('diagSummary').innerHTML = hasError ? '🔴 Có lỗi đang ảnh hưởng đến đồng bộ hoặc số liệu. Xem danh sách bên dưới.' : hasWarn ? '🟠 Có cảnh báo dữ liệu. Số liệu có thể chưa đủ hoặc snapshot đang lệch ledger.' : '🟢 Kiểm tra nhanh chưa phát hiện lỗi rõ ràng.';
   $('diagSnapshot').textContent = num(d.snapshot?.rows||0);
-  $('diagSnapshotSub').textContent = 'Doanh số đặt snapshot: '+money(d.snapshot?.aggregate?.gmv||0);
+  $('diagSnapshotSub').textContent = 'Snapshot GMV: '+money(d.snapshot?.aggregate?.gmv||0)+' · nguồn '+(d.amount_audit?.amount_source||'-');
   $('diagOrders').textContent = num(d.ledger?.orders||0);
-  $('diagOrdersSub').textContent = 'Doanh số đặt ledger: '+money(d.ledger?.aggregate?.gmv||0);
+  $('diagOrdersSub').textContent = 'Đơn tính Shopee: '+num(d.amount_audit?.placed_order_count||0)+' / raw '+num(d.amount_audit?.raw_order_count||0);
   const diff=d.diff_snapshot_minus_ledger?.gmv?.diff||0;
   $('diagDiffGmv').textContent = (diff>0?'+':'')+money(diff);
   $('diagErrors').textContent = num((d.recent_error_logs||[]).length);
   $('issuesList').innerHTML = issues.map(x=>`<div class="${issueClass(x.level)}"><div class="tag">${(x.level||'ok').toUpperCase()}</div><div><div class="area">${x.area||'-'}</div><div>${x.message||''}</div></div></div>`).join('');
   const rows=[];
   for(const i of issues) rows.push(`<tr><td>${i.area||'-'}</td><td class="${i.level==='error'?'log-error':''}">${i.message||''}</td></tr>`);
+  if(d.amount_audit){
+    rows.push(`<tr><td>Amount audit</td><td>Nguồn GMV: <b>${d.amount_audit.amount_source}</b> · Đơn raw: <b>${num(d.amount_audit.raw_order_count)}</b> · Đơn tính Shopee: <b>${num(d.amount_audit.placed_order_count)}</b> · Loại: <b>${(d.amount_audit.excluded_statuses||[]).join(', ')||'không'}</b></td></tr>`);
+    rows.push(`<tr><td>So sánh nguồn tiền</td><td>total_amount all: <b>${money(d.amount_audit.total_amount_all)}</b> · item_subtotal all: <b>${money(d.amount_audit.item_subtotal_all)}</b> · GMV đang dùng: <b>${money(d.amount_audit.datacenter_gmv)}</b></td></tr>`);
+    rows.push(`<tr><td>Đơn lỗi tiền</td><td>Đơn total_amount = 0: <b>${num(d.amount_audit.zero_total_amount_count)}</b> · Đơn item_subtotal = 0: <b>${num(d.amount_audit.zero_item_subtotal_count)}</b></td></tr>`);
+  }
   const badCursors=(d.cursors||[]).filter(c=>!c.completed).slice(0,8);
   for(const c of badCursors) rows.push(`<tr><td>Cursor ${c.shop_name||c.shop_id}</td><td>${c.date}: đã quét ${c.next_minute}/${c.latest_allowed_minute+1} phút <div class="progress"><i style="width:${Math.max(0,Math.min(100,c.progress_percent||0))}%"></i></div></td></tr>`);
   for(const l of (d.recent_error_logs||[]).slice(0,6)) rows.push(`<tr><td>Sync log ${l.shop_id||''}</td><td class="log-error">${l.stat_date||''} · ${l.sync_type||''}: ${l.message||''}</td></tr>`);
@@ -201,8 +206,8 @@ async function recomputeFromLedger(){
 async function loadDashboard(){ try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard(); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
-function saveWorker(){ localStorage.setItem('ledger_worker_v44',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
-function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
+function saveWorker(){ localStorage.setItem('ledger_worker_v45',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
+function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
 async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('recomputeBtn').addEventListener('click',recomputeFromLedger); window.addEventListener('resize',()=>loadDashboard()); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
