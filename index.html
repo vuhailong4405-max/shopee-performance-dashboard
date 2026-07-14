@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shopee Performance Dashboard V36</title>
+  <title>Shopee Performance Dashboard V38 - Daily Archive</title>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--text:#12213d;--muted:#64748b;--line:#e7eaf0;--orange:#ff6a1a;--green:#16a34a;--red:#dc2626;--blue:#2563eb;--yellow:#f59e0b;--shadow:0 16px 42px rgba(15,23,42,.08);--radius:20px}
     *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#fff7ed 0,#f6f7fb 240px);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text)}
@@ -19,7 +19,7 @@
 <div class="app">
   <div class="top">
     <div class="brand"><div class="logo">SP</div><div><h1>Shopee Performance Dashboard</h1><div class="subtitle">Web riêng để xem <b>GMV</b>, hiệu quả shop, hiệu quả sản phẩm và tình trạng vận hành theo dữ liệu đơn hàng Shopee.</div></div></div>
-    <div class="toolbar"><button class="btn" onclick="openConfig()">Cấu hình Worker</button><button id="autoBtn" class="btn" onclick="toggleAuto()">Bật auto</button><button class="btn primary" onclick="syncNow()">Cập nhật ngay</button></div>
+    <div class="toolbar"><button class="btn" onclick="openConfig()">Cấu hình Worker</button><button id="autoBtn" class="btn danger" onclick="toggleAuto()">Tắt auto</button><button class="btn primary" onclick="syncNow()">Cập nhật ngay</button></div>
   </div>
 
   <div class="panel">
@@ -32,9 +32,9 @@
     </div>
     <div class="grid" style="grid-template-columns:1fr auto;align-items:center;margin-top:14px;gap:14px">
       <div class="status" id="syncStatus">Chưa tải dữ liệu.</div>
-      <button class="btn orange" onclick="syncAllChannels()">Đồng bộ tất cả shop & lưu snapshot</button>
+      <button class="btn orange" onclick="syncAllChannels()">Đồng bộ tất cả shop & lưu snapshot</button><button class="btn" onclick="archiveSelectedDay()">Lưu cố định ngày đang chọn</button>
     </div>
-    <div class="hint">Logic V35: lấy đơn theo <b>thời gian tạo đơn</b>, lưu snapshot theo từng shop, dashboard cộng số từ dữ liệu đã lưu. Shop nào lỗi sẽ giữ dữ liệu cũ, không làm mất dữ liệu shop khác.</div>
+    <div class="hint">Logic V38: dữ liệu hôm nay tự cập nhật 1 phút/lần. Sau khi qua ngày mới, Worker Cron sẽ tự lưu cố định dữ liệu ngày hôm qua thành snapshot khóa. Khi chọn ngày cũ, web đọc snapshot đã lưu ngay, không gọi lại API Shopee nếu snapshot đã có.</div>
   </div>
 
   <div class="tabs"><button class="tab active" onclick="showTab('overview', this)">Tổng quan GMV</button><button class="tab" onclick="showTab('products', this)">Hiệu quả sản phẩm</button><button class="tab" onclick="showTab('shop', this)">Tình trạng shop</button><button class="tab" onclick="showTab('logs', this)">Kho dữ liệu / Log</button></div>
@@ -62,12 +62,12 @@
     <div class="section" style="margin-top:18px"><h2>Log đồng bộ</h2><div class="tableWrap"><table id="logTable"></table></div></div>
   </div>
 
-  <div class="footer">V36 Product · Shop · GMV Performance Dashboard · Global Worker Config</div>
+  <div class="footer">V38 Product · Shop · GMV Performance Dashboard · Daily Archive Snapshots</div>
 </div>
 
 <script>
 const DEFAULT_WORKER = 'https://shopee-performance-sync.vuhailong4405.workers.dev';
-let state = {connections:{}, current:null, snapshots:[], logs:[], auto:false, autoTimer:null, syncing:false, activeTab:'overview', workerUrl:''};
+let state = {connections:{}, current:null, currentRange:'', snapshots:[], logs:[], auto:true, autoTimer:null, syncing:false, activeTab:'overview', workerUrl:''};
 const $ = id => document.getElementById(id);
 function workerBase(){ return (state.workerUrl || localStorage.getItem('perfWorkerUrl') || DEFAULT_WORKER).replace(/\/$/,''); }
 function setStatus(msg, cls=''){ $('syncStatus').innerHTML = `<span class="${cls}">${msg}</span>`; }
@@ -78,6 +78,10 @@ function todayVN(){ const d=new Date(); const p=new Intl.DateTimeFormat('en-CA',
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 function qs(params){return new URLSearchParams(params).toString()}
 function rangeFromInputs(){ const mode=$('periodMode').value; let a=$('dateA').value || todayVN(), b=$('dateB').value || a; if(mode==='day'){b=a} if(mode==='month'){ const [y,m]=a.slice(0,7).split('-').map(Number); const last=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); a=`${y}-${String(m).padStart(2,'0')}-01`; b=last; } return {mode,date_from:a,date_to:b}; }
+function rangeKey(r){ return `${r.date_from}|${r.date_to}|${r.mode}`; }
+function isPastRange(r){ return r.date_to < todayVN(); }
+function hasSnapshotForCurrentRange(){ const r=rangeFromInputs(); return state.snapshots.some(s=>s.date_from===r.date_from&&s.date_to===r.date_to) || state.snapshots.length>0; }
+
 function renderDateInputs(){ const mode=$('periodMode').value; $('dateBBox').style.display = mode==='range'?'block':'none'; $('dateALabel').textContent = mode==='month'?'Chọn tháng':'Chọn ngày'; $('dateA').type = mode==='month'?'month':'date'; if(!$('dateA').value){ $('dateA').value = mode==='month'?todayVN().slice(0,7):todayVN(); } }
 async function loadGlobalWorkerConfig(){ const saved=(localStorage.getItem('perfWorkerUrl')||'').replace(/\/$/,''); const candidates=[saved, DEFAULT_WORKER].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i); for(const base of candidates){ try{ const res=await fetch(base.replace(/\/$/,'')+'/api/performance/config'); const data=await res.json(); if(res.ok && data && data.config && data.config.workerUrl){ state.workerUrl=String(data.config.workerUrl).replace(/\/$/,''); localStorage.setItem('perfWorkerUrl', state.workerUrl); return state.workerUrl; } if(res.ok){ state.workerUrl=base.replace(/\/$/,''); return state.workerUrl; } }catch(e){} } state.workerUrl=(saved||DEFAULT_WORKER).replace(/\/$/,''); return state.workerUrl; }
 async function saveGlobalWorkerConfig(url){ const clean=String(url||'').trim().replace(/\/$/,''); if(!clean) throw new Error('Worker URL trống'); const data=await fetchJSON(clean+'/api/performance/config',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({workerUrl:clean})}); state.workerUrl=clean; localStorage.setItem('perfWorkerUrl', clean); return data; }
@@ -85,13 +89,41 @@ async function openConfig(){ const cur=workerBase(); const next=prompt('Dán Wor
 function showTab(tab, btn){ state.activeTab=tab; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); ['overview','products','shop','logs'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==tab)); }
 async function fetchJSON(url, opts={}){ const res=await fetch(url, opts); const text=await res.text(); let data; try{data=JSON.parse(text)}catch(e){throw new Error(text.slice(0,200)||`HTTP ${res.status}`)} if(!res.ok || data.error) throw new Error(data.error || data.message || `HTTP ${res.status}`); return data; }
 async function loadConnections(){ try{ const data=await fetchJSON(workerBase()+'/api/shopee/connections'); state.connections=data.connections||{}; const channels=Object.keys(state.connections).filter(k=>state.connections[k]?.status==='connected'||state.connections[k]?.hasAccessToken); const prev=$('channelSelect').value; $('channelSelect').innerHTML = `<option value="all">Tổng tất cả shop</option>` + channels.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(prev && [...$('channelSelect').options].some(o=>o.value===prev)) $('channelSelect').value=prev; renderConnections(); }catch(e){setStatus('Không tải được kết nối Worker: '+e.message,'error')} }
-async function loadSnapshots(render=true){ const r=rangeFromInputs(); try{ const data=await fetchJSON(workerBase()+'/api/shopee/performance-snapshots?'+qs({date_from:r.date_from,date_to:r.date_to})); state.snapshots=data.snapshots||[]; state.logs=data.logs||[]; if(render) renderAll(); }catch(e){ state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi tải snapshot', error:e.message}); if(render) renderAll(); }}
+async function loadSnapshots(render=true){
+  const r=rangeFromInputs();
+  try{
+    const data=await fetchJSON(workerBase()+'/api/shopee/performance-snapshots?'+qs({date_from:r.date_from,date_to:r.date_to}));
+    state.snapshots=data.snapshots||[];
+    state.logs=data.logs||[];
+    if(render){
+      renderAll();
+      if(isPastRange(r) && state.snapshots.length){ setStatus(`Đang xem dữ liệu đã lưu cố định ${r.date_from} → ${r.date_to}. Không gọi lại API Shopee.`, 'ok'); }
+      else if(isPastRange(r)){ setStatus(`Chưa có snapshot cố định cho ${r.date_from} → ${r.date_to}. Bấm “Lưu cố định ngày đang chọn” để lưu một lần.`, 'warn'); }
+    }
+  }catch(e){ state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi tải snapshot', error:e.message}); if(render) renderAll(); }
+}
+async function archiveSelectedDay(){
+  if(state.syncing) return;
+  const r=rangeFromInputs();
+  if(r.date_from!==r.date_to){ setStatus('Chức năng lưu cố định chỉ áp dụng từng ngày. Hãy chọn kiểu Theo ngày.', 'warn'); return; }
+  state.syncing=true;
+  setStatus(`<span class="spinner"></span> Đang lưu cố định dữ liệu ngày ${esc(r.date_from)} cho tất cả shop...`);
+  try{
+    const data=await fetchJSON(workerBase()+'/api/shopee/archive-day?'+qs({date:r.date_from}));
+    await loadSnapshots(false);
+    const ok=(data.results||[]).filter(x=>x.ok).length;
+    const fail=(data.results||[]).filter(x=>!x.ok).length;
+    setStatus(`Đã lưu cố định ngày ${esc(r.date_from)}: ${ok} shop thành công${fail?`, ${fail} shop lỗi`:''}.`, fail?'warn':'ok');
+    renderAll();
+  }catch(e){ setStatus('Lỗi lưu cố định: '+esc(e.message),'error'); }
+  finally{state.syncing=false;}
+}
 async function syncNow(){ const channel=$('channelSelect').value; if(channel==='all') return syncAllChannels(); return syncChannel(channel); }
-async function syncChannel(channel){ if(state.syncing) return; state.syncing=true; const r=rangeFromInputs(); setStatus(`<span class="spinner"></span> Đang đồng bộ ${esc(channel)} từ Shopee...`); try{ const data=await fetchJSON(workerBase()+'/api/shopee/performance-sync?'+qs({channel,date_from:r.date_from,date_to:r.date_to,period:r.mode,save:1})); state.current = data.data; state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Đồng bộ '+channel, error:data.data?.lastError||''}); await loadSnapshots(false); setStatus(`Đã đồng bộ ${esc(channel)} lúc ${esc(data.data?.lastSyncAt||'')}`,'ok'); renderAll(); }catch(e){ state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi đồng bộ '+channel, error:e.message}); setStatus(`Lỗi đồng bộ ${esc(channel)}: ${esc(e.message)}`,'error'); renderAll(); }finally{state.syncing=false;} }
+async function syncChannel(channel){ if(state.syncing) return; state.syncing=true; const r=rangeFromInputs(); setStatus(`<span class="spinner"></span> Đang đồng bộ ${esc(channel)} từ Shopee...`); try{ const data=await fetchJSON(workerBase()+'/api/shopee/performance-sync?'+qs({channel,date_from:r.date_from,date_to:r.date_to,period:r.mode,save:1})); state.current = data.data; state.currentRange=rangeKey(r); state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Đồng bộ '+channel, error:data.data?.lastError||''}); await loadSnapshots(false); setStatus(`Đã đồng bộ ${esc(channel)} lúc ${esc(data.data?.lastSyncAt||'')}`,'ok'); renderAll(); }catch(e){ state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi đồng bộ '+channel, error:e.message}); setStatus(`Lỗi đồng bộ ${esc(channel)}: ${esc(e.message)}`,'error'); renderAll(); }finally{state.syncing=false;} }
 async function syncAllChannels(){ if(state.syncing) return; state.syncing=true; const r=rangeFromInputs(); const channels=Object.keys(state.connections).filter(k=>state.connections[k]?.status==='connected'||state.connections[k]?.hasAccessToken); const results=[]; for(const ch of channels){ setStatus(`<span class="spinner"></span> Đang đồng bộ ${esc(ch)} (${results.length+1}/${channels.length})...`); try{ const data=await fetchJSON(workerBase()+'/api/shopee/performance-sync?'+qs({channel:ch,date_from:r.date_from,date_to:r.date_to,period:r.mode,save:1})); results.push(data.data); state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Đồng bộ '+ch, error:data.data?.lastError||''}); }catch(e){ results.push({channel:ch,lastError:e.message,summary:{gmv:0,totalOrders:0,validOrders:0,cancelGmv:0,cancelOrders:0,aov:0},topProducts:[],hourly:[]}); state.logs.unshift({time:new Date().toLocaleString('vi-VN'), action:'Lỗi đồng bộ '+ch, error:e.message}); }}
-  state.current = mergeClient(results); await loadSnapshots(false); setStatus(`Đã đồng bộ ${results.length} shop lúc ${new Date().toLocaleString('vi-VN')}`,'ok'); renderAll(); state.syncing=false; }
+  state.current = mergeClient(results); state.currentRange=rangeKey(r); await loadSnapshots(false); setStatus(`Đã đồng bộ ${results.length} shop lúc ${new Date().toLocaleString('vi-VN')}`,'ok'); renderAll(); state.syncing=false; }
 function mergeClient(rows){ const sum={gmv:0,totalOrders:0,validOrders:0,cancelGmv:0,cancelOrders:0,aov:0,cancelRate:0}; const hours={}; const products={}; for(let i=0;i<24;i++) hours[String(i).padStart(2,'0')+':00']={hour:String(i).padStart(2,'0')+':00',gmv:0,orders:0}; rows.forEach(row=>{ const s=row.summary||row; sum.gmv+=+s.gmv||0; sum.totalOrders+=+s.totalOrders||0; sum.validOrders+=+s.validOrders||0; sum.cancelGmv+=+s.cancelGmv||0; sum.cancelOrders+=+s.cancelOrders||0; (row.hourly||[]).forEach(h=>{ if(!hours[h.hour]) hours[h.hour]={hour:h.hour,gmv:0,orders:0}; hours[h.hour].gmv+=+h.gmv||0; hours[h.hour].orders+=+h.orders||0; }); (row.topProducts||[]).forEach(p=>{ const key=[p.item_id,p.model_id,p.sku].join('|'); if(!products[key]) products[key]={...p,qty:0,gmv:0,orders:0,cancelOrders:0}; products[key].qty+=+p.qty||0; products[key].gmv+=+p.gmv||0; products[key].orders+=+p.orders||0; products[key].cancelOrders+=+p.cancelOrders||0; }); }); sum.aov=sum.validOrders?Math.round(sum.gmv/sum.validOrders):0; sum.cancelRate=sum.totalOrders?Math.round(sum.cancelOrders/sum.totalOrders*1000)/10:0; return {channel:'all',summary:sum,channels:rows,hourly:Object.values(hours),topProducts:Object.values(products).sort((a,b)=>b.gmv-a.gmv).slice(0,100),lastSyncAt:new Date().toLocaleString('vi-VN')}; }
-function currentData(){ const ch=$('channelSelect').value; if(state.current){ if(ch==='all') return state.current; const row=(state.current.channels||[]).find(x=>x.channel===ch); if(row) return {channel:ch,summary:row.summary||row,channels:[row],hourly:row.hourly||[],topProducts:row.topProducts||[],lastSyncAt:row.lastSyncAt||row.syncedAt}; }
+function currentData(){ const ch=$('channelSelect').value; const curRangeKey=rangeKey(rangeFromInputs()); if(state.current && state.currentRange===curRangeKey){ if(ch==='all') return state.current; const row=(state.current.channels||[]).find(x=>x.channel===ch); if(row) return {channel:ch,summary:row.summary||row,channels:[row],hourly:row.hourly||[],topProducts:row.topProducts||[],lastSyncAt:row.lastSyncAt||row.syncedAt}; }
   const r=rangeFromInputs(); const snaps=state.snapshots.filter(s=>s.date_from===r.date_from&&s.date_to===r.date_to); if(ch==='all') return mergeClient(snaps.map(s=>s.data||s)); const snap=snaps.find(s=>s.channel===ch); return snap?.data || null; }
 function previousData(){ const ch=$('channelSelect').value; const r=rangeFromInputs(); const prev=prevRange(r.date_from,r.date_to,r.mode); const snaps=state.snapshots.filter(s=>s.date_from===prev.date_from&&s.date_to===prev.date_to); if(ch==='all') return mergeClient(snaps.map(s=>s.data||s)); const snap=snaps.find(s=>s.channel===ch); return snap?.data || null; }
 function prevRange(from,to,mode){ if(mode==='month'){ let [y,m]=from.slice(0,7).split('-').map(Number); m--; if(m===0){m=12;y--} const first=`${y}-${String(m).padStart(2,'0')}-01`; const last=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); return {date_from:first,date_to:last}; } const ms=86400000; const days=Math.max(1,Math.round((Date.parse(to)-Date.parse(from))/ms)+1); const prevTo=new Date(Date.parse(from)-ms).toISOString().slice(0,10); const prevFrom=new Date(Date.parse(prevTo)-(days-1)*ms).toISOString().slice(0,10); return {date_from:prevFrom,date_to:prevTo}; }
@@ -107,9 +139,9 @@ function renderSnapshots(){ $('snapshotTable').innerHTML=`<thead><tr><th>Kỳ</t
 function drawHourly(data){ const c=$('hourlyChart'), ctx=c.getContext('2d'); const DPR=window.devicePixelRatio||1; const w=c.clientWidth,h=c.clientHeight; c.width=w*DPR;c.height=h*DPR;ctx.scale(DPR,DPR);ctx.clearRect(0,0,w,h); const arr=data?.hourly||[]; const max=Math.max(1,...arr.map(x=>+x.gmv||0)); ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;for(let i=0;i<5;i++){let y=20+(h-50)*i/4;ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(w-10,y);ctx.stroke()} const bw=(w-50)/24; arr.forEach((x,i)=>{const val=+x.gmv||0;const bh=(h-70)*val/max;const x0=35+i*bw;const y=h-35-bh;const g=ctx.createLinearGradient(0,y,0,h-35);g.addColorStop(0,'#ff7a1a');g.addColorStop(1,'#16a34a');ctx.fillStyle=g;ctx.fillRect(x0,y,Math.max(3,bw-4),bh); if(i%3===0){ctx.fillStyle='#64748b';ctx.font='11px system-ui';ctx.fillText(String(i).padStart(2,'0'),x0,h-12)}}); ctx.fillStyle='#334155';ctx.font='12px system-ui';ctx.fillText('Max '+money(max),35,16); }
 function renderAll(){ const data=currentData(); const prev=$('compareMode').value==='previous'?previousData():null; renderCards(data,prev); renderHealth(data); renderChannelTable(data); renderProducts(data); renderOperation(data); renderAlerts(data); renderConnections(); renderSnapshots(); drawHourly(data); }
 function toggleAuto(){ state.auto=!state.auto; $('autoBtn').textContent=state.auto?'Tắt auto':'Bật auto'; $('autoBtn').classList.toggle('danger', state.auto); if(state.auto){ autoLoop(); } else if(state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer=null; } }
-async function autoLoop(){ if(!state.auto) return; const r=rangeFromInputs(); const today=todayVN(); if(r.date_from<=today && r.date_to>=today && !state.syncing){ try{ await syncNow(); }catch(e){} } state.autoTimer=setTimeout(autoLoop, 5*60*1000); }
-['channelSelect','periodMode','dateA','dateB','compareMode'].forEach(id=>document.addEventListener('change',e=>{ if(e.target?.id===id) {loadSnapshots(true)}}));
-(async function init(){ $('dateA').value=todayVN(); $('dateB').value=todayVN(); renderDateInputs(); await loadGlobalWorkerConfig(); await loadConnections(); await loadSnapshots(true); setStatus('Sẵn sàng. Worker dùng chung: '+workerBase()+'. Bấm Cập nhật ngay hoặc Đồng bộ tất cả shop để lấy dữ liệu.'); })();
+async function autoLoop(){ if(!state.auto) return; const r=rangeFromInputs(); const today=todayVN(); if(r.date_from<=today && r.date_to>=today && !state.syncing){ try{ await syncNow(); }catch(e){} } state.autoTimer=setTimeout(autoLoop, 60*1000); }
+['channelSelect','periodMode','dateA','dateB','compareMode'].forEach(id=>document.addEventListener('change',e=>{ if(e.target?.id===id) { state.current=null; state.currentRange=''; loadSnapshots(true); }}));
+(async function init(){ $('dateA').value=todayVN(); $('dateB').value=todayVN(); renderDateInputs(); await loadGlobalWorkerConfig(); await loadConnections(); await loadSnapshots(true); setStatus('Sẵn sàng. Worker dùng chung: '+workerBase()+'. Hôm nay auto 1 phút/lần. Ngày cũ đọc snapshot cố định đã lưu.'); if(state.auto){ autoLoop(); } })();
 </script>
 </body>
 </html>
