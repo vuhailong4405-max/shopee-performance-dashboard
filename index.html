@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopee Ledger Dashboard V48</title>
+  <title>Shopee Ledger Dashboard V55</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -24,10 +24,10 @@
     <section class="hero">
       <div>
         <h1>Shopee Ledger Dashboard</h1>
-        <p>V53 · GMV theo total_amount · tổng đơn đếm toàn bộ ledger · có quét bù đơn thiếu</p>
+        <p>V55 · Web chỉ đọc dữ liệu · Worker Cron/Webhook tự cập nhật nền liên tục</p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
-        <div class="pill"><span class="dot"></span><span id="runMode">Webhook + Cron · Raw orders + catchup</span></div>
+        <div class="pill"><span class="dot"></span><span id="runMode">Cron/Webhook nền · Snapshot cố định</span></div>
         <div class="range-note" id="heroRange">-</div>
       </div>
     </section>
