@@ -1,226 +1,1670 @@
-<!doctype html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopee Ledger Dashboard V55</title>
-  <style>
-    :root{
-      --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
-      --brand:#ff6b35;--brand2:#ff9f43;--good:#0f9f6e;--bad:#d92d20;--warn:#b7791f;--ink:#1d2939;
-      --shadow:0 18px 45px rgba(16,24,40,.08);--shadow2:0 8px 24px rgba(16,24,40,.06);--radius:22px;
+/**
+ * V54 - Shopee Ledger Sync Worker
+ * Mục tiêu: cập nhật nền liên tục bằng Cron/Webhook kể cả khi web tắt; web chỉ đọc snapshot Supabase.
+ * Kiến trúc: Shopee Webhook + Cron 1 phút + Supabase PostgreSQL ledger.
+ * Metric basis: create_time (thời gian tạo đơn theo giờ Việt Nam).
+ */
+const VERSION = 'V59 tabbed dashboard UI + order detail + shop performance APIs';
+const SHOPEE_AUTH_PATH = '/api/v2/shop/auth_partner';
+const TOKEN_GET_PATH = '/api/v2/auth/token/get';
+const TOKEN_REFRESH_PATH = '/api/v2/auth/access_token/get';
+const ORDER_LIST_PATH = '/api/v2/order/get_order_list';
+const ORDER_DETAIL_PATH = '/api/v2/order/get_order_detail';
+const TOKEN_REFRESH_BUFFER_SECONDS = 30 * 60;
+
+function corsHeaders() {
+  return {
+    'content-type': 'application/json; charset=utf-8',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS,DELETE',
+    'access-control-allow-headers': 'content-type,authorization,x-shopee-signature,x-shopee-hmac-sha256',
+  };
+}
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), { status, headers: corsHeaders() });
+}
+function html(body, status = 200) {
+  return new Response(body, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'access-control-allow-origin': '*' } });
+}
+function mustEnv(env, key) {
+  const v = String(env[key] || '').trim();
+  if (!v) throw new Error('Thiếu biến môi trường: ' + key);
+  return v;
+}
+function optionalEnv(env, key, def = '') { return String(env[key] || def).trim(); }
+function apiBase(env) { return optionalEnv(env, 'SHOPEE_API_BASE', 'https://partner.shopeemobile.com').replace(/\/$/, ''); }
+function supabaseUrl(env) { return mustEnv(env, 'SUPABASE_URL').replace(/\/$/, ''); }
+function supabaseKey(env) { return String(env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY || '').trim(); }
+function assertSupabaseKey(env) { const k = supabaseKey(env); if (!k) throw new Error('Thiếu SUPABASE_SECRET_KEY hoặc SUPABASE_SERVICE_ROLE_KEY'); return k; }
+function partnerId(env) { return String(mustEnv(env, 'SHOPEE_PARTNER_ID')); }
+function partnerKey(env) { return mustEnv(env, 'SHOPEE_PARTNER_KEY'); }
+function tzOffset(env) { return Number(optionalEnv(env, 'TIMEZONE_OFFSET', '7')) || 7; }
+function nowSec() { return Math.floor(Date.now() / 1000); }
+function nowIso() { return new Date().toISOString(); }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, Math.max(0, Number(ms) || 0))); }
+function retryableShopeeStatus(status) { return [429, 500, 502, 503, 504].includes(Number(status)); }
+function retryableShopeeApiError(err) { return /system_busy|server|timeout|temporar|too many|rate/i.test(String(err || '')); }
+function shopeeRetryAttempts(env) { return Math.max(0, Math.min(4, Number(optionalEnv(env, 'SHOPEE_RETRY_ATTEMPTS', '2')) || 2)); }
+function shopeeRetryDelayMs(env) { return Math.max(100, Math.min(3000, Number(optionalEnv(env, 'SHOPEE_RETRY_DELAY_MS', '600')) || 600)); }
+function hex(buffer) { return [...new Uint8Array(buffer)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+async function hmacSha256(message, secret) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return hex(sig);
+}
+async function signBase(env, path, timestamp) {
+  return hmacSha256(`${partnerId(env)}${path}${timestamp}`, partnerKey(env));
+}
+async function signShop(env, path, timestamp, accessToken, shopId) {
+  return hmacSha256(`${partnerId(env)}${path}${timestamp}${accessToken}${shopId}`, partnerKey(env));
+}
+function toVNDate(sec, env) {
+  const d = new Date((Number(sec) || 0) * 1000 + tzOffset(env) * 3600 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+function vnDateToday(env) {
+  const d = new Date(Date.now() + tzOffset(env) * 3600 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+function addDaysISO(date, delta) {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + delta * 86400000).toISOString().slice(0, 10);
+}
+function daysInclusiveISO(dateFrom, dateTo) {
+  const a = Date.parse(`${dateFrom}T00:00:00Z`);
+  const b = Date.parse(`${dateTo}T00:00:00Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 1;
+  return Math.max(1, Math.round((b - a) / 86400000) + 1);
+}
+function dateRangeSeconds(date, env) {
+  const off = tzOffset(env);
+  const startMs = Date.parse(`${date}T00:00:00.000Z`) - off * 3600 * 1000;
+  const endMs = Date.parse(`${date}T23:59:59.999Z`) - off * 3600 * 1000;
+  return { time_from: Math.floor(startMs / 1000), time_to: Math.floor(endMs / 1000) };
+}
+function dateStartSec(date, env) {
+  const off = tzOffset(env);
+  const startMs = Date.parse(`${date}T00:00:00.000Z`) - off * 3600 * 1000;
+  return Math.floor(startMs / 1000);
+}
+function minuteRangeSeconds(date, minuteIndex, env, windowMinutes = 1) {
+  const start = dateStartSec(date, env) + Math.max(0, Number(minuteIndex) || 0) * 60;
+  const end = Math.min(dateStartSec(date, env) + 86400 - 1, start + Math.max(1, Number(windowMinutes) || 1) * 60 - 1);
+  return { time_from: start, time_to: end };
+}
+function currentVNMinuteIndex(env, lagMinutes = 1) {
+  const d = new Date(Date.now() + tzOffset(env) * 3600 * 1000 - Math.max(0, Number(lagMinutes) || 0) * 60000);
+  return Math.max(0, Math.min(1439, d.getUTCHours() * 60 + d.getUTCMinutes()));
+}
+function minutesPerRun(env) {
+  // V44: tạo đơn mới được quét theo cửa sổ lớn hơn để bắt kịp Shopee nhanh hơn.
+  // Không dùng lại SYNC_MINUTES_PER_RUN cũ nếu trước đó bạn đang để 1, vì sẽ làm dashboard bắt kịp rất chậm.
+  return Math.max(1, Math.min(240, Number(optionalEnv(env, 'CREATE_SYNC_MINUTES_PER_RUN', optionalEnv(env, 'SYNC_MINUTES_PER_RUN', '60'))) || 60));
+}
+function updateMinutesPerRun(env) {
+  // Quét các đơn có update_time mới để cập nhật trạng thái đơn, không quét lại các phút create_time đã xong.
+  return Math.max(1, Math.min(60, Number(optionalEnv(env, 'UPDATE_SYNC_MINUTES_PER_RUN', '30')) || 30));
+}
+function shopsPerCron(env) {
+  return Math.max(1, Math.min(4, Number(optionalEnv(env, 'SHOPS_PER_CRON', '2')) || 2));
+}
+function primaryShopIds(env) {
+  const raw = String(optionalEnv(env, 'PRIMARY_SHOP_IDS', '') || '').trim();
+  if (!raw) return new Set();
+  return new Set(raw.split(',').map(x => x.trim()).filter(Boolean));
+}
+function isPrimaryShop(env, shopId) {
+  return primaryShopIds(env).has(String(shopId));
+}
+function primaryCreateMinutesPerRun(env) {
+  return Math.max(1, Math.min(300, Number(optionalEnv(env, 'PRIMARY_CREATE_SYNC_MINUTES_PER_RUN', '120')) || 120));
+}
+function primaryUpdateMinutesPerRun(env) {
+  return Math.max(1, Math.min(60, Number(optionalEnv(env, 'PRIMARY_UPDATE_SYNC_MINUTES_PER_RUN', '30')) || 30));
+}
+function primaryCatchupRunsPerCron(env) {
+  // Chạy thêm nhiều cửa sổ create_time cho shop chính trong mỗi lần Cron để bắt kịp Shopee khi web tắt.
+  // Nếu gặp Too many subrequests, giảm PRIMARY_CATCHUP_RUNS_PER_CRON về 1.
+  return Math.max(1, Math.min(3, Number(optionalEnv(env, 'PRIMARY_CATCHUP_RUNS_PER_CRON', '2')) || 2));
+}
+function secondaryCatchupRunsPerCron(env) {
+  return Math.max(1, Math.min(2, Number(optionalEnv(env, 'SECONDARY_CATCHUP_RUNS_PER_CRON', '1')) || 1));
+}
+function syncLagMinutes(env) {
+  return Math.max(0, Math.min(30, Number(optionalEnv(env, 'SYNC_LAG_MINUTES', '1')) || 1));
+}
+function vnHourFromSec(sec, env) {
+  const d = new Date((Number(sec) || 0) * 1000 + tzOffset(env) * 3600 * 1000);
+  return d.toISOString().slice(11, 13) + ':00';
+}
+function safeNum(x) { const n = Number(x || 0); return Number.isFinite(n) ? n : 0; }
+function isCancelled(status) { return ['CANCELLED', 'IN_CANCEL'].includes(String(status || '').toUpperCase()); }
+function isValid(status) { return !['CANCELLED', 'IN_CANCEL', 'UNPAID'].includes(String(status || '').toUpperCase()); }
+function itemQty(it) { return safeNum(it?.model_quantity_purchased ?? it?.quantity_purchased ?? it?.item_quantity ?? it?.quantity); }
+function itemPrice(it) { return safeNum(it?.model_discounted_price ?? it?.discounted_price ?? it?.model_original_price ?? it?.original_price ?? it?.item_price); }
+function itemSku(it) { return String(it?.model_sku || it?.item_sku || it?.sku || ''); }
+function itemName(it) { return String(it?.item_name || it?.name || it?.product_name || '-'); }
+function modelName(it) { return String(it?.model_name || it?.variation_name || '-'); }
+
+function csvSetEnv(env, key, def) {
+  return new Set(String(optionalEnv(env, key, def) || '').split(',').map(x => x.trim().toUpperCase()).filter(Boolean));
+}
+function boolEnv(env, key, def = '0') {
+  const v = String(optionalEnv(env, key, def) || '').trim().toLowerCase();
+  return ['1','true','yes','on'].includes(v);
+}
+function gmvIncludeAllStatuses(env, shopId = '') {
+  const shopVal = envMapValue(env, 'GMV_INCLUDE_ALL_STATUSES_BY_SHOP', shopId, '');
+  if (shopVal !== '') return ['1','true','yes','on'].includes(String(shopVal).toLowerCase());
+  // V49: mặc định KHÔNG loại trạng thái khi tính GMV Data Center / Đơn hàng đã đặt.
+  // Nếu muốn quay lại loại UNPAID/CANCELLED, đặt GMV_INCLUDE_ALL_STATUSES=0 và PLACED_ORDER_EXCLUDE_STATUSES=...
+  return boolEnv(env, 'GMV_INCLUDE_ALL_STATUSES', '1');
+}
+function placedExcludedStatuses(env, shopId = '') {
+  if (gmvIncludeAllStatuses(env, shopId)) return new Set();
+  const shopVal = envMapValue(env, 'PLACED_ORDER_EXCLUDE_STATUSES_BY_SHOP', shopId, '');
+  const raw = shopVal ? shopVal.replace(/\|/g, ',') : optionalEnv(env, 'PLACED_ORDER_EXCLUDE_STATUSES', '');
+  return new Set(splitCsv(raw).map(x => x.toUpperCase()));
+}
+function includePlacedOrderStatus(status, env, shopId = '') {
+  return !placedExcludedStatuses(env, shopId).has(String(status || '').toUpperCase());
+}
+function splitCsv(v) {
+  return String(v || '').split(',').map(x => x.trim()).filter(Boolean);
+}
+function envMapValue(env, mapKey, shopId, def = '') {
+  const rawMap = String(optionalEnv(env, mapKey, '') || '').trim();
+  const sid = String(shopId || '').trim();
+  if (rawMap && sid) {
+    for (const part of rawMap.split(',')) {
+      const idx = part.indexOf(':');
+      if (idx < 0) continue;
+      const id = part.slice(0, idx).trim();
+      const val = part.slice(idx + 1).trim();
+      if (id === sid) return val;
     }
-    *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:radial-gradient(circle at 15% 0%,#fff1e8 0,#f4f6fb 32%,#f7f8fc 100%);color:var(--text)}
-    .app{max-width:1440px;margin:0 auto;padding:22px 22px 44px}.hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;padding:28px 30px;border-radius:30px;background:linear-gradient(135deg,#ff6b35,#ff9f43 62%,#ffd3a8);color:#fff;box-shadow:0 22px 60px rgba(255,107,53,.24);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-90px;top:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.22)}.hero h1{position:relative;margin:0;font-size:34px;letter-spacing:-.04em}.hero p{position:relative;margin:8px 0 0;opacity:.92;font-size:15px}.pill{display:inline-flex;gap:8px;align-items:center;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);font-weight:700;font-size:13px}.dot{width:9px;height:9px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 4px rgba(18,183,106,.18)}
-    .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:18px}.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}input,select,button{height:44px;border:1px solid var(--line);border-radius:14px;padding:0 13px;font:inherit;background:#fff;color:var(--text)}select,input[type=date]{min-width:170px}button{border:0;background:var(--brand);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,107,53,.2)}button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}.status{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.card{background:rgba(255,255,255,.92);border:1px solid rgba(230,234,242,.9);border-radius:var(--radius);box-shadow:var(--shadow2);padding:18px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:16px}.metric{min-height:132px;position:relative;overflow:hidden}.metric:after{content:"";position:absolute;right:-34px;bottom:-38px;width:104px;height:104px;border-radius:50%;background:#fff3ec}.metric .label{position:relative;color:var(--muted);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.metric .value{position:relative;font-size:30px;line-height:1.08;font-weight:900;letter-spacing:-.04em;margin-top:12px}.metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}.delta{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:12px}.delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f2f4f7;color:#475467}.grid2{display:grid;grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.section-title h2{margin:0;font-size:20px;letter-spacing:-.02em}.section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.chart-wrap{height:370px;border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcff);border:1px solid var(--line);padding:14px 12px 8px}.chart{width:100%;height:100%}.bar{fill:url(#barGrad)}.bar-compare{fill:#d0d5dd;opacity:.75}.axis{font-size:11px;fill:#667085}.gridline{stroke:#edf0f5;stroke-width:1}.tooltip{position:fixed;pointer-events:none;background:#101828;color:white;border-radius:12px;padding:9px 10px;font-size:12px;box-shadow:0 12px 30px rgba(16,24,40,.22);display:none;z-index:10}.legend{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}.legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:11px;height:11px;border-radius:4px;background:var(--brand)}.sw.gray{background:#d0d5dd}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.04em;background:#fbfcff}td:first-child{white-space:normal;min-width:280px}.muted{color:var(--muted)}.right{text-align:right}.product-name{font-weight:800}.settings{margin-top:16px}.settings summary{cursor:pointer;color:var(--muted);font-weight:800}.settings-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:14px}.hidden{display:none!important}.range-note{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#fff;color:var(--ink);border:1px solid rgba(255,255,255,.45);font-weight:800;font-size:13px}.notice{display:flex;gap:10px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:18px;padding:13px 14px;font-size:13px;margin-top:16px}.empty{padding:30px;text-align:center;color:var(--muted)}
-
-    .diag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}.diag-card{border:1px solid var(--line);background:#fbfcff;border-radius:18px;padding:14px}.diag-card .k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:900}.diag-card .v{font-size:22px;font-weight:900;margin-top:8px;letter-spacing:-.03em}.issue-list{display:grid;gap:10px;margin-top:12px}.issue{display:flex;gap:10px;align-items:flex-start;border-radius:16px;padding:12px 13px;border:1px solid var(--line);background:#fff}.issue .tag{min-width:76px;text-align:center;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900}.issue.ok .tag{background:#ecfdf3;color:#067647}.issue.warn .tag{background:#fffaeb;color:#b54708}.issue.error .tag{background:#fef3f2;color:#b42318}.issue .area{font-weight:900}.diag-raw{max-height:360px;overflow:auto;background:#0b1220;color:#e5e7eb;border-radius:16px;padding:14px;font-size:12px;line-height:1.5}.mini-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.progress{height:8px;background:#eef2f6;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#ff7a37,#ffb067);border-radius:999px}.log-table td:first-child{min-width:120px}.log-error{color:#b42318;font-weight:800}
-    @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
-    @media(max-width:760px){.app{padding:12px}.hero{padding:22px;border-radius:24px}.hero h1{font-size:28px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:24px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:330px}}
-  </style>
-</head>
-<body>
-  <div class="app">
-    <section class="hero">
-      <div>
-        <h1>Shopee Ledger Dashboard</h1>
-        <p>V55 · Web chỉ đọc dữ liệu · Worker Cron/Webhook tự cập nhật nền liên tục</p>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
-        <div class="pill"><span class="dot"></span><span id="runMode">Cron/Webhook nền · Snapshot cố định</span></div>
-        <div class="range-note" id="heroRange">-</div>
-      </div>
-    </section>
-
-    <section class="topbar">
-      <div class="filters">
-        <div class="field"><label>Kiểu xem</label><select id="period"><option value="day">Theo ngày</option><option value="week">Theo tuần</option><option value="month">Theo tháng</option><option value="custom">Tùy chọn</option></select></div>
-        <div class="field" data-period-field="day"><label>Ngày xem</label><input type="date" id="dayDate"></div>
-        <div class="field hidden" data-period-field="week"><label>Tuần xem</label><input type="week" id="weekInput"></div>
-        <div class="field hidden" data-period-field="month"><label>Tháng xem</label><input type="month" id="monthInput"></div>
-        <div class="field hidden" data-period-field="custom"><label>Từ ngày</label><input type="date" id="fromDate"></div>
-        <div class="field hidden" data-period-field="custom"><label>Đến ngày</label><input type="date" id="toDate"></div>
-        <div class="field"><label>Shop</label><select id="shop"><option value="all">Tất cả shop</option></select></div>
-        <div class="field"><label>So sánh</label><select id="compare"><option value="previous_period">So với kỳ liền trước</option></select></div>
-      </div>
-      <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
-    </section>
-
-    <section class="metrics">
-      <div class="card metric"><div class="label">Doanh số đã đặt / Data Center</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Đơn đã đặt</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
-      <div class="card metric"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
-      <div class="card metric"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Tỷ lệ hủy</div><div class="value" id="mCancelRate">-</div><div class="subline"><span id="dCancelRate" class="delta neutral">-</span><span id="cCancelRate">so sánh</span></div></div>
-    </section>
-
-    <section class="grid2">
-      <div class="card">
-        <div class="section-title">
-          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột theo doanh số Data Center, gom theo create_time.</p></div>
-          <div class="legend"><span><i class="sw"></i>Kỳ đang xem</span><span><i class="sw gray"></i>Kỳ so sánh</span></div>
-        </div>
-        <div class="chart-wrap"><svg id="hourlyChart" class="chart" role="img"></svg></div>
-      </div>
-      <div class="card">
-        <div class="section-title"><div><h2>Tổng quan lưu trữ</h2><p>Đổi ngày/tuần/tháng chỉ đọc snapshot đã lưu trong Supabase.</p></div></div>
-        <div id="storageBox" class="notice">Đang đọc snapshot từ database...</div>
-        <div class="table-wrap" style="margin-top:14px"><table><tbody id="statusTable"></tbody></table></div>
-      </div>
-    </section>
-
-    <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo doanh số sản phẩm đã đặt trong khoảng thời gian đang chọn.</p></div></div>
-      <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
-    </section>
-
-
-    <section class="card" style="margin-top:16px">
-      <div class="section-title">
-        <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, số đơn ledger thiếu, công thức GMV hoặc nguồn tiền total_amount/item_subtotal.</p></div>
-        <button class="ghost" id="diagBtn">Kiểm tra lỗi</button>
-      </div>
-      <div id="diagSummary" class="notice">Đang chờ kiểm tra dữ liệu...</div>
-      <div class="diag-grid">
-        <div class="diag-card"><div class="k">Snapshot đã lưu</div><div class="v" id="diagSnapshot">-</div><div class="muted" id="diagSnapshotSub">daily_shop_stats</div></div>
-        <div class="diag-card"><div class="k">Đơn trong ledger</div><div class="v" id="diagOrders">-</div><div class="muted" id="diagOrdersSub">shopee_orders</div></div>
-        <div class="diag-card"><div class="k">Lệch GMV</div><div class="v" id="diagDiffGmv">-</div><div class="muted">snapshot - ledger</div></div>
-        <div class="diag-card"><div class="k">Sync lỗi gần nhất</div><div class="v" id="diagErrors">-</div><div class="muted">sync_logs</div></div>
-      </div>
-      <div id="issuesList" class="issue-list"></div>
-      <div class="mini-actions">
-        <button class="ghost" id="catchupBtn">Quét bù đơn thiếu</button>
-        <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
-        <span class="muted">Quét bù sẽ gọi Shopee API theo cursor; recompute chỉ tính lại từ Supabase, không gọi Shopee API.</span>
-      </div>
-      <details style="margin-top:14px">
-        <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
-        <pre id="diagRaw" class="diag-raw">-</pre>
-      </details>
-      <div class="table-wrap" style="margin-top:14px"><table class="log-table"><thead><tr><th>Khu vực</th><th>Nội dung lỗi/cảnh báo</th></tr></thead><tbody id="diagLogRows"></tbody></table></div>
-    </section>
-
-    <details class="card settings">
-      <summary>Cài đặt kỹ thuật / kết nối shop</summary>
-      <div class="settings-panel">
-        <div class="filters">
-          <div class="field" style="flex:1;min-width:300px"><label>Worker URL</label><input id="workerUrl" placeholder="https://shopee-ledger-sync.xxx.workers.dev"></div>
-          <div class="field"><label>Tên kênh/shop</label><input id="channel" placeholder="Gooby"></div>
-          <button class="ghost" id="saveWorkerBtn">Lưu Worker</button>
-          <button class="ghost" id="oauthBtn">Tạo link OAuth</button>
-        </div>
-        <p class="muted">Webhook URL: <code id="pushUrl"></code><br>OAuth callback URL: <code id="callbackUrl"></code></p>
-        <div id="oauthBox" class="muted"></div>
-      </div>
-    </details>
-  </div>
-  <div id="tip" class="tooltip"></div>
-<script>
-const DEFAULT_WORKER = 'https://shopee-ledger-sync.vuhailong4405.workers.dev';
-const $ = id => document.getElementById(id);
-let timer = null;
-function isoDate(d){ return d.toISOString().slice(0,10); }
-function todayVN(){ return new Date(Date.now()+7*3600*1000).toISOString().slice(0,10); }
-function addDaysISO(date, delta){ return isoDate(new Date(Date.parse(date+'T00:00:00Z') + delta*86400000)); }
-function daysInclusive(from,to){ return Math.max(1, Math.round((Date.parse(to+'T00:00:00Z')-Date.parse(from+'T00:00:00Z'))/86400000)+1); }
-function monthLastDay(ym){ const [y,m]=ym.split('-').map(Number); return isoDate(new Date(Date.UTC(y,m,0))); }
-function prevMonthRange(ym){ let [y,m]=ym.split('-').map(Number); m--; if(m===0){m=12;y--;} const mm=String(m).padStart(2,'0'); return {from:`${y}-${mm}-01`, to:monthLastDay(`${y}-${mm}`)}; }
-function getMonday(date){ const d=new Date(Date.parse(date+'T00:00:00Z')); const day=d.getUTCDay(); const diff=(day+6)%7; return isoDate(new Date(d.getTime()-diff*86400000)); }
-function isoWeekString(date){ const d=new Date(Date.parse(date+'T00:00:00Z')); const tmp=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); const day=tmp.getUTCDay()||7; tmp.setUTCDate(tmp.getUTCDate()+4-day); const yearStart=new Date(Date.UTC(tmp.getUTCFullYear(),0,1)); const week=Math.ceil((((tmp-yearStart)/86400000)+1)/7); return tmp.getUTCFullYear()+'-W'+String(week).padStart(2,'0'); }
-function weekToRange(w){ const [y,ww]=w.split('-W'); const year=Number(y), week=Number(ww); const jan4=new Date(Date.UTC(year,0,4)); const jan4Day=jan4.getUTCDay()||7; const monday=new Date(jan4.getTime()-(jan4Day-1)*86400000+(week-1)*7*86400000); return {from:isoDate(monday), to:isoDate(new Date(monday.getTime()+6*86400000))}; }
-function getWorker(){ return (($('workerUrl')?.value)||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v43')||DEFAULT_WORKER).replace(/\/$/,''); }
-function money(n){ n=Number(n||0); if(Math.abs(n)>=1e9) return (n/1e9).toFixed(n>=1e10?1:2).replace('.',',')+' tỷ'; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n>=1e7?1:2).replace('.',',')+' tr'; return n.toLocaleString('vi-VN')+'đ'; }
-function num(n){ return Number(n||0).toLocaleString('vi-VN'); }
-function percent(n){ return (Number(n||0)).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%'; }
-function vnDateLabel(date){ const [y,m,d]=date.split('-'); return `${d}/${m}/${y}`; }
-function rangeLabel(r){ return r.from===r.to ? vnDateLabel(r.from) : vnDateLabel(r.from)+' → '+vnDateLabel(r.to); }
-function periodName(){ return $('period').value==='week'?'tuần':$('period').value==='month'?'tháng':$('period').value==='custom'?'khoảng tùy chọn':'ngày'; }
-function compareLabel(){ return 'kỳ trước'; }
-function updateUrls(){ const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'; }
-async function api(path){ const res=await fetch(getWorker()+path,{cache:'no-store'}); const data=await res.json().catch(()=>null); if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status)); return data; }
-async function loadShops(){ const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){ const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op); } if([...sel.options].some(o=>o.value===cur)) sel.value=cur; }
-function updatePeriodFields(){ const p=$('period').value; document.querySelectorAll('[data-period-field]').forEach(el=>el.classList.toggle('hidden', el.dataset.periodField!==p)); const r=getRangeSafe(); $('heroRange').textContent=r?rangeLabel(r):'-'; }
-function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
-function getRange(){ const p=$('period').value; if(p==='day'){ const d=$('dayDate').value||todayVN(); return {period:p,from:d,to:d}; } if(p==='week'){ return {period:p,...weekToRange($('weekInput').value||isoWeekString(todayVN()))}; } if(p==='month'){ const ym=$('monthInput').value||todayVN().slice(0,7); return {period:p,from:ym+'-01',to:monthLastDay(ym)}; } let from=$('fromDate').value||todayVN(), to=$('toDate').value||from; if(from>to) [from,to]=[to,from]; return {period:p,from,to}; }
-function getCompareRange(r){ if(r.period==='day') return {from:addDaysISO(r.from,-1),to:addDaysISO(r.to,-1)}; if(r.period==='week') return {from:addDaysISO(r.from,-7),to:addDaysISO(r.to,-7)}; if(r.period==='month') return prevMonthRange(r.from.slice(0,7)); const span=daysInclusive(r.from,r.to); const to=addDaysISO(r.from,-1); const from=addDaysISO(to,-(span-1)); return {from,to}; }
-function deltaClass(value, reverse=false){ if(value===null || value===undefined || !isFinite(value) || value===0) return 'delta neutral'; const good = reverse ? value<0 : value>0; return 'delta '+(good?'up':'down'); }
-function deltaText(d){ if(!d || d.percent===null || d.percent===undefined) return 'mới'; const sign=d.percent>0?'+':''; return sign+percent(d.percent); }
-function setMetric(valueId, deltaId, compId, value, delta, type='money', reverse=false){ $(valueId).textContent = type==='money'?money(value):type==='percent'?percent(value):num(value); const el=$(deltaId); el.className=deltaClass(delta?.percent, reverse); el.textContent=deltaText(delta); $(compId).textContent='vs '+compareLabel(); }
-function normalizeHourly(arr){ const out={}; for(let i=0;i<24;i++){ const h=String(i).padStart(2,'0')+':00'; out[h]={hour:h,gmv:0,orders:0}; } for(const r of arr||[]){ const h=r.hour||String(r.h||'').padStart(2,'0')+':00'; out[h]={hour:h,gmv:Number(r.gmv||0),orders:Number(r.orders||0)}; } return Object.values(out); }
-function compactAxis(n){ n=Number(n||0); if(n>=1e9) return (n/1e9).toFixed(1).replace('.',',')+' tỷ'; if(n>=1e6) return Math.round(n/1e6)+' tr'; if(n>=1e3) return Math.round(n/1e3)+'k'; return String(Math.round(n)); }
-function renderChart(current, previous){
-  const svg=$('hourlyChart'); const tip=$('tip'); const cur=normalizeHourly(current), prev=normalizeHourly(previous); const W=svg.clientWidth||900,H=svg.clientHeight||340; const m={l:62,r:18,t:22,b:42}; const cw=W-m.l-m.r,ch=H-m.t-m.b; const max=Math.max(1,...cur.map(x=>x.gmv),...prev.map(x=>x.gmv)); const nice=Math.ceil(max/1000000)*1000000 || max; const step=cw/24; const bw=Math.max(7,step*.5); let html=`<defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a37"/><stop offset="1" stop-color="#ffb067"/></linearGradient></defs>`;
-  for(let i=0;i<=4;i++){ const v=nice*i/4; const y=m.t+ch-(v/nice)*ch; html+=`<line class="gridline" x1="${m.l}" y1="${y}" x2="${W-m.r}" y2="${y}"/><text class="axis" x="${m.l-10}" y="${y+4}" text-anchor="end">${compactAxis(v)}</text>`; }
-  cur.forEach((d,i)=>{ const x=m.l+i*step+step/2; const hp=(prev[i]?.gmv||0)/nice*ch; const yp=m.t+ch-hp; html+=`<rect class="bar-compare" x="${x-bw*.52}" y="${yp}" width="${bw}" height="${Math.max(0,hp)}" rx="5"/>`; });
-  cur.forEach((d,i)=>{ const x=m.l+i*step+step/2; const h=d.gmv/nice*ch; const y=m.t+ch-h; html+=`<rect class="bar" data-hour="${d.hour}" data-gmv="${d.gmv}" data-orders="${d.orders}" x="${x+bw*.08}" y="${y}" width="${bw}" height="${Math.max(0,h)}" rx="5"/>`; if(i%2===0) html+=`<text class="axis" x="${x}" y="${H-15}" text-anchor="middle">${String(i).padStart(2,'0')}</text>`; });
-  html+=`<text class="axis" x="${m.l}" y="${H-2}">Giờ</text>`; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=html;
-  svg.querySelectorAll('.bar').forEach(b=>{ b.addEventListener('mousemove',ev=>{ tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px'; tip.innerHTML=`<b>${b.dataset.hour}</b><br>GMV: ${money(b.dataset.gmv)}<br>Đơn: ${num(b.dataset.orders)}`; }); b.addEventListener('mouseleave',()=>tip.style.display='none'); });
-}
-function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho khoảng thời gian này.</td></tr>'; }
-function renderStatus(payload){ const r={from:payload.date_from,to:payload.date_to}; const cr={from:payload.compare?.date_from,to:payload.compare?.date_to}; const rows=payload.rows||0; const isCurrent = r.to>=todayVN(); $('storageBox').innerHTML = isCurrent ? '🟢 Khoảng thời gian có hôm nay: số liệu hôm nay được Worker cập nhật nền bằng Cron/Webhook, giao diện chỉ đọc database.' : '✅ Đây là dữ liệu lịch sử: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi lại API Shopee.'; $('statusTable').innerHTML=`<tr><td>Kiểu xem</td><td class="right"><b>Theo ${periodName()}</b></td></tr><tr><td>Kỳ đang xem</td><td class="right"><b>${rangeLabel(r)}</b></td></tr><tr><td>Kỳ so sánh</td><td class="right"><b>${rangeLabel(cr)}</b></td></tr><tr><td>Snapshot đã đọc</td><td class="right">${rows} dòng ngày/shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time · Đơn hàng đã đặt</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
-function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); renderChart(payload.data?.hourly_gmv||[], payload.compare?.data?.hourly_gmv||[]); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
-
-function shortMoney(n){ return money(n||0); }
-function issueClass(level){ return level==='error'?'issue error':level==='warn'?'issue warn':'issue ok'; }
-function renderDiagnostics(d){
-  const issues=d.issues||[];
-  const hasError=issues.some(x=>x.level==='error');
-  const hasWarn=issues.some(x=>x.level==='warn');
-  $('diagSummary').innerHTML = hasError ? '🔴 Có lỗi đang ảnh hưởng đến đồng bộ hoặc số liệu. Xem danh sách bên dưới.' : hasWarn ? '🟠 Có cảnh báo dữ liệu. Số liệu có thể chưa đủ hoặc snapshot đang lệch ledger.' : '🟢 Kiểm tra nhanh chưa phát hiện lỗi rõ ràng.';
-  $('diagSnapshot').textContent = num(d.snapshot?.rows||0);
-  $('diagSnapshotSub').textContent = 'Snapshot GMV: '+money(d.snapshot?.aggregate?.gmv||0)+' · nguồn '+(d.amount_audit?.amount_source||'-');
-  $('diagOrders').textContent = num(d.ledger?.orders||0);
-  $('diagOrdersSub').textContent = 'Đơn đang tính: '+num(d.amount_audit?.datacenter_order_count||d.amount_audit?.raw_order_count||0)+' / raw '+num(d.amount_audit?.raw_order_count||0);
-  const diff=d.diff_snapshot_minus_ledger?.gmv?.diff||0;
-  $('diagDiffGmv').textContent = (diff>0?'+':'')+money(diff);
-  $('diagErrors').textContent = num((d.recent_error_logs||[]).length);
-  $('issuesList').innerHTML = issues.map(x=>`<div class="${issueClass(x.level)}"><div class="tag">${(x.level||'ok').toUpperCase()}</div><div><div class="area">${x.area||'-'}</div><div>${x.message||''}</div></div></div>`).join('');
-  const rows=[];
-  for(const i of issues) rows.push(`<tr><td>${i.area||'-'}</td><td class="${i.level==='error'?'log-error':''}">${i.message||''}</td></tr>`);
-  if(d.amount_audit){
-    rows.push(`<tr><td>Amount audit</td><td>Nguồn GMV: <b>${d.amount_audit.amount_source}</b> · Đơn raw: <b>${num(d.amount_audit.raw_order_count)}</b> · Đơn đang tính: <b>${num(d.amount_audit.datacenter_order_count||d.amount_audit.raw_order_count)}</b> · Count all: <b>${d.amount_audit.count_all_ledger_orders?'bật':'tắt'}</b> · Trạng thái bị loại khỏi GMV: <b>${(d.amount_audit.excluded_statuses||[]).join(', ')||'không'}</b></td></tr>`);
-    rows.push(`<tr><td>So sánh nguồn tiền</td><td>total_amount all: <b>${money(d.amount_audit.total_amount_all)}</b> · item_subtotal all: <b>${money(d.amount_audit.item_subtotal_all)}</b> · GMV đang dùng: <b>${money(d.amount_audit.datacenter_gmv)}</b></td></tr>`);
-    rows.push(`<tr><td>Đơn lỗi tiền</td><td>Đơn total_amount = 0: <b>${num(d.amount_audit.zero_total_amount_count)}</b> · Đơn item_subtotal = 0: <b>${num(d.amount_audit.zero_item_subtotal_count)}</b></td></tr>`);
   }
-  const badCursors=(d.cursors||[]).filter(c=>!c.completed).slice(0,8);
-  for(const c of badCursors) rows.push(`<tr><td>Cursor ${c.shop_name||c.shop_id}</td><td>${c.date}: đã quét ${c.next_minute}/${c.latest_allowed_minute+1} phút <div class="progress"><i style="width:${Math.max(0,Math.min(100,c.progress_percent||0))}%"></i></div></td></tr>`);
-  for(const l of (d.recent_error_logs||[]).slice(0,6)) rows.push(`<tr><td>Sync log ${l.shop_id||''}</td><td class="log-error">${l.stat_date||''} · ${l.sync_type||''}: ${l.message||''}</td></tr>`);
-  $('diagLogRows').innerHTML=rows.join('') || '<tr><td colspan="2" class="empty">Không có lỗi/cảnh báo.</td></tr>';
-  $('diagRaw').textContent=JSON.stringify(d,null,2);
+  return def;
 }
-async function loadDiagnostics(){
-  const r=getRange(); const shop=$('shop').value||'all';
-  const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
-  const data=await api('/api/diagnostics?'+qs.toString());
-  renderDiagnostics(data);
+function countAllLedgerOrders(env, shopId = '') {
+  const shopVal = envMapValue(env, 'COUNT_ALL_LEDGER_ORDERS_BY_SHOP', shopId, '');
+  if (shopVal !== '') return ['1','true','yes','on'].includes(String(shopVal).toLowerCase());
+  // V50: mặc định đếm toàn bộ order_sn đã quét được trong ledger.
+  // Điều này sửa lỗi màn chính thấp do tự loại UNPAID/CANCELLED khi Shopee đang xem tổng đơn đã đặt.
+  return boolEnv(env, 'COUNT_ALL_LEDGER_ORDERS', '1');
 }
-async function recomputeFromLedger(){
-  const r=getRange(); const shop=$('shop').value||'all';
-  if(daysInclusive(r.from,r.to)>31){ alert('Chỉ tính lại tối đa 31 ngày/lần. Hãy chọn khoảng ngắn hơn.'); return; }
-  if(!confirm('Tính lại snapshot từ shopee_orders cho khoảng '+rangeLabel(r)+'? Thao tác này không gọi Shopee API.')) return;
-  $('diagSummary').innerHTML='Đang tính lại snapshot từ ledger...';
-  const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
-  await api('/api/recompute/range?'+qs.toString());
-  await loadDashboard();
+function orderCountExcludedStatuses(env, shopId = '') {
+  const shopVal = envMapValue(env, 'ORDER_COUNT_EXCLUDE_STATUSES_BY_SHOP', shopId, '');
+  const raw = shopVal ? shopVal.replace(/\|/g, ',') : optionalEnv(env, 'ORDER_COUNT_EXCLUDE_STATUSES', '');
+  return new Set(splitCsv(raw).map(x => x.toUpperCase()));
+}
+function orderCountMode(env, shopId = '') {
+  // raw_ledger/status_included: đếm toàn bộ đơn đã quét, chỉ lọc nếu COUNT_ALL_LEDGER_ORDERS=0 và có exclude statuses.
+  // gmv_positive/total_amount_positive/item_subtotal_positive: dùng khi muốn loại đơn 0đ.
+  const raw = envMapValue(env, 'ORDER_COUNT_MODE_BY_SHOP', shopId, optionalEnv(env, 'ORDER_COUNT_MODE', 'raw_ledger'));
+  const v = String(raw || 'raw_ledger').toLowerCase();
+  return ['raw_ledger','status_included','gmv_positive','total_amount_positive','item_subtotal_positive'].includes(v) ? v : 'raw_ledger';
+}
+function includeOrderCount(o, env) {
+  const sid = String(o.shop_id || '');
+  if (countAllLedgerOrders(env, sid)) return true;
+  const st = String(o.order_status || 'UNKNOWN').toUpperCase();
+  if (orderCountExcludedStatuses(env, sid).has(st)) return false;
+  const raw = o.raw_data || o;
+  const mode = orderCountMode(env, sid);
+  if (mode === 'raw_ledger' || mode === 'status_included') return true;
+  if (mode === 'total_amount_positive') return safeNum(o.total_amount ?? raw.total_amount) > 0;
+  if (mode === 'item_subtotal_positive') return itemSubtotalFromRaw(raw) > 0;
+  return orderGmvAmount(o, env) > 0;
+}
+function gmvAmountSource(env, shopId = '') {
+  // V47: Cho phép cấu hình nguồn GMV theo từng shop.
+  // Ví dụ: GMV_AMOUNT_SOURCE_BY_SHOP=1447973115:total_amount,889519230:item_subtotal
+  // Nếu một shop có tổng đơn đúng nhưng GMV/AOV cao hơn Shopee, thường nên dùng total_amount cho shop đó.
+  const rawMap = String(optionalEnv(env, 'GMV_AMOUNT_SOURCE_BY_SHOP', '') || '').trim();
+  const sid = String(shopId || '').trim();
+  if (rawMap && sid) {
+    for (const part of rawMap.split(',')) {
+      const [id, source] = part.split(':').map(x => String(x || '').trim());
+      if (id === sid) {
+        const v = String(source || '').toLowerCase();
+        return ['item_subtotal','total_amount'].includes(v) ? v : 'total_amount';
+      }
+    }
+  }
+  // V50: mặc định dùng total_amount theo cấu hình mới của shop.
+  const v = String(optionalEnv(env, 'GMV_AMOUNT_SOURCE', 'total_amount') || 'total_amount').toLowerCase();
+  return ['item_subtotal','total_amount'].includes(v) ? v : 'total_amount';
+}
+function itemSubtotalFromRaw(raw) {
+  let total = 0;
+  for (const it of (raw?.item_list || [])) total += itemPrice(it) * itemQty(it);
+  return total;
+}
+function orderGmvAmount(o, env) {
+  const raw = o.raw_data || o;
+  const subtotal = itemSubtotalFromRaw(raw);
+  const totalAmount = safeNum(o.total_amount ?? raw.total_amount);
+  const source = gmvAmountSource(env, o.shop_id);
+  if (source === 'item_subtotal') return subtotal > 0 ? subtotal : totalAmount;
+  return totalAmount > 0 ? totalAmount : subtotal;
+}
+function amountAuditFromOrders(rows, env) {
+  const status = {};
+  const byStatus = {};
+  let raw_count = 0, placed_count = 0, excluded_count = 0, datacenter_order_count = 0;
+  let total_amount_all = 0, item_subtotal_all = 0, datacenter_gmv = 0;
+  let zero_total_amount_count = 0, zero_item_subtotal_count = 0;
+  const excluded_statuses = [...placedExcludedStatuses(env, rows?.[0]?.shop_id)];
+  for (const o of rows || []) {
+    raw_count++;
+    const st = String(o.order_status || 'UNKNOWN').toUpperCase();
+    status[st] = (status[st] || 0) + 1;
+    const totalAmount = safeNum(o.total_amount);
+    const itemSubtotal = itemSubtotalFromRaw(o.raw_data || {});
+    total_amount_all += totalAmount;
+    item_subtotal_all += itemSubtotal;
+    if (!totalAmount) zero_total_amount_count++;
+    if (!itemSubtotal) zero_item_subtotal_count++;
+    byStatus[st] ||= { orders: 0, order_counted: 0, total_amount: 0, item_subtotal: 0, datacenter_gmv: 0 };
+    byStatus[st].orders++;
+    byStatus[st].total_amount += totalAmount;
+    byStatus[st].item_subtotal += itemSubtotal;
+    if (includePlacedOrderStatus(st, env, o.shop_id)) {
+      placed_count++;
+      const amt = orderGmvAmount(o, env);
+      datacenter_gmv += amt;
+      byStatus[st].datacenter_gmv += amt;
+    } else {
+      excluded_count++;
+    }
+    if (includeOrderCount(o, env)) {
+      datacenter_order_count++;
+      byStatus[st].order_counted++;
+    }
+  }
+  for (const v of Object.values(byStatus)) {
+    v.total_amount = Math.round(v.total_amount);
+    v.item_subtotal = Math.round(v.item_subtotal);
+    v.datacenter_gmv = Math.round(v.datacenter_gmv);
+  }
+  return {
+    amount_source: gmvAmountSource(env, rows?.[0]?.shop_id),
+    excluded_statuses,
+    source_map: optionalEnv(env, 'GMV_AMOUNT_SOURCE_BY_SHOP', ''),
+    count_all_ledger_orders: countAllLedgerOrders(env, rows?.[0]?.shop_id),
+    order_count_mode: orderCountMode(env, rows?.[0]?.shop_id),
+    order_count_excluded_statuses: [...orderCountExcludedStatuses(env, rows?.[0]?.shop_id)],
+    raw_order_count: raw_count,
+    placed_order_count: placed_count,
+    datacenter_order_count,
+    excluded_order_count: excluded_count,
+    total_amount_all: Math.round(total_amount_all),
+    item_subtotal_all: Math.round(item_subtotal_all),
+    datacenter_gmv: Math.round(datacenter_gmv),
+    zero_total_amount_count,
+    zero_item_subtotal_count,
+    status_counts: status,
+    by_status: byStatus,
+  };
 }
 
-async function catchupMissingOrders(){
-  const r=getRange();
-  const shop=$('shop').value||'all';
-  if(shop==='all'){ alert('Hãy chọn một shop cụ thể trước khi quét bù để tránh quá tải Worker.'); return; }
-  $('diagSummary').innerHTML='Đang quét bù đơn thiếu từ Shopee API...';
-  const qs=new URLSearchParams({date:r.to,shop_id:shop,minutes:'120',runs:'2'});
-  await api('/api/sync/catchup-date?'+qs.toString());
-  await recomputeFromLedger();
+
+async function sbFetch(env, path, opts = {}) {
+  const key = assertSupabaseKey(env);
+  const url = supabaseUrl(env) + '/rest/v1/' + path.replace(/^\//, '');
+  const headers = {
+    apikey: key,
+    authorization: `Bearer ${key}`,
+    'content-type': 'application/json',
+    ...(opts.headers || {}),
+  };
+  const res = await fetch(url, { ...opts, headers });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!res.ok) throw new Error(`Supabase HTTP ${res.status}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+  return data;
 }
-async function loadDashboard(){ try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
-function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard(); },60000); }
-async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
-function saveWorker(){ localStorage.setItem('ledger_worker_v53',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
-function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); window.addEventListener('resize',()=>loadDashboard()); await loadShops(); await loadDashboard(); schedule(); }
-init();
-</script>
-</body>
-</html>
+async function sbSelectAll(env, table, query) {
+  const rows = [];
+  let from = 0;
+  const page = 1000;
+  while (true) {
+    const path = `${table}?${query}`;
+    const part = await sbFetch(env, path, { method: 'GET', headers: { Range: `${from}-${from + page - 1}` } });
+    const arr = Array.isArray(part) ? part : [];
+    rows.push(...arr);
+    if (arr.length < page) break;
+    from += page;
+    if (from > 50000) throw new Error('Supabase pagination vượt 50.000 dòng, cần tối ưu backend/SQL function');
+  }
+  return rows;
+}
+async function sbUpsert(env, table, rows, onConflict) {
+  if (!Array.isArray(rows)) rows = [rows];
+  if (!rows.length) return null;
+  const params = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : '';
+  return sbFetch(env, `${table}${params}`, {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(rows),
+  });
+}
+async function sbInsert(env, table, rows) {
+  if (!Array.isArray(rows)) rows = [rows];
+  if (!rows.length) return null;
+  return sbFetch(env, table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(rows) });
+}
+async function sbPatch(env, tableAndQuery, row) {
+  return sbFetch(env, tableAndQuery, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+}
+async function sbDelete(env, tableAndQuery) { return sbFetch(env, tableAndQuery, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); }
+async function logSync(env, row) {
+  try { await sbInsert(env, 'sync_logs', { ...row, finished_at: row.finished_at || nowIso() }); } catch (_) {}
+}
+async function getSetting(env, key, def = null) {
+  const rows = await sbSelectAll(env, 'app_settings', `select=key,value&key=eq.${encodeURIComponent(key)}&limit=1`);
+  return rows.length ? rows[0].value : def;
+}
+async function setSetting(env, key, value) {
+  return sbUpsert(env, 'app_settings', { key, value, updated_at: nowIso() }, 'key');
+}
+function cursorKey(shopId, date) { return `v40_cursor_${shopId}_${date}`; }
+async function getCursor(env, shopId, date) {
+  return await getSetting(env, cursorKey(shopId, date), { shop_id: Number(shopId), date, next_minute: 0, completed: false });
+}
+async function setCursor(env, shopId, date, cursor) {
+  return setSetting(env, cursorKey(shopId, date), { shop_id: Number(shopId), date, ...cursor, updated_at: nowIso() });
+}
+async function resetCursor(env, shopId, date, minute = 0) {
+  await setCursor(env, shopId, date, { next_minute: Math.max(0, Math.min(1439, Number(minute) || 0)), completed: false, reset_at: nowIso() });
+}
+
+function updateCursorKey(shopId) { return `v44_update_cursor_${shopId}`; }
+async function getUpdateCursor(env, shopId) {
+  const todayStart = dateStartSec(vnDateToday(env), env);
+  return await getSetting(env, updateCursorKey(shopId), { shop_id: Number(shopId), next_update_time: todayStart, updated_at: nowIso() });
+}
+async function setUpdateCursor(env, shopId, cursor) {
+  return setSetting(env, updateCursorKey(shopId), { shop_id: Number(shopId), ...cursor, updated_at: nowIso() });
+}
+
+async function shopeeGet(env, path, params, shop) {
+  const accessToken = String(shop.access_token || '');
+  const shopId = String(shop.shop_id || '');
+  if (!accessToken || !shopId) throw new Error('Shop thiếu access_token hoặc shop_id');
+  const attempts = shopeeRetryAttempts(env);
+  let lastError = null;
+  for (let attempt = 0; attempt <= attempts; attempt++) {
+    const timestamp = nowSec();
+    const sign = await signShop(env, path, timestamp, accessToken, shopId);
+    const url = new URL(apiBase(env) + path);
+    url.searchParams.set('partner_id', partnerId(env));
+    url.searchParams.set('timestamp', String(timestamp));
+    url.searchParams.set('access_token', accessToken);
+    url.searchParams.set('shop_id', shopId);
+    url.searchParams.set('sign', sign);
+    for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+    try {
+      const res = await fetch(url.toString(), { method: 'GET' });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+      if (res.ok && data && !data.error) return data.response || data;
+      const rid = data?.request_id ? ` request_id=${data.request_id}` : '';
+      const msg = !res.ok
+        ? `Shopee HTTP ${res.status}${rid}`
+        : `${data?.error || 'Shopee API error'}: ${data?.message || 'Không parse được response'}${rid}`;
+      lastError = new Error(msg);
+      const canRetry = retryableShopeeStatus(res.status) || retryableShopeeApiError(data?.error || data?.message || msg);
+      if (attempt < attempts && canRetry) {
+        await sleep(shopeeRetryDelayMs(env) * (attempt + 1));
+        continue;
+      }
+      throw lastError;
+    } catch (e) {
+      lastError = e;
+      if (attempt < attempts && /Shopee HTTP (429|500|502|503|504)|fetch failed|network|timeout/i.test(String(e.message || e))) {
+        await sleep(shopeeRetryDelayMs(env) * (attempt + 1));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError || new Error('Shopee API retry failed');
+}
+async function shopeePostBase(env, path, body) {
+  const timestamp = nowSec();
+  const sign = await signBase(env, path, timestamp);
+  const url = new URL(apiBase(env) + path);
+  url.searchParams.set('partner_id', partnerId(env));
+  url.searchParams.set('timestamp', String(timestamp));
+  url.searchParams.set('sign', sign);
+  const res = await fetch(url.toString(), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, partner_id: Number(partnerId(env)) }) });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) throw new Error(`Shopee Token HTTP ${res.status}`);
+  if (data.error) throw new Error(`${data.error}: ${data.message || 'Shopee token error'} request_id=${data.request_id || ''}`);
+  return data.response || data;
+}
+async function refreshShopIfNeeded(env, shop) {
+  if (!shop?.shop_id) throw new Error('Shop không hợp lệ');
+  const expireAt = Number(shop.expire_at || 0);
+  if (shop.access_token && expireAt - TOKEN_REFRESH_BUFFER_SECONDS > nowSec()) return shop;
+  if (!shop.refresh_token) throw new Error(`Shop ${shop.shop_id} thiếu refresh_token`);
+  const token = await shopeePostBase(env, TOKEN_REFRESH_PATH, { shop_id: Number(shop.shop_id), refresh_token: shop.refresh_token });
+  const next = {
+    ...shop,
+    access_token: token.access_token || shop.access_token,
+    refresh_token: token.refresh_token || shop.refresh_token,
+    expire_at: nowSec() + safeNum(token.expire_in || 0),
+    refresh_expire_at: token.refresh_expire_in ? nowSec() + safeNum(token.refresh_expire_in) : shop.refresh_expire_at,
+    raw_token: token,
+    status: 'connected',
+    updated_at: nowIso(),
+    last_error: '',
+  };
+  await sbUpsert(env, 'shopee_shops', next, 'shop_id');
+  return next;
+}
+async function getConnectedShops(env, shopId = 'all') {
+  const q = shopId && shopId !== 'all'
+    ? `select=*&shop_id=eq.${encodeURIComponent(shopId)}`
+    : 'select=*&status=eq.connected';
+  return await sbSelectAll(env, 'shopee_shops', q);
+}
+async function getShop(env, shopId) {
+  const rows = await sbSelectAll(env, 'shopee_shops', `select=*&shop_id=eq.${encodeURIComponent(shopId)}&limit=1`);
+  if (!rows.length) throw new Error(`Shop ${shopId} chưa kết nối OAuth`);
+  return rows[0];
+}
+async function getOrderSNsByTimeRange(env, shop, timeField, time_from, time_to) {
+  const orderSNs = [];
+  const seen = new Set();
+  let cursor = '';
+  const maxPages = Math.max(1, Math.min(30, Number(optionalEnv(env, 'SHOPEE_ORDER_LIST_MAX_PAGES', '5')) || 5));
+  for (let page = 0; page < maxPages; page++) {
+    const resp = await shopeeGet(env, ORDER_LIST_PATH, {
+      time_range_field: timeField,
+      time_from,
+      time_to,
+      page_size: 100,
+      cursor,
+    }, shop);
+    for (const o of (resp.order_list || [])) {
+      if (o.order_sn && !seen.has(o.order_sn)) { seen.add(o.order_sn); orderSNs.push(o.order_sn); }
+    }
+    if (!resp.more || !resp.next_cursor) break;
+    cursor = resp.next_cursor;
+  }
+  return orderSNs;
+}
+async function getOrderSNsByCreateTimeRange(env, shop, time_from, time_to) {
+  return getOrderSNsByTimeRange(env, shop, 'create_time', time_from, time_to);
+}
+async function getOrderSNsByUpdateTimeRange(env, shop, time_from, time_to) {
+  return getOrderSNsByTimeRange(env, shop, 'update_time', time_from, time_to);
+}
+async function getOrderSNsByCreateTime(env, shop, date) {
+  const { time_from, time_to } = dateRangeSeconds(date, env);
+  return getOrderSNsByCreateTimeRange(env, shop, time_from, time_to);
+}
+function chunk(arr, size) { const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size)); return out; }
+async function getOrderDetails(env, shop, orderSNs) {
+  const details = [];
+  const detailBatchSize = Math.max(1, Math.min(50, Number(optionalEnv(env, 'SHOPEE_DETAIL_BATCH_SIZE', '50')) || 20));
+  for (const group of chunk(orderSNs, detailBatchSize)) {
+    const resp = await shopeeGet(env, ORDER_DETAIL_PATH, {
+      order_sn_list: group.join(','),
+      response_optional_fields: 'order_status,total_amount,currency,create_time,pay_time,update_time,item_list,buyer_user_id',
+    }, shop);
+    details.push(...(resp.order_list || []));
+  }
+  return details;
+}
+function orderRowFromDetail(o, shopId, env) {
+  const st = String(o.order_status || '').toUpperCase();
+  const amt = safeNum(o.total_amount);
+  return {
+    order_sn: String(o.order_sn),
+    shop_id: Number(shopId),
+    create_time: safeNum(o.create_time),
+    create_date: toVNDate(o.create_time, env),
+    update_time: o.update_time ? safeNum(o.update_time) : null,
+    pay_time: o.pay_time ? safeNum(o.pay_time) : null,
+    order_status: st,
+    total_amount: amt,
+    cancel_amount: isCancelled(st) ? amt : 0,
+    currency: o.currency || null,
+    buyer_user_id: o.buyer_user_id ? safeNum(o.buyer_user_id) : null,
+    raw_data: o,
+    synced_at: nowIso(),
+  };
+}
+function itemRowsFromDetail(o, shopId) {
+  const items = [];
+  const st = String(o.order_status || '').toUpperCase();
+  const valid = true; // V44: item_gmv/top sản phẩm theo 'Đơn hàng đã đặt', không lọc trạng thái.
+  for (const it of (o.item_list || [])) {
+    const qty = itemQty(it);
+    const price = itemPrice(it);
+    items.push({
+      order_sn: String(o.order_sn),
+      shop_id: Number(shopId),
+      item_id: it.item_id ? safeNum(it.item_id) : null,
+      model_id: it.model_id ? safeNum(it.model_id) : null,
+      item_name: itemName(it),
+      model_name: modelName(it),
+      sku: itemSku(it),
+      quantity: qty,
+      item_price: price,
+      item_gmv: valid ? price * qty : 0,
+      raw_item: it,
+    });
+  }
+  return items;
+}
+async function upsertDetails(env, shop, details) {
+  if (!details.length) return { orderCount: 0, dates: [] };
+  const shopId = Number(shop.shop_id);
+  const orders = details.filter(o => o.order_sn && o.create_time).map(o => orderRowFromDetail(o, shopId, env));
+  await sbUpsert(env, 'shopee_orders', orders, 'order_sn');
+  for (const group of chunk(orders, 20)) {
+    for (const o of group) await sbDelete(env, `shopee_order_items?order_sn=eq.${encodeURIComponent(o.order_sn)}`);
+  }
+  const items = details.flatMap(o => itemRowsFromDetail(o, shopId));
+  for (const group of chunk(items, 500)) await sbInsert(env, 'shopee_order_items', group);
+  const dates = [...new Set(orders.map(o => o.create_date))];
+  return { orderCount: orders.length, dates };
+}
+async function recomputeDailyStats(env, shopId, date) {
+  const orders = await sbSelectAll(env, 'shopee_orders', `select=order_sn,shop_id,create_time,create_date,order_status,total_amount,raw_data&shop_id=eq.${encodeURIComponent(shopId)}&create_date=eq.${encodeURIComponent(date)}`);
+  const statusCounts = {};
+  const hourly = {};
+  for (let i = 0; i < 24; i++) hourly[String(i).padStart(2, '0') + ':00'] = { hour: String(i).padStart(2, '0') + ':00', gmv: 0, orders: 0 };
+  const prod = {};
+  let totalOrders = 0, rawOrders = orders.length, validOrders = 0, cancelOrders = 0, excludedOrders = 0;
+  let placedGmv = 0, validGmv = 0, cancelGmv = 0, totalAmountAll = 0, itemSubtotalAll = 0;
+  for (const o of orders) {
+    const st = String(o.order_status || 'UNKNOWN').toUpperCase();
+    statusCounts[st] = (statusCounts[st] || 0) + 1;
+    const raw = o.raw_data || {};
+    const totalAmount = safeNum(o.total_amount);
+    const itemSubtotal = itemSubtotalFromRaw(raw);
+    totalAmountAll += totalAmount;
+    itemSubtotalAll += itemSubtotal;
+    const included = includePlacedOrderStatus(st, env, shopId);
+    const amt = orderGmvAmount(o, env);
+
+    if (included) {
+      placedGmv += amt;
+      const h = vnHourFromSec(o.create_time, env);
+      hourly[h] ||= { hour: h, gmv: 0, orders: 0 };
+      hourly[h].gmv += amt;
+    } else {
+      excludedOrders++;
+    }
+    if (includeOrderCount(o, env)) {
+      totalOrders++;
+      const h = vnHourFromSec(o.create_time, env);
+      hourly[h] ||= { hour: h, gmv: 0, orders: 0 };
+      hourly[h].orders += 1;
+    }
+
+    if (isCancelled(st)) { cancelOrders++; cancelGmv += amt; }
+    else if (isValid(st)) { validOrders++; validGmv += amt; }
+
+    if (included) for (const it of (raw.item_list || [])) {
+      const key = [it.item_id || '', it.model_id || '', itemSku(it)].join('|');
+      prod[key] ||= { item_id: it.item_id || '', model_id: it.model_id || '', item_name: itemName(it), model_name: modelName(it), sku: itemSku(it), qty: 0, gmv: 0, orders: 0, valid_orders: 0, cancel_orders: 0 };
+      const p = prod[key];
+      const qty = itemQty(it);
+      p.qty += qty;
+      p.orders += 1;
+      p.gmv += itemPrice(it) * qty;
+      if (isCancelled(st)) p.cancel_orders += 1;
+      else if (isValid(st)) p.valid_orders += 1;
+    }
+  }
+  const row = {
+    stat_date: date,
+    shop_id: Number(shopId),
+    gmv: Math.round(placedGmv),
+    total_orders: totalOrders,
+    valid_orders: validOrders,
+    cancel_gmv: Math.round(cancelGmv),
+    cancel_orders: cancelOrders,
+    aov: totalOrders ? Math.round(placedGmv / totalOrders) : 0,
+    hourly_gmv: Object.values(hourly).map(h => ({ ...h, gmv: Math.round(h.gmv) })),
+    top_products: Object.values(prod).sort((a, b) => b.gmv - a.gmv).slice(0, 100).map(p => ({ ...p, gmv: Math.round(p.gmv) })),
+    status_counts: { ...statusCounts, __valid_gmv: Math.round(validGmv), __placed_gmv: Math.round(placedGmv), __raw_order_count: rawOrders, __excluded_order_count: excludedOrders, __gmv_amount_source: gmvAmountSource(env, shopId), __gmv_include_all_statuses: gmvIncludeAllStatuses(env, shopId), __excluded_statuses: [...placedExcludedStatuses(env, shopId)].join(','), __count_all_ledger_orders: countAllLedgerOrders(env, shopId), __order_count_mode: orderCountMode(env, shopId), __order_count_excluded_statuses: [...orderCountExcludedStatuses(env, shopId)].join(','), __total_amount_all: Math.round(totalAmountAll), __item_subtotal_all: Math.round(itemSubtotalAll) },
+    is_locked: date < vnDateToday(env),
+    updated_at: nowIso(),
+  };
+  await sbUpsert(env, 'daily_shop_stats', row, 'stat_date,shop_id');
+  return row;
+}
+async function syncOneShopMinuteCore(env, shop, date, minuteIndex) {
+  const shopId = Number(shop.shop_id);
+  const { time_from, time_to } = minuteRangeSeconds(date, minuteIndex, env, 1);
+  const sns = await getOrderSNsByCreateTimeRange(env, shop, time_from, time_to);
+  const details = sns.length ? await getOrderDetails(env, shop, sns) : [];
+  const filtered = details.filter(o => toVNDate(o.create_time, env) === date);
+  const up = await upsertDetails(env, shop, filtered);
+  return { ok: true, shop_id: shopId, date, minute: Number(minuteIndex), time_from, time_to, order_sns: sns.length, details: filtered.length, affected_dates: up.dates || [] };
+}
+
+function transientShopeeError(e) {
+  return /Shopee HTTP (429|500|502|503|504)|gateway|temporar|timeout|fetch failed|network/i.test(String(e?.message || e || ''));
+}
+function minCreateWindowMinutes(env) {
+  return Math.max(1, Math.min(30, Number(optionalEnv(env, 'MIN_CREATE_SYNC_WINDOW_MINUTES', '10')) || 10));
+}
+function maxAdaptiveCreateSegments(env) {
+  return Math.max(2, Math.min(32, Number(optionalEnv(env, 'MAX_ADAPTIVE_CREATE_SEGMENTS', '16')) || 16));
+}
+async function syncOneShopCreateWindowAdaptiveCore(env, shop, date, startMinute, windowMinutes) {
+  const start = Number(startMinute) || 0;
+  const totalWin = Math.max(1, Number(windowMinutes) || 1);
+  const minWin = minCreateWindowMinutes(env);
+  const queue = [{ start, win: totalWin }];
+  const windows = [];
+  const affected = new Set();
+  let order_sns = 0;
+  let details = 0;
+  let attempts = 0;
+  const maxSegments = maxAdaptiveCreateSegments(env);
+  while (queue.length) {
+    if (++attempts > maxSegments) throw new Error(`Adaptive create sync vượt ${maxSegments} đoạn nhỏ. Hãy giảm PRIMARY_CREATE_SYNC_MINUTES_PER_RUN hoặc MIN_CREATE_SYNC_WINDOW_MINUTES.`);
+    const seg = queue.shift();
+    if (!seg || seg.win <= 0) continue;
+    try {
+      const r = await syncOneShopCreateWindowCore(env, shop, date, seg.start, seg.win);
+      windows.push({ from_minute: seg.start, to_minute: seg.start + seg.win - 1, window_minutes: seg.win, order_sns: r.order_sns, details: r.details });
+      order_sns += Number(r.order_sns || 0);
+      details += Number(r.details || 0);
+      for (const d of (r.affected_dates || [])) affected.add(d);
+    } catch (e) {
+      if (transientShopeeError(e) && seg.win > minWin) {
+        const first = Math.max(minWin, Math.floor(seg.win / 2));
+        const second = seg.win - first;
+        if (second > 0) queue.unshift({ start: seg.start + first, win: second });
+        queue.unshift({ start: seg.start, win: first });
+        continue;
+      }
+      throw e;
+    }
+  }
+  return {
+    ok: true,
+    shop_id: Number(shop.shop_id),
+    date,
+    from_minute: start,
+    to_minute: start + totalWin - 1,
+    window_minutes: totalWin,
+    order_sns,
+    details,
+    affected_dates: [...affected],
+    adaptive_windows: windows,
+  };
+}
+async function syncOneShopCreateWindowCore(env, shop, date, startMinute, windowMinutes) {
+  const shopId = Number(shop.shop_id);
+  const win = Math.max(1, Math.min(120, Number(windowMinutes) || 1));
+  const { time_from, time_to } = minuteRangeSeconds(date, startMinute, env, win);
+  const sns = await getOrderSNsByCreateTimeRange(env, shop, time_from, time_to);
+  const details = sns.length ? await getOrderDetails(env, shop, sns) : [];
+  const filtered = details.filter(o => toVNDate(o.create_time, env) === date);
+  const up = await upsertDetails(env, shop, filtered);
+  return { ok: true, shop_id: shopId, date, from_minute: Number(startMinute), to_minute: Number(startMinute) + win - 1, window_minutes: win, time_from, time_to, order_sns: sns.length, details: filtered.length, affected_dates: up.dates || [] };
+}
+async function syncOneShopMinute(env, shop, date, minuteIndex) {
+  const started = nowIso();
+  const shopId = Number(shop.shop_id);
+  try {
+    const fresh = await refreshShopIfNeeded(env, shop);
+    const r = await syncOneShopMinuteCore(env, fresh, date, minuteIndex);
+    const stat = await recomputeDailyStats(env, shopId, date);
+    await sbPatch(env, `shopee_shops?shop_id=eq.${encodeURIComponent(shopId)}`, { last_sync_at: nowIso(), last_error: '', updated_at: nowIso() });
+    await logSync(env, { shop_id: shopId, sync_type: 'create_time_minute', stat_date: date, status: 'success', message: `minute=${minuteIndex}, SN=${r.order_sns}, details=${r.details}, GMV=${stat.gmv}`, started_at: started });
+    return { ...r, stat };
+  } catch (e) {
+    await sbPatch(env, `shopee_shops?shop_id=eq.${encodeURIComponent(shopId)}`, { last_error: String(e.message || e), updated_at: nowIso() }).catch(() => null);
+    await logSync(env, { shop_id: shopId, sync_type: 'create_time_minute', stat_date: date, status: 'error', message: String(e.message || e), started_at: started });
+    return { ok: false, shop_id: shopId, date, minute: Number(minuteIndex), error: String(e.message || e) };
+  }
+}
+async function syncNextMinutesForShopDate(env, shop, date, maxMinutes = minutesPerRun(env)) {
+  const started = nowIso();
+  const shopId = Number(shop.shop_id);
+  const today = vnDateToday(env);
+  const latestAllowed = date < today ? 1439 : currentVNMinuteIndex(env, syncLagMinutes(env));
+  const cursor = await getCursor(env, shopId, date);
+  let next = Math.max(0, Math.min(1439, Number(cursor.next_minute || 0)));
+  const requestedStartMinute = next;
+  try {
+    if (next > latestAllowed) {
+      return { ok: true, mode: 'create_time_window_waiting', shop_id: shopId, date, next_minute: next, latest_allowed_minute: latestAllowed, message: 'Cursor đã bắt kịp thời điểm hiện tại, chờ phút mới.' };
+    }
+    const fresh = await refreshShopIfNeeded(env, shop);
+    const limit = Math.max(1, Math.min(120, Number(maxMinutes) || 1));
+    const windowMinutes = Math.max(1, Math.min(limit, latestAllowed - next + 1));
+    const r = await syncOneShopCreateWindowAdaptiveCore(env, fresh, date, next, windowMinutes);
+    next += windowMinutes;
+    const stat = await recomputeDailyStats(env, shopId, date);
+    const completed = date < today && next > 1439;
+    await setCursor(env, shopId, date, { next_minute: next, completed, latest_allowed_minute: latestAllowed, last_run_at: nowIso(), last_processed_from: requestedStartMinute, last_processed_to: next - 1, window_minutes: windowMinutes });
+    await sbPatch(env, `shopee_shops?shop_id=eq.${encodeURIComponent(shopId)}`, { last_sync_at: nowIso(), last_error: '', updated_at: nowIso() });
+    await logSync(env, { shop_id: shopId, sync_type: 'create_time_window_cursor', stat_date: date, status: 'success', message: `minutes=${requestedStartMinute}-${next - 1}, SN=${r.order_sns}, details=${r.details}, windows=${(r.adaptive_windows||[]).length||1}, GMV=${stat.gmv}`, started_at: started });
+    return { ok: true, mode: 'create_time_window_cursor', shop_id: shopId, date, processed_minutes: windowMinutes, from_minute: requestedStartMinute, to_minute: next - 1, next_minute: next, latest_allowed_minute: latestAllowed, totals: { order_sns: r.order_sns, details: r.details }, stat, result: r };
+  } catch (e) {
+    await sbPatch(env, `shopee_shops?shop_id=eq.${encodeURIComponent(shopId)}`, { last_error: String(e.message || e), updated_at: nowIso() }).catch(() => null);
+    await logSync(env, { shop_id: shopId, sync_type: 'create_time_window_cursor', stat_date: date, status: 'error', message: String(e.message || e), started_at: started });
+    return { ok: false, mode: 'create_time_window_cursor', shop_id: shopId, date, from_minute: requestedStartMinute, error: String(e.message || e) };
+  }
+}
+async function pickRoundRobinShop(env, shops) {
+  if (!shops.length) throw new Error('Chưa có shop kết nối OAuth');
+  const state = await getSetting(env, 'v40_round_robin_shop', { index: 0 });
+  const idx = Math.max(0, Number(state?.index || 0)) % shops.length;
+  const nextIdx = (idx + 1) % shops.length;
+  await setSetting(env, 'v40_round_robin_shop', { index: nextIdx, shop_count: shops.length, updated_at: nowIso() });
+  return shops[idx];
+}
+async function syncUpdateTimeForShop(env, shop, maxMinutes = updateMinutesPerRun(env)) {
+  const started = nowIso();
+  const shopId = Number(shop.shop_id);
+  const lag = syncLagMinutes(env) * 60;
+  const latestAllowed = nowSec() - lag;
+  let cursor = await getUpdateCursor(env, shopId);
+  let from = Math.max(0, Number(cursor.next_update_time || 0));
+  if (!from) from = dateStartSec(vnDateToday(env), env);
+  if (from > latestAllowed) return { ok: true, mode: 'update_time_waiting', shop_id: shopId, next_update_time: from, latest_allowed_time: latestAllowed };
+  const to = Math.min(latestAllowed, from + Math.max(1, Number(maxMinutes) || 1) * 60 - 1);
+  try {
+    const fresh = await refreshShopIfNeeded(env, shop);
+    const sns = await getOrderSNsByUpdateTimeRange(env, fresh, from, to);
+    const details = sns.length ? await getOrderDetails(env, fresh, sns) : [];
+    const up = await upsertDetails(env, fresh, details);
+    const stats = [];
+    for (const d of up.dates || []) stats.push(await recomputeDailyStats(env, shopId, d));
+    await setUpdateCursor(env, shopId, { next_update_time: to + 1, last_processed_from: from, last_processed_to: to, last_run_at: nowIso() });
+    await sbPatch(env, `shopee_shops?shop_id=eq.${encodeURIComponent(shopId)}`, { last_update_sync_at: nowIso(), last_error: '', updated_at: nowIso() });
+    await logSync(env, { shop_id: shopId, sync_type: 'update_time_status_cursor', stat_date: vnDateToday(env), status: 'success', message: `update_time=${from}-${to}, SN=${sns.length}, details=${details.length}, affected_dates=${(up.dates||[]).join(',')}`, started_at: started });
+    return { ok: true, mode: 'update_time_status_cursor', shop_id: shopId, time_from: from, time_to: to, order_sns: sns.length, details: details.length, affected_dates: up.dates || [], stats };
+  } catch (e) {
+    await sbPatch(env, `shopee_shops?shop_id=eq.${encodeURIComponent(shopId)}`, { last_error: String(e.message || e), updated_at: nowIso() }).catch(() => null);
+    await logSync(env, { shop_id: shopId, sync_type: 'update_time_status_cursor', stat_date: vnDateToday(env), status: 'error', message: String(e.message || e), started_at: started });
+    return { ok: false, mode: 'update_time_status_cursor', shop_id: shopId, time_from: from, time_to: to, error: String(e.message || e) };
+  }
+}
+async function pickRoundRobinShops(env, shops, count = shopsPerCron(env)) {
+  if (!shops.length) throw new Error('Chưa có shop kết nối OAuth');
+  const maxCount = Math.max(1, Math.min(count, shops.length));
+  const primaryIds = primaryShopIds(env);
+  const primary = shops.filter(s => primaryIds.has(String(s.shop_id)));
+  const secondary = shops.filter(s => !primaryIds.has(String(s.shop_id)));
+  const picked = [];
+
+  // V46: shop chính luôn được ưu tiên trong mỗi vòng cron để bắt kịp nhanh hơn.
+  // Nếu SHOPS_PER_CRON = 1 và PRIMARY_SHOP_IDS = 889519230, mỗi phút cron sẽ chỉ ưu tiên Gooby.
+  for (const s of primary) {
+    if (picked.length < maxCount) picked.push(s);
+  }
+
+  if (picked.length < maxCount && secondary.length) {
+    const state = await getSetting(env, 'v46_secondary_round_robin_shop', await getSetting(env, 'v44_round_robin_shop', await getSetting(env, 'v40_round_robin_shop', { index: 0 })));
+    let idx = Math.max(0, Number(state?.index || 0)) % secondary.length;
+    const need = maxCount - picked.length;
+    for (let i = 0; i < Math.min(need, secondary.length); i++) picked.push(secondary[(idx + i) % secondary.length]);
+    await setSetting(env, 'v46_secondary_round_robin_shop', { index: (idx + Math.min(need, secondary.length)) % secondary.length, shop_count: secondary.length, picked: picked.map(s => Number(s.shop_id)), updated_at: nowIso() });
+  } else {
+    await setSetting(env, 'v46_secondary_round_robin_shop', { index: 0, shop_count: secondary.length, picked: picked.map(s => Number(s.shop_id)), updated_at: nowIso() });
+  }
+
+  return picked;
+}
+
+async function syncDate(env, date, shopId = 'all', maxMinutes = minutesPerRun(env)) {
+  const shops = await getConnectedShops(env, shopId);
+  if (!shops.length) return [];
+  // Nếu chọn all, mỗi lần chỉ xử lý 1 shop theo vòng luân phiên để tránh vượt subrequests.
+  if (!shopId || shopId === 'all') {
+    const shop = await pickRoundRobinShop(env, shops);
+    return [await syncNextMinutesForShopDate(env, shop, date, maxMinutes)];
+  }
+  const results = [];
+  for (const shop of shops) results.push(await syncNextMinutesForShopDate(env, shop, date, maxMinutes));
+  return results;
+}
+async function syncSpecificMinute(env, date, shopId, minuteIndex) {
+  const shops = await getConnectedShops(env, shopId);
+  const results = [];
+  for (const shop of shops) results.push(await syncOneShopMinute(env, shop, date, minuteIndex));
+  return results;
+}
+async function resetDateCursor(env, date, shopId = 'all', minute = 0) {
+  const shops = await getConnectedShops(env, shopId);
+  const results = [];
+  for (const shop of shops) {
+    await resetCursor(env, shop.shop_id, date, minute);
+    results.push({ ok: true, shop_id: Number(shop.shop_id), date, next_minute: Number(minute) || 0 });
+  }
+  return results;
+}
+async function getCursors(env, date = vnDateToday(env), shopId = 'all') {
+  const shops = await getConnectedShops(env, shopId);
+  const rows = [];
+  for (const shop of shops) rows.push({ shop_id: Number(shop.shop_id), date, cursor: await getCursor(env, shop.shop_id, date) });
+  return rows;
+}
+async function cronRun(env) {
+  const today = vnDateToday(env);
+  const minuteUTC = new Date().getUTCMinutes();
+  const shops = await getConnectedShops(env, 'all');
+  if (!shops.length) return [{ ok: false, message: 'Chưa có shop connected' }];
+  const picked = await pickRoundRobinShops(env, shops, shopsPerCron(env));
+  const out = [];
+  for (const shop of picked) {
+    const shopId = Number(shop.shop_id);
+    const shopOut = { shop_id: shopId, results: [] };
+    const isPrimary = isPrimaryShop(env, shopId);
+    const createWindow = isPrimary ? primaryCreateMinutesPerRun(env) : minutesPerRun(env);
+    const updateWindow = isPrimary ? primaryUpdateMinutesPerRun(env) : updateMinutesPerRun(env);
+    shopOut.primary = isPrimary;
+    shopOut.create_minutes = createWindow;
+    shopOut.update_minutes = updateWindow;
+    // 1) Chỉ quét tiếp các phút create_time chưa quét. Không gọi lại phút đã scan xong.
+    // V54: shop chính có thể chạy nhiều lượt trong cùng 1 Cron để bắt kịp dữ liệu khi web đang tắt.
+    const createRuns = isPrimary ? primaryCatchupRunsPerCron(env) : secondaryCatchupRunsPerCron(env);
+    for (let run = 1; run <= createRuns; run++) {
+      const createResult = await syncNextMinutesForShopDate(env, shop, today, createWindow);
+      shopOut.results.push({ type: 'new_orders_create_time_cursor', run, result: createResult });
+      if (!createResult || createResult.ok === false || createResult.mode === 'create_time_window_waiting') break;
+    }
+    // 2) Quét update_time để cập nhật tình trạng đơn thay đổi, kể cả đơn thuộc ngày cũ.
+    shopOut.results.push({ type: 'status_changes_update_time_cursor', result: await syncUpdateTimeForShop(env, shop, updateWindow) });
+    // 3) Mỗi 30 phút, backfill thêm hôm qua để chống sót đơn/hủy muộn theo create_time.
+    if (minuteUTC % 30 === 0) shopOut.results.push({ type: 'yesterday_create_time_cursor', result: await syncNextMinutesForShopDate(env, shop, addDaysISO(today, -1), Math.max(5, Math.min(30, createWindow))) });
+    out.push(shopOut);
+  }
+  return [{ ok: true, today, shops_per_cron: picked.length, primary_shop_ids: [...primaryShopIds(env)], create_minutes_per_run: minutesPerRun(env), primary_create_minutes_per_run: primaryCreateMinutesPerRun(env), primary_catchup_runs_per_cron: primaryCatchupRunsPerCron(env), secondary_catchup_runs_per_cron: secondaryCatchupRunsPerCron(env), update_minutes_per_run: updateMinutesPerRun(env), primary_update_minutes_per_run: primaryUpdateMinutesPerRun(env), results: out }];
+}
+async function syncOrderByWebhook(env, shopId, orderSn, eventType, rawEvent, headersObj) {
+  const event = { shop_id: shopId ? Number(shopId) : null, order_sn: orderSn || null, event_type: eventType || 'unknown', raw_event: rawEvent || {}, headers: headersObj || {}, status: 'pending' };
+  let inserted = null;
+  try {
+    inserted = await sbFetch(env, 'shopee_webhook_events?select=id', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(event) });
+  } catch (_) {}
+  const eventId = Array.isArray(inserted) && inserted[0]?.id ? inserted[0].id : null;
+  try {
+    if (!shopId || !orderSn) throw new Error('Webhook không có shop_id hoặc order_sn, đã lưu log nhưng chưa xử lý được');
+    const shop = await refreshShopIfNeeded(env, await getShop(env, shopId));
+    const details = await getOrderDetails(env, shop, [orderSn]);
+    if (!details.length) throw new Error('Không lấy được order detail từ order_sn webhook');
+    const up = await upsertDetails(env, shop, details);
+    const stats = [];
+    for (const d of up.dates) stats.push(await recomputeDailyStats(env, shopId, d));
+    if (eventId) await sbPatch(env, `shopee_webhook_events?id=eq.${eventId}`, { status: 'processed', processed_at: nowIso(), error_message: null });
+    return { ok: true, event_id: eventId, shop_id: shopId, order_sn: orderSn, dates: up.dates, stats };
+  } catch (e) {
+    if (eventId) await sbPatch(env, `shopee_webhook_events?id=eq.${eventId}`, { status: 'error', processed_at: nowIso(), error_message: String(e.message || e) }).catch(() => null);
+    return { ok: false, event_id: eventId, shop_id: shopId, order_sn: orderSn, error: String(e.message || e) };
+  }
+}
+function extractWebhookEvents(body) {
+  const events = [];
+  const eventType = String(body?.event_type || body?.type || body?.msg_type || body?.code || body?.data?.event_type || 'unknown');
+  const baseShopId = body?.shop_id || body?.data?.shop_id || body?.shopid || body?.data?.shopid;
+  const candidates = [];
+  function add(sn, sid) { if (sn) candidates.push({ order_sn: String(sn), shop_id: sid || baseShopId }); }
+  add(body?.order_sn, body?.shop_id);
+  add(body?.data?.order_sn, body?.data?.shop_id);
+  for (const key of ['order_sn_list', 'ordersn_list', 'order_list', 'orders']) {
+    const arr = body?.[key] || body?.data?.[key];
+    if (Array.isArray(arr)) {
+      for (const x of arr) {
+        if (typeof x === 'string') add(x, baseShopId);
+        else add(x?.order_sn || x?.ordersn, x?.shop_id || baseShopId);
+      }
+    }
+  }
+  if (!candidates.length) events.push({ shop_id: baseShopId ? Number(baseShopId) : null, order_sn: null, event_type: eventType });
+  else for (const c of candidates) events.push({ shop_id: c.shop_id ? Number(c.shop_id) : null, order_sn: c.order_sn, event_type: eventType });
+  return events;
+}
+async function handlePush(req, env) {
+  const raw = await req.text();
+  let body = {};
+  try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw_text: raw }; }
+  const headersObj = {};
+  for (const [k, v] of req.headers.entries()) headersObj[k] = v;
+  // Lưu ý: Shopee có thể có cơ chế ký webhook riêng. Bản này đang ưu tiên nhận và log trước.
+  // Khi bạn gửi ảnh cấu hình Push của Shopee, mình sẽ bổ sung verify chữ ký đúng chuẩn header của tài khoản bạn.
+  const events = extractWebhookEvents(body);
+  const results = [];
+  for (const ev of events) results.push(await syncOrderByWebhook(env, ev.shop_id, ev.order_sn, ev.event_type, body, headersObj));
+  return json({ ok: true, version: VERSION, received: events.length, results });
+}
+function aggregateStats(rows, dateFrom, dateTo, shopId) {
+  const hourly = {};
+  for (let i = 0; i < 24; i++) hourly[String(i).padStart(2, '0') + ':00'] = { hour: String(i).padStart(2, '0') + ':00', gmv: 0, orders: 0 };
+  const top = {};
+  const status = {};
+  let gmv = 0, total_orders = 0, valid_orders = 0, cancel_gmv = 0, cancel_orders = 0;
+  for (const r of rows) {
+    gmv += safeNum(r.gmv); total_orders += safeNum(r.total_orders); valid_orders += safeNum(r.valid_orders); cancel_gmv += safeNum(r.cancel_gmv); cancel_orders += safeNum(r.cancel_orders);
+    for (const h of (r.hourly_gmv || [])) { hourly[h.hour] ||= { hour: h.hour, gmv: 0, orders: 0 }; hourly[h.hour].gmv += safeNum(h.gmv); hourly[h.hour].orders += safeNum(h.orders); }
+    for (const p of (r.top_products || [])) {
+      const key = [p.item_id || '', p.model_id || '', p.sku || ''].join('|');
+      top[key] ||= { ...p, qty: 0, gmv: 0, orders: 0, valid_orders: 0, cancel_orders: 0 };
+      top[key].qty += safeNum(p.qty); top[key].gmv += safeNum(p.gmv); top[key].orders += safeNum(p.orders); top[key].valid_orders += safeNum(p.valid_orders); top[key].cancel_orders += safeNum(p.cancel_orders);
+    }
+    for (const [k, v] of Object.entries(r.status_counts || {})) status[k] = (status[k] || 0) + safeNum(v);
+  }
+  return { date_from: dateFrom, date_to: dateTo, shop_id: shopId, metric_basis: 'create_time', summary: { gmv: Math.round(gmv), total_orders, valid_orders, cancel_gmv: Math.round(cancel_gmv), cancel_orders, aov: total_orders ? Math.round(gmv / total_orders) : 0, cancel_rate: total_orders ? Math.round(cancel_orders / total_orders * 1000) / 10 : 0, status_counts: status }, hourly_gmv: Object.values(hourly).map(x => ({ ...x, gmv: Math.round(x.gmv) })), top_products: Object.values(top).sort((a, b) => b.gmv - a.gmv).slice(0, 100).map(p => ({ ...p, gmv: Math.round(p.gmv) })), updated_at: rows.reduce((m, r) => r.updated_at > m ? r.updated_at : m, '') };
+}
+async function handleDashboard(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const dateFrom = String(url.searchParams.get('date_from') || date).slice(0, 10);
+  const dateTo = String(url.searchParams.get('date_to') || date).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  let q = `select=*&stat_date=gte.${encodeURIComponent(dateFrom)}&stat_date=lte.${encodeURIComponent(dateTo)}`;
+  if (shopId !== 'all') q += `&shop_id=eq.${encodeURIComponent(shopId)}`;
+  try {
+    const rows = await sbSelectAll(env, 'daily_shop_stats', q);
+    return json({ ok: true, version: VERSION, data: aggregateStats(rows, dateFrom, dateTo, shopId), rows });
+  } catch (e) {
+    return json({ ok: true, version: VERSION, warning: String(e && (e.message || e)), data: emptyDashboardData(dateFrom, dateTo, shopId), rows: [] });
+  }
+}
+
+async function getDashboardDataOnly(env, dateFrom, dateTo, shopId) {
+  let q = `select=*&stat_date=gte.${encodeURIComponent(dateFrom)}&stat_date=lte.${encodeURIComponent(dateTo)}`;
+  if (shopId !== 'all') q += `&shop_id=eq.${encodeURIComponent(shopId)}`;
+  const rows = await sbSelectAll(env, 'daily_shop_stats', q);
+  return { data: aggregateStats(rows, dateFrom, dateTo, shopId), rows };
+}
+
+function emptyDashboardData(dateFrom, dateTo, shopId) {
+  const hourly = [];
+  for (let i = 0; i < 24; i++) hourly.push({ hour: String(i).padStart(2, '0') + ':00', gmv: 0, orders: 0 });
+  return {
+    date_from: dateFrom,
+    date_to: dateTo,
+    shop_id: shopId,
+    metric_basis: 'create_time',
+    summary: {
+      gmv: 0,
+      total_orders: 0,
+      valid_orders: 0,
+      cancel_gmv: 0,
+      cancel_orders: 0,
+      aov: 0,
+      cancel_rate: 0,
+      status_counts: {}
+    },
+    hourly_gmv: hourly,
+    top_products: [],
+    updated_at: null
+  };
+}
+async function getDashboardDataOnlySafe(env, dateFrom, dateTo, shopId) {
+  try {
+    return await getDashboardDataOnly(env, dateFrom, dateTo, shopId);
+  } catch (e) {
+    return { data: emptyDashboardData(dateFrom, dateTo, shopId), rows: [], error: String(e && (e.message || e)) };
+  }
+}
+function compareDateForMode(date, mode) {
+  if (mode === 'prev_week') return addDaysISO(date, -7);
+  if (mode === 'prev_2days') return addDaysISO(date, -2);
+  return addDaysISO(date, -1);
+}
+function pctDelta(cur, prev) {
+  cur = safeNum(cur); prev = safeNum(prev);
+  if (!prev && !cur) return 0;
+  if (!prev) return null;
+  return Math.round(((cur - prev) / prev) * 1000) / 10;
+}
+function buildDeltas(curSummary, prevSummary) {
+  const keys = ['gmv', 'total_orders', 'valid_orders', 'cancel_gmv', 'cancel_orders', 'aov', 'cancel_rate'];
+  const out = {};
+  for (const k of keys) {
+    const cur = safeNum(curSummary?.[k]);
+    const prev = safeNum(prevSummary?.[k]);
+    out[k] = { current: cur, previous: prev, diff: Math.round((cur - prev) * 10) / 10, percent: pctDelta(cur, prev) };
+  }
+  return out;
+}
+
+function listDatesISO(dateFrom, dateTo) {
+  const out = [];
+  let d = dateFrom;
+  let guard = 0;
+  while (d <= dateTo && guard++ < 370) { out.push(d); d = addDaysISO(d, 1); }
+  return out;
+}
+function aggregateOrdersFromLedger(rows, dateFrom, dateTo, shopId, env) {
+  const hourly = {};
+  for (let i = 0; i < 24; i++) hourly[String(i).padStart(2, '0') + ':00'] = { hour: String(i).padStart(2, '0') + ':00', gmv: 0, orders: 0 };
+  const status = {};
+  let placedGmv = 0, total_orders = 0, raw_orders = rows.length, excluded_orders = 0, valid_orders = 0, cancel_gmv = 0, cancel_orders = 0;
+  for (const o of rows) {
+    const st = String(o.order_status || 'UNKNOWN').toUpperCase();
+    status[st] = (status[st] || 0) + 1;
+    const amt = orderGmvAmount(o, env);
+    if (includePlacedOrderStatus(st, env, o.shop_id)) {
+      placedGmv += amt;
+      const h = vnHourFromSec(o.create_time, env);
+      hourly[h] ||= { hour: h, gmv: 0, orders: 0 };
+      hourly[h].gmv += amt;
+    } else {
+      excluded_orders++;
+    }
+    if (includeOrderCount(o, env)) {
+      total_orders++;
+      const h = vnHourFromSec(o.create_time, env);
+      hourly[h] ||= { hour: h, gmv: 0, orders: 0 };
+      hourly[h].orders += 1;
+    }
+    if (isCancelled(st)) { cancel_orders++; cancel_gmv += amt; }
+    else if (isValid(st)) valid_orders++;
+  }
+  status.__raw_order_count = raw_orders;
+  status.__excluded_order_count = excluded_orders;
+  status.__gmv_amount_source = gmvAmountSource(env);
+  status.__excluded_statuses = [...placedExcludedStatuses(env)].join(',');
+  status.__order_count_mode = orderCountMode(env, shopId);
+  status.__order_count_excluded_statuses = [...orderCountExcludedStatuses(env, shopId)].join(',');
+  return {
+    date_from: dateFrom,
+    date_to: dateTo,
+    shop_id: shopId,
+    metric_basis: 'create_time_placed_orders',
+    summary: {
+      gmv: Math.round(placedGmv),
+      total_orders,
+      valid_orders,
+      cancel_gmv: Math.round(cancel_gmv),
+      cancel_orders,
+      aov: total_orders ? Math.round(placedGmv / total_orders) : 0,
+      cancel_rate: total_orders ? Math.round(cancel_orders / total_orders * 1000) / 10 : 0,
+      status_counts: status,
+    },
+    hourly_gmv: Object.values(hourly).map(x => ({ ...x, gmv: Math.round(x.gmv) })),
+  };
+}
+function summaryDiff(snapshot, ledger) {
+  const keys = ['gmv', 'total_orders', 'valid_orders', 'cancel_gmv', 'cancel_orders', 'aov', 'cancel_rate'];
+  const out = {};
+  for (const k of keys) {
+    const a = safeNum(snapshot?.summary?.[k]);
+    const b = safeNum(ledger?.summary?.[k]);
+    out[k] = { snapshot: a, ledger: b, diff: Math.round((a - b) * 10) / 10, percent: pctDelta(a, b) };
+  }
+  return out;
+}
+async function getDailyStatsRows(env, dateFrom, dateTo, shopId) {
+  let q = `select=*&stat_date=gte.${encodeURIComponent(dateFrom)}&stat_date=lte.${encodeURIComponent(dateTo)}`;
+  if (shopId !== 'all') q += `&shop_id=eq.${encodeURIComponent(shopId)}`;
+  q += '&order=stat_date.asc,shop_id.asc';
+  return await sbSelectAll(env, 'daily_shop_stats', q);
+}
+async function getLedgerOrderRows(env, dateFrom, dateTo, shopId) {
+  let q = `select=order_sn,shop_id,create_time,create_date,order_status,total_amount,raw_data,synced_at&create_date=gte.${encodeURIComponent(dateFrom)}&create_date=lte.${encodeURIComponent(dateTo)}`;
+  if (shopId !== 'all') q += `&shop_id=eq.${encodeURIComponent(shopId)}`;
+  q += '&order=create_time.asc';
+  return await sbSelectAll(env, 'shopee_orders', q);
+}
+async function getCursorRowsFast(env) {
+  try { return await sbSelectAll(env, 'app_settings', 'select=key,value&key=like.v40_cursor*&order=updated_at.desc'); }
+  catch (e) { return []; }
+}
+function buildCursorCoverage(env, shops, dates, cursorRows) {
+  const m = new Map();
+  for (const r of cursorRows || []) m.set(String(r.key), r.value || {});
+  const today = vnDateToday(env);
+  const out = [];
+  for (const s of shops) {
+    const shopId = Number(s.shop_id);
+    for (const date of dates) {
+      const key = cursorKey(shopId, date);
+      const cur = m.get(key) || { shop_id: shopId, date, next_minute: 0, completed: false };
+      const latestAllowed = date < today ? 1439 : currentVNMinuteIndex(env, syncLagMinutes(env));
+      const denom = Math.max(1, latestAllowed + 1);
+      const next = Math.max(0, Math.min(1440, Number(cur.next_minute || 0)));
+      const progress = Math.min(100, Math.round((Math.min(next, denom) / denom) * 1000) / 10);
+      out.push({ shop_id: shopId, shop_name: s.channel_name || s.shop_name || String(shopId), date, next_minute: next, latest_allowed_minute: latestAllowed, completed: !!cur.completed || next > latestAllowed, progress_percent: progress, updated_at: cur.updated_at || null });
+    }
+  }
+  return out;
+}
+function buildSnapshotCoverage(shops, dates, statRows) {
+  const rowSet = new Set((statRows || []).map(r => `${r.shop_id}_${String(r.stat_date).slice(0, 10)}`));
+  const missing = [];
+  const byShop = [];
+  for (const s of shops) {
+    let have = 0;
+    const miss = [];
+    for (const d of dates) {
+      if (rowSet.has(`${s.shop_id}_${d}`)) have++;
+      else { missing.push({ shop_id: Number(s.shop_id), shop_name: s.channel_name || s.shop_name || String(s.shop_id), date: d }); miss.push(d); }
+    }
+    byShop.push({ shop_id: Number(s.shop_id), shop_name: s.channel_name || s.shop_name || String(s.shop_id), have_days: have, expected_days: dates.length, missing_days: miss.slice(0, 20) });
+  }
+  return { expected_rows: shops.length * dates.length, actual_rows: statRows.length, missing_count: missing.length, missing_preview: missing.slice(0, 30), by_shop: byShop };
+}
+function buildIssues(env, shops, statRows, orderRows, snapshotAgg, ledgerAgg, coverage, cursors, errorLogs) {
+  const issues = [];
+  if (!supabaseKey(env)) issues.push({ level: 'error', area: 'Supabase', message: 'Worker thiếu SUPABASE_SERVICE_ROLE_KEY hoặc SUPABASE_SECRET_KEY.' });
+  if (!env.SHOPEE_PARTNER_KEY) issues.push({ level: 'error', area: 'Shopee', message: 'Worker thiếu SHOPEE_PARTNER_KEY.' });
+  if (!shops.length) issues.push({ level: 'error', area: 'OAuth shop', message: 'Chưa có shop connected trong bảng shopee_shops.' });
+  for (const s of shops) if (s.last_error) issues.push({ level: 'error', area: `Shop ${s.shop_id}`, message: String(s.last_error).slice(0, 300) });
+  if (coverage.missing_count) issues.push({ level: 'warn', area: 'Snapshot daily_shop_stats', message: `Thiếu ${coverage.missing_count}/${coverage.expected_rows} snapshot ngày/shop trong khoảng đang xem.` });
+  const incomplete = cursors.filter(c => !c.completed && String(c.date) <= vnDateToday(env));
+  if (incomplete.length) issues.push({ level: 'warn', area: 'Cursor sync phút', message: `${incomplete.length} ngày/shop chưa quét đủ phút. Số liệu có thể thấp hơn dashboard sàn.` });
+  if (!orderRows.length && !safeNum(snapshotAgg?.summary?.total_orders)) issues.push({ level: 'warn', area: 'Ledger orders', message: 'Chưa có đơn trong shopee_orders cho khoảng đang xem. Có thể Cron chưa chạy đủ hoặc token shop/API lỗi.' });
+  const diffs = summaryDiff(snapshotAgg, ledgerAgg);
+  const major = Object.entries(diffs).filter(([k, v]) => ['gmv','total_orders','valid_orders','cancel_gmv','cancel_orders'].includes(k) && Math.abs(safeNum(v.diff)) > 0);
+  if (major.length) issues.push({ level: 'warn', area: 'Công thức snapshot', message: 'daily_shop_stats đang lệch với dữ liệu ledger shopee_orders. Có thể cần recompute snapshot từ ledger.' });
+  if ((errorLogs || []).length) issues.push({ level: 'error', area: 'Sync logs', message: `Có ${errorLogs.length} log lỗi gần nhất. Mở phần chi tiết lỗi để xem lỗi nằm ở Shopee, Supabase hay Worker.` });
+  if (!issues.length) issues.push({ level: 'ok', area: 'Data quality', message: 'Chưa phát hiện lỗi rõ ràng trong snapshot, ledger và log gần nhất.' });
+  return issues;
+}
+async function handleDiagnostics(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const dateFrom = String(url.searchParams.get('date_from') || date).slice(0, 10);
+  const dateTo = String(url.searchParams.get('date_to') || dateFrom).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const dates = listDatesISO(dateFrom, dateTo);
+  const shops = await getConnectedShops(env, shopId);
+  const [statRows, orderRows, cursorRows, logs, errorLogs, webhooks] = await Promise.all([
+    getDailyStatsRows(env, dateFrom, dateTo, shopId),
+    getLedgerOrderRows(env, dateFrom, dateTo, shopId),
+    getCursorRowsFast(env),
+    sbSelectAll(env, 'sync_logs', 'select=*&order=started_at.desc&limit=30').catch(() => []),
+    sbSelectAll(env, 'sync_logs', 'select=*&status=eq.error&order=started_at.desc&limit=20').catch(() => []),
+    sbSelectAll(env, 'shopee_webhook_events', 'select=*&order=received_at.desc&limit=20').catch(() => []),
+  ]);
+  const snapshotAgg = aggregateStats(statRows, dateFrom, dateTo, shopId);
+  const ledgerAgg = aggregateOrdersFromLedger(orderRows, dateFrom, dateTo, shopId, env);
+  const coverage = buildSnapshotCoverage(shops, dates, statRows);
+  const cursors = buildCursorCoverage(env, shops, dates.slice(-14), cursorRows);
+  const diffs = summaryDiff(snapshotAgg, ledgerAgg);
+  const amountAudit = amountAuditFromOrders(orderRows, env);
+  const issues = buildIssues(env, shops, statRows, orderRows, snapshotAgg, ledgerAgg, coverage, cursors, errorLogs);
+  if (amountAudit.raw_order_count && amountAudit.excluded_order_count) issues.unshift({ level: 'warn', area: 'Bộ lọc GMV đơn đặt', message: `Đang loại ${amountAudit.excluded_order_count}/${amountAudit.raw_order_count} đơn theo trạng thái: ${amountAudit.excluded_statuses.join(', ') || 'không có'}. V50 mặc định nên không loại; kiểm tra GMV_INCLUDE_ALL_STATUSES/PLACED_ORDER_EXCLUDE_STATUSES nếu vẫn thấy dòng này.` });
+  if (gmvAmountSource(env, shopId !== 'all' ? shopId : (orderRows?.[0]?.shop_id || '')) === 'item_subtotal' && amountAudit.item_subtotal_all > amountAudit.total_amount_all * 1.15) issues.unshift({ level: 'warn', area: 'Nguồn GMV', message: 'Tổng item_subtotal lớn hơn total_amount khá nhiều. Hiện đang dùng item_subtotal. Nếu bạn muốn theo total_amount, đặt GMV_AMOUNT_SOURCE=total_amount và recompute snapshot.' });
+  return json({
+    ok: true,
+    version: VERSION,
+    checked_at: nowIso(),
+    date_from: dateFrom,
+    date_to: dateTo,
+    shop_id: shopId,
+    env: {
+      has_supabase_url: !!optionalEnv(env, 'SUPABASE_URL'),
+      has_supabase_key: !!supabaseKey(env),
+      has_partner_id: !!optionalEnv(env, 'SHOPEE_PARTNER_ID'),
+      has_partner_key: !!optionalEnv(env, 'SHOPEE_PARTNER_KEY'),
+      timezone_offset: tzOffset(env),
+      sync_minutes_per_run: minutesPerRun(env),
+      sync_lag_minutes: syncLagMinutes(env),
+      shopee_detail_batch_size: Math.max(1, Math.min(50, Number(optionalEnv(env, 'SHOPEE_DETAIL_BATCH_SIZE', '50')) || 20)),
+      shopee_order_list_max_pages_per_minute: Math.max(1, Math.min(20, Number(optionalEnv(env, 'SHOPEE_ORDER_LIST_MAX_PAGES_PER_MINUTE', '3')) || 3)),
+      gmv_amount_source: gmvAmountSource(env, shopId !== 'all' ? shopId : (orderRows?.[0]?.shop_id || '')),
+      placed_order_exclude_statuses: [...placedExcludedStatuses(env, shopId !== 'all' ? shopId : (orderRows?.[0]?.shop_id || ''))],
+      order_count_mode: orderCountMode(env, shopId !== 'all' ? shopId : (orderRows?.[0]?.shop_id || '')),
+      order_count_exclude_statuses: [...orderCountExcludedStatuses(env, shopId !== 'all' ? shopId : (orderRows?.[0]?.shop_id || ''))],
+    },
+    shops: shops.map(s => ({ shop_id: Number(s.shop_id), shop_name: s.channel_name || s.shop_name || String(s.shop_id), status: s.status, last_sync_at: s.last_sync_at || null, last_error: s.last_error || '', token_expire_at: s.expire_at || null, token_expires_in_minutes: s.expire_at ? Math.round((Number(s.expire_at) - nowSec()) / 60) : null })),
+    snapshot: { rows: statRows.length, aggregate: snapshotAgg.summary, updated_at: snapshotAgg.updated_at || null },
+    ledger: { orders: orderRows.length, aggregate: ledgerAgg.summary, latest_synced_at: orderRows.reduce((m, r) => r.synced_at && r.synced_at > m ? r.synced_at : m, '') },
+    diff_snapshot_minus_ledger: diffs,
+    amount_audit: amountAudit,
+    coverage,
+    cursors,
+    issues,
+    recent_logs: logs,
+    recent_error_logs: errorLogs,
+    recent_webhook_events: webhooks,
+  });
+}
+async function handleRecomputeRange(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const dateFrom = String(url.searchParams.get('date_from') || date).slice(0, 10);
+  const dateTo = String(url.searchParams.get('date_to') || dateFrom).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const dates = listDatesISO(dateFrom, dateTo);
+  if (dates.length > 31) return json({ ok: false, error: 'Chỉ recompute tối đa 31 ngày/lần để tránh quá nặng. Hãy chọn khoảng ngắn hơn.' }, 400);
+  const shops = await getConnectedShops(env, shopId);
+  const results = [];
+  for (const s of shops) {
+    for (const d of dates) {
+      try { results.push({ ok: true, shop_id: Number(s.shop_id), date: d, stat: await recomputeDailyStats(env, s.shop_id, d) }); }
+      catch (e) { results.push({ ok: false, shop_id: Number(s.shop_id), date: d, error: String(e.message || e) }); }
+    }
+  }
+  return json({ ok: true, version: VERSION, mode: 'recompute_from_ledger_no_shopee_api', date_from: dateFrom, date_to: dateTo, shop_id: shopId, results });
+}
+async function handleDashboardCompare(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const dateFrom = String(url.searchParams.get('date_from') || date).slice(0, 10);
+  const dateTo = String(url.searchParams.get('date_to') || dateFrom).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const mode = String(url.searchParams.get('compare') || 'previous_period');
+  const span = daysInclusiveISO(dateFrom, dateTo);
+  const fallbackCompareTo = addDaysISO(dateFrom, -1);
+  const fallbackCompareFrom = addDaysISO(fallbackCompareTo, -(span - 1));
+  const compareDateFrom = String(url.searchParams.get('compare_date_from') || fallbackCompareFrom).slice(0, 10);
+  const compareDateTo = String(url.searchParams.get('compare_date_to') || fallbackCompareTo).slice(0, 10);
+  const current = await getDashboardDataOnlySafe(env, dateFrom, dateTo, shopId);
+  const previous = await getDashboardDataOnlySafe(env, compareDateFrom, compareDateTo, shopId);
+  const errors = [];
+  if (current.error) errors.push({ area: 'current_dashboard', message: current.error });
+  if (previous.error) errors.push({ area: 'compare_dashboard', message: previous.error });
+  return json({
+    ok: true,
+    version: VERSION,
+    period: String(url.searchParams.get('period') || 'custom'),
+    date_from: dateFrom,
+    date_to: dateTo,
+    shop_id: shopId,
+    compare: { mode, date_from: compareDateFrom, date_to: compareDateTo, data: previous.data, rows: previous.rows.length, error: previous.error || null },
+    data: current.data,
+    rows: current.rows.length,
+    load_errors: errors,
+    deltas: buildDeltas(current.data.summary || {}, previous.data.summary || {})
+  });
+}
+async function handleOauthStart(req, env) {
+  const url = new URL(req.url);
+  const channel = String(url.searchParams.get('channel') || 'Shopee').trim();
+  const timestamp = nowSec();
+  const sign = await signBase(env, SHOPEE_AUTH_PATH, timestamp);
+  const workerOrigin = url.origin;
+  const callback = `${workerOrigin}/api/oauth/callback?channel=${encodeURIComponent(channel)}`;
+  const auth = new URL(apiBase(env) + SHOPEE_AUTH_PATH);
+  auth.searchParams.set('partner_id', partnerId(env));
+  auth.searchParams.set('timestamp', String(timestamp));
+  auth.searchParams.set('sign', sign);
+  auth.searchParams.set('redirect', callback);
+  if (url.searchParams.get('redirect') === '1') return Response.redirect(auth.toString(), 302);
+  return json({ ok: true, version: VERSION, channel, redirect_url_to_add_in_shopee: `${workerOrigin}/api/oauth/callback`, auth_url: auth.toString() });
+}
+async function handleOauthCallback(req, env) {
+  const url = new URL(req.url);
+  const code = url.searchParams.get('code');
+  const shopId = url.searchParams.get('shop_id') || url.searchParams.get('shopid');
+  const channel = String(url.searchParams.get('channel') || `shop_${shopId || ''}`).trim();
+  if (!code || !shopId) return html(`<h2>Thiếu code hoặc shop_id</h2><pre>${url.search}</pre>`, 400);
+  try {
+    const token = await shopeePostBase(env, TOKEN_GET_PATH, { code, shop_id: Number(shopId) });
+    const row = {
+      shop_id: Number(shopId),
+      shop_name: channel,
+      channel_name: channel,
+      access_token: token.access_token || '',
+      refresh_token: token.refresh_token || '',
+      expire_at: nowSec() + safeNum(token.expire_in || 0),
+      refresh_expire_at: token.refresh_expire_in ? nowSec() + safeNum(token.refresh_expire_in) : null,
+      status: 'connected',
+      raw_token: token,
+      updated_at: nowIso(),
+      last_error: '',
+    };
+    await sbUpsert(env, 'shopee_shops', row, 'shop_id');
+    return html(`<h2>Đã kết nối Shopee thành công</h2><p>Shop ID: <b>${shopId}</b></p><p>Channel: <b>${channel}</b></p><p>Bạn có thể quay lại dashboard.</p>`);
+  } catch (e) {
+    return html(`<h2>Kết nối Shopee lỗi</h2><pre>${String(e.stack || e.message || e)}</pre>`, 500);
+  }
+}
+async function handleShops(env) {
+  const rows = await sbSelectAll(env, 'shopee_shops', 'select=*&order=updated_at.desc');
+  return json({ ok: true, version: VERSION, shops: rows });
+}
+async function handleLogs(req, env) {
+  const limit = Math.min(200, Number(new URL(req.url).searchParams.get('limit') || 50));
+  const rows = await sbSelectAll(env, `sync_logs`, `select=*&order=started_at.desc&limit=${limit}`);
+  return json({ ok: true, logs: rows });
+}
+async function handleWebhookEvents(req, env) {
+  const limit = Math.min(200, Number(new URL(req.url).searchParams.get('limit') || 50));
+  const rows = await sbSelectAll(env, `shopee_webhook_events`, `select=*&order=received_at.desc&limit=${limit}`);
+  return json({ ok: true, events: rows });
+}
+async function handleSyncDate(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const minutes = Math.max(1, Math.min(240, Number(url.searchParams.get('minutes') || minutesPerRun(env)) || minutesPerRun(env)));
+  const results = await syncDate(env, date, shopId, minutes);
+  return json({ ok: true, version: VERSION, mode: 'minute_sliced_cursor', date, shop_id: shopId, minutes_per_run: minutes, results });
+}
+
+async function handleCatchupDate(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || optionalEnv(env, 'PRIMARY_SHOP_IDS', '').split(',')[0] || 'all');
+  const minutes = Math.max(1, Math.min(240, Number(url.searchParams.get('minutes') || primaryCreateMinutesPerRun(env)) || primaryCreateMinutesPerRun(env)));
+  const maxRuns = Math.max(1, Math.min(6, Number(url.searchParams.get('runs') || '2') || 2));
+  const shops = await getConnectedShops(env, shopId);
+  const results = [];
+  for (const shop of shops) {
+    for (let i = 0; i < maxRuns; i++) {
+      const before = await getCursor(env, shop.shop_id, date);
+      const r = await syncNextMinutesForShopDate(env, shop, date, minutes);
+      results.push({ shop_id: Number(shop.shop_id), run: i + 1, before, result: r });
+      if (!r || r.mode === 'create_time_window_waiting' || r.ok === false) break;
+      const after = await getCursor(env, shop.shop_id, date);
+      if (after.completed || Number(after.next_minute || 0) === Number(before.next_minute || 0)) break;
+    }
+  }
+  return json({ ok: true, version: VERSION, mode: 'catchup_create_time_cursor', date, shop_id: shopId, minutes_per_run: minutes, runs: maxRuns, results });
+}
+async function handleRescanWindow(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || '').trim();
+  if (!shopId || shopId === 'all') return json({ ok:false, error:'Rescan window cần shop_id cụ thể để tránh quá tải Worker.' }, 400);
+  const fromMinute = Math.max(0, Math.min(1439, Number(url.searchParams.get('from_minute') || '0') || 0));
+  const minutes = Math.max(1, Math.min(120, Number(url.searchParams.get('minutes') || '30') || 30));
+  const shop = await getShop(env, shopId);
+  const fresh = await refreshShopIfNeeded(env, shop);
+  const r = await syncOneShopCreateWindowCore(env, fresh, date, fromMinute, minutes);
+  const stat = await recomputeDailyStats(env, shopId, date);
+  await logSync(env, { shop_id: Number(shopId), sync_type: 'rescan_create_time_window', stat_date: date, status: 'success', message: `rescan=${fromMinute}-${fromMinute + minutes - 1}, SN=${r.order_sns}, details=${r.details}`, started_at: nowIso() });
+  return json({ ok: true, version: VERSION, mode: 'rescan_create_time_window_no_cursor_change', date, shop_id: shopId, from_minute: fromMinute, minutes, result: r, stat });
+}
+
+async function handleSyncMinute(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const minute = Math.max(0, Math.min(1439, Number(url.searchParams.get('minute') || currentVNMinuteIndex(env, syncLagMinutes(env))) || 0));
+  const results = await syncSpecificMinute(env, date, shopId, minute);
+  return json({ ok: true, version: VERSION, mode: 'specific_minute', date, minute, shop_id: shopId, results });
+}
+async function handleResetCursor(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const minute = Math.max(0, Math.min(1439, Number(url.searchParams.get('minute') || 0) || 0));
+  const results = await resetDateCursor(env, date, shopId, minute);
+  return json({ ok: true, version: VERSION, mode: 'reset_cursor', date, shop_id: shopId, minute, results });
+}
+
+async function cronRunSafe(env, source = 'cron') {
+  const started = nowIso();
+  try {
+    const results = await cronRun(env);
+    await setSetting(env, 'last_cron_run', { ok: true, source, ran_at: nowIso(), results });
+    await logSync(env, { shop_id: null, sync_type: source, stat_date: vnDateToday(env), status: 'success', message: `auto sync ok: ${JSON.stringify(results).slice(0, 900)}`, started_at: started }).catch(() => null);
+    return results;
+  } catch (e) {
+    const msg = String(e && (e.message || e));
+    await setSetting(env, 'last_cron_run', { ok: false, source, ran_at: nowIso(), error: msg });
+    await logSync(env, { shop_id: null, sync_type: source, stat_date: vnDateToday(env), status: 'error', message: msg, started_at: started }).catch(() => null);
+    return [{ ok: false, source, error: msg }];
+  }
+}
+
+function autoBackgroundEnabled(env) {
+  return String(optionalEnv(env, 'AUTO_BACKGROUND_SYNC', '1')).trim() !== '0';
+}
+
+async function kickBackgroundSyncFromDashboard(req, env) {
+  if (!autoBackgroundEnabled(env)) return { ok: true, skipped: true, reason: 'AUTO_BACKGROUND_SYNC=0' };
+  const url = new URL(req.url);
+  const today = vnDateToday(env);
+  const dateTo = String(url.searchParams.get('date_to') || url.searchParams.get('date') || today).slice(0, 10);
+  if (dateTo < today) return { ok: true, skipped: true, reason: 'selected range is historical', date_to: dateTo, today };
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const started = nowIso();
+  try {
+    let results;
+    // Khi dashboard đang xem tất cả shop, chạy đúng logic cron: ưu tiên shop chính + luân phiên shop phụ.
+    if (!shopId || shopId === 'all') {
+      results = await cronRun(env);
+    } else {
+      const shops = await getConnectedShops(env, shopId);
+      results = [];
+      for (const shop of shops) {
+        const isPrimary = isPrimaryShop(env, shop.shop_id);
+        const createWindow = isPrimary ? primaryCreateMinutesPerRun(env) : minutesPerRun(env);
+        const updateWindow = isPrimary ? primaryUpdateMinutesPerRun(env) : updateMinutesPerRun(env);
+        const one = { shop_id: Number(shop.shop_id), primary: isPrimary, create_minutes: createWindow, update_minutes: updateWindow, results: [] };
+        one.results.push({ type: 'dashboard_background_create_time_cursor', result: await syncNextMinutesForShopDate(env, shop, today, createWindow) });
+        one.results.push({ type: 'dashboard_background_update_time_cursor', result: await syncUpdateTimeForShop(env, shop, updateWindow) });
+        results.push(one);
+      }
+    }
+    await setSetting(env, 'last_dashboard_background_sync', { ok: true, shop_id: shopId, date: today, ran_at: nowIso(), results });
+    await logSync(env, { shop_id: shopId === 'all' ? null : Number(shopId), sync_type: 'dashboard_background_sync', stat_date: today, status: 'success', message: `dashboard background sync ok: ${JSON.stringify(results).slice(0, 900)}`, started_at: started }).catch(() => null);
+    return { ok: true, shop_id: shopId, date: today, results };
+  } catch (e) {
+    const msg = String(e && (e.message || e));
+    await setSetting(env, 'last_dashboard_background_sync', { ok: false, shop_id: shopId, date: today, ran_at: nowIso(), error: msg });
+    await logSync(env, { shop_id: shopId === 'all' ? null : Number(shopId), sync_type: 'dashboard_background_sync', stat_date: today, status: 'error', message: msg, started_at: started }).catch(() => null);
+    return { ok: false, shop_id: shopId, date: today, error: msg };
+  }
+}
+
+async function handleCronStatus(env) {
+  const lastCron = await getSetting(env, 'last_cron_run', null);
+  const lastDashboard = await getSetting(env, 'last_dashboard_background_sync', null);
+  const logs = await sbSelectAll(env, 'sync_logs', 'select=*&order=started_at.desc&limit=20').catch(e => [{ error: String(e.message || e) }]);
+  return json({ ok: true, version: VERSION, auto_background_sync: autoBackgroundEnabled(env), last_cron_run: lastCron, last_dashboard_background_sync: lastDashboard, recent_logs: logs });
+}
+
+
+
+// ===== V58: Order detail + shop performance APIs =====
+function orderItemSubtotal(o) {
+  return itemSubtotalFromRaw((o && o.raw_data) || o || {});
+}
+function orderQtyTotalFromRaw(raw) {
+  let total = 0;
+  for (const it of (raw?.item_list || [])) total += itemQty(it);
+  return total;
+}
+function orderView(o, env) {
+  const raw = o.raw_data || {};
+  const items = raw.item_list || [];
+  const createIso = o.create_time ? new Date(Number(o.create_time) * 1000).toISOString() : null;
+  const updateIso = o.update_time ? new Date(Number(o.update_time) * 1000).toISOString() : null;
+  return {
+    order_sn: String(o.order_sn || ''),
+    shop_id: Number(o.shop_id || 0),
+    create_time: safeNum(o.create_time),
+    create_date: o.create_date || (o.create_time ? toVNDate(o.create_time, env) : null),
+    create_time_iso: createIso,
+    update_time: o.update_time ? safeNum(o.update_time) : null,
+    update_time_iso: updateIso,
+    order_status: String(o.order_status || 'UNKNOWN').toUpperCase(),
+    total_amount: safeNum(o.total_amount),
+    item_subtotal: orderItemSubtotal(o),
+    gmv_amount: orderGmvAmount(o, env),
+    cancel_amount: safeNum(o.cancel_amount),
+    currency: o.currency || raw.currency || 'VND',
+    item_count: items.length,
+    quantity_total: orderQtyTotalFromRaw(raw),
+    synced_at: o.synced_at || null,
+    buyer_user_id: o.buyer_user_id || raw.buyer_user_id || null,
+  };
+}
+function orderSearchMatch(o, q) {
+  q = String(q || '').toLowerCase().trim();
+  if (!q) return true;
+  if (String(o.order_sn || '').toLowerCase().includes(q)) return true;
+  const raw = o.raw_data || {};
+  for (const it of (raw.item_list || [])) {
+    if (String(itemName(it) || '').toLowerCase().includes(q)) return true;
+    if (String(modelName(it) || '').toLowerCase().includes(q)) return true;
+    if (String(itemSku(it) || '').toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
+async function handleOrders(req, env) {
+  const url = new URL(req.url);
+  const today = vnDateToday(env);
+  const dateFrom = String(url.searchParams.get('date_from') || today).slice(0, 10);
+  const dateTo = String(url.searchParams.get('date_to') || dateFrom).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const status = String(url.searchParams.get('status') || 'all').toUpperCase();
+  const q = String(url.searchParams.get('q') || '').trim();
+  const limit = Math.max(1, Math.min(200, Number(url.searchParams.get('limit') || 50) || 50));
+  const offset = Math.max(0, Number(url.searchParams.get('offset') || 0) || 0);
+  let rows = await getLedgerOrderRows(env, dateFrom, dateTo, shopId);
+  if (status && status !== 'ALL') rows = rows.filter(o => String(o.order_status || 'UNKNOWN').toUpperCase() === status);
+  if (q) rows = rows.filter(o => orderSearchMatch(o, q));
+  rows.sort((a, b) => safeNum(b.create_time) - safeNum(a.create_time));
+  const total = rows.length;
+  const pageRows = rows.slice(offset, offset + limit).map(o => orderView(o, env));
+  const statusCounts = {};
+  for (const o of rows) statusCounts[String(o.order_status || 'UNKNOWN').toUpperCase()] = (statusCounts[String(o.order_status || 'UNKNOWN').toUpperCase()] || 0) + 1;
+  return json({ ok: true, version: VERSION, date_from: dateFrom, date_to: dateTo, shop_id: shopId, status, q, limit, offset, total, status_counts: statusCounts, orders: pageRows });
+}
+async function handleOrderDetail(req, env) {
+  const url = new URL(req.url);
+  const orderSn = String(url.searchParams.get('order_sn') || '').trim();
+  if (!orderSn) return json({ ok: false, error: 'Thiếu order_sn' }, 400);
+  const orders = await sbSelectAll(env, 'shopee_orders', `select=*&order_sn=eq.${encodeURIComponent(orderSn)}&limit=1`);
+  if (!orders.length) return json({ ok: false, error: 'Không tìm thấy đơn trong ledger', order_sn: orderSn }, 404);
+  const items = await sbSelectAll(env, 'shopee_order_items', `select=*&order_sn=eq.${encodeURIComponent(orderSn)}&order=id.asc`).catch(() => []);
+  return json({ ok: true, version: VERSION, order: orderView(orders[0], env), raw_order: orders[0].raw_data || {}, items });
+}
+function rawTime(raw, keys) {
+  for (const k of keys) {
+    const v = safeNum(raw?.[k]);
+    if (v > 0) return v;
+  }
+  return 0;
+}
+function buildShopPerformance(rows, env, shopId) {
+  const statusCounts = {};
+  let total = 0, gmv = 0, cancelled = 0, cancelGmv = 0, unpaid = 0, valid = 0;
+  let lateKnown = 0, lateOrders = 0, prepKnown = 0, prepDaysSum = 0;
+  for (const o of rows || []) {
+    total++;
+    const st = String(o.order_status || 'UNKNOWN').toUpperCase();
+    statusCounts[st] = (statusCounts[st] || 0) + 1;
+    const amt = orderGmvAmount(o, env);
+    gmv += amt;
+    if (isCancelled(st)) { cancelled++; cancelGmv += amt; }
+    if (st === 'UNPAID') unpaid++;
+    if (isValid(st)) valid++;
+    const raw = o.raw_data || {};
+    const shipBy = rawTime(raw, ['ship_by_date','ship_by_time','deadline_to_ship']);
+    const shipped = rawTime(raw, ['pickup_done_time','ship_time','shipping_time','actual_shipping_time']);
+    if (shipBy && shipped) { lateKnown++; if (shipped > shipBy) lateOrders++; }
+    const endForPrep = shipped || rawTime(raw, ['pay_time','update_time']) || safeNum(o.update_time);
+    if (safeNum(o.create_time) && endForPrep && endForPrep >= safeNum(o.create_time)) {
+      prepKnown++;
+      prepDaysSum += (endForPrep - safeNum(o.create_time)) / 86400;
+    }
+  }
+  const cancelRate = total ? Math.round(cancelled / total * 1000) / 10 : 0;
+  const failRate = cancelRate;
+  const lateRate = lateKnown ? Math.round(lateOrders / lateKnown * 1000) / 10 : null;
+  const avgPrep = prepKnown ? Math.round(prepDaysSum / prepKnown * 100) / 100 : null;
+  const excellent = failRate < 10 && (lateRate === null || lateRate < 10) && (avgPrep === null || avgPrep <= 1.5);
+  const warn = failRate >= 10 || (lateRate !== null && lateRate >= 10) || (avgPrep !== null && avgPrep > 1.5);
+  return {
+    shop_id: shopId,
+    total_orders: total,
+    gmv: Math.round(gmv),
+    valid_orders: valid,
+    cancel_orders: cancelled,
+    cancel_gmv: Math.round(cancelGmv),
+    unpaid_orders: unpaid,
+    failure_rate: failRate,
+    cancel_rate: cancelRate,
+    late_rate: lateRate,
+    late_known_orders: lateKnown,
+    avg_preparation_days: avgPrep,
+    prep_known_orders: prepKnown,
+    performance_label: excellent ? 'Xuất sắc' : warn ? 'Cần theo dõi' : 'Ổn định',
+    penalty_points_estimate: excellent ? 0 : warn ? 3 : 0,
+    status_counts: statusCounts,
+    targets: {
+      failure_rate: '< 10%',
+      late_rate: '< 10%',
+      avg_preparation_days: '< 1.5 ngày',
+    },
+    data_note: 'Các chỉ số vận hành được tính từ shopee_orders đã lưu trong Supabase. Một số chỉ số trong Seller Center như Sao Quả Tạ/Shop Yêu Thích có thể cần API riêng hoặc đối chiếu thủ công nếu Open API không trả đủ trường.'
+  };
+}
+async function handleShopPerformance(req, env) {
+  const url = new URL(req.url);
+  const today = vnDateToday(env);
+  const dateFrom = String(url.searchParams.get('date_from') || today).slice(0, 10);
+  const dateTo = String(url.searchParams.get('date_to') || dateFrom).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const rows = await getLedgerOrderRows(env, dateFrom, dateTo, shopId);
+  const shops = await getConnectedShops(env, shopId);
+  const names = new Map((shops || []).map(s => [String(s.shop_id), s.channel_name || s.shop_name || String(s.shop_id)]));
+  if (shopId !== 'all') return json({ ok: true, version: VERSION, date_from: dateFrom, date_to: dateTo, shop_id: shopId, performance: { ...buildShopPerformance(rows, env, shopId), shop_name: names.get(String(shopId)) || String(shopId) } });
+  const grouped = new Map();
+  for (const o of rows) {
+    const sid = String(o.shop_id || '');
+    if (!grouped.has(sid)) grouped.set(sid, []);
+    grouped.get(sid).push(o);
+  }
+  const performances = [...grouped.entries()].map(([sid, arr]) => ({ ...buildShopPerformance(arr, env, sid), shop_name: names.get(sid) || sid }));
+  return json({ ok: true, version: VERSION, date_from: dateFrom, date_to: dateTo, shop_id: shopId, performances });
+}
+
+async function handleCursors(req, env) {
+  const url = new URL(req.url);
+  const date = String(url.searchParams.get('date') || vnDateToday(env)).slice(0, 10);
+  const shopId = String(url.searchParams.get('shop_id') || 'all');
+  const cursors = await getCursors(env, date, shopId);
+  return json({ ok: true, version: VERSION, date, shop_id: shopId, cursors });
+}
+async function route(req, env, ctx) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders() });
+  const url = new URL(req.url);
+  const path = url.pathname.replace(/\/$/, '') || '/';
+  if (path === '/' || path === '/api/debug/version') return json({ ok: true, version: VERSION, now: nowIso(), today_vn: vnDateToday(env), config: { create_minutes_per_run: minutesPerRun(env), primary_create_minutes_per_run: primaryCreateMinutesPerRun(env), update_minutes_per_run: updateMinutesPerRun(env), primary_update_minutes_per_run: primaryUpdateMinutesPerRun(env), primary_catchup_runs_per_cron: primaryCatchupRunsPerCron(env), secondary_catchup_runs_per_cron: secondaryCatchupRunsPerCron(env), shops_per_cron: shopsPerCron(env), primary_shop_ids: [...primaryShopIds(env)], detail_batch_size: Math.max(1, Math.min(50, Number(optionalEnv(env, 'SHOPEE_DETAIL_BATCH_SIZE', '50')) || 50)), gmv_amount_source: gmvAmountSource(env), gmv_include_all_statuses: gmvIncludeAllStatuses(env), placed_order_exclude_statuses: [...placedExcludedStatuses(env)], count_all_ledger_orders: countAllLedgerOrders(env), order_count_mode: orderCountMode(env), order_count_exclude_statuses: [...orderCountExcludedStatuses(env)], auto_background_sync: autoBackgroundEnabled(env) } });
+  if (path === '/api/health') return json({ ok: true, version: VERSION, supabase: !!supabaseUrl(env), has_key: !!supabaseKey(env) });
+  if (path === '/api/oauth/start') return handleOauthStart(req, env);
+  if (path === '/api/oauth/callback') return handleOauthCallback(req, env);
+  if (path === '/api/shopee/push') return handlePush(req, env);
+  if (path === '/api/sync/catchup-today') return handleCatchupDate(new Request(new URL(`/api/sync/catchup-date?date=${vnDateToday(env)}&shop_id=${url.searchParams.get('shop_id') || optionalEnv(env, 'PRIMARY_SHOP_IDS', '').split(',')[0] || 'all'}&minutes=${url.searchParams.get('minutes') || ''}&runs=${url.searchParams.get('runs') || ''}`, url.origin), req), env);
+  if (path === '/api/sync/catchup-date') return handleCatchupDate(req, env);
+  if (path === '/api/sync/rescan-window') return handleRescanWindow(req, env);
+  if (path === '/api/sync/today') return handleSyncDate(new Request(new URL(`/api/sync/date?date=${vnDateToday(env)}&shop_id=${url.searchParams.get('shop_id') || 'all'}&minutes=${url.searchParams.get('minutes') || ''}`, url.origin), req), env);
+  if (path === '/api/sync/date') return handleSyncDate(req, env);
+  if (path === '/api/sync/update-status') { const shopId = String(url.searchParams.get('shop_id') || 'all'); const shops = await getConnectedShops(env, shopId); const results = []; for (const shop of shops) results.push(await syncUpdateTimeForShop(env, shop, Math.max(1, Math.min(240, Number(url.searchParams.get('minutes') || updateMinutesPerRun(env)) || updateMinutesPerRun(env))))); return json({ ok: true, version: VERSION, mode: 'update_time_status_cursor', shop_id: shopId, results }); }
+  if (path === '/api/sync/minute') return handleSyncMinute(req, env);
+  if (path === '/api/sync/reset-cursor') return handleResetCursor(req, env);
+  if (path === '/api/sync/cursors') return handleCursors(req, env);
+  if (path === '/api/orders') return handleOrders(req, env);
+  if (path === '/api/order-detail') return handleOrderDetail(req, env);
+  if (path === '/api/shop-performance') return handleShopPerformance(req, env);
+  if (path === '/api/diagnostics') return handleDiagnostics(req, env);
+  if (path === '/api/amount-audit') return handleDiagnostics(req, env);
+  if (path === '/api/recompute/range') return handleRecomputeRange(req, env);
+  if (path === '/api/dashboard/compare') { if (ctx) ctx.waitUntil(kickBackgroundSyncFromDashboard(req, env)); return handleDashboardCompare(req, env); }
+  if (path === '/api/dashboard') return handleDashboard(req, env);
+  if (path === '/api/shops') return handleShops(env);
+  if (path === '/api/logs') return handleLogs(req, env);
+  if (path === '/api/webhook-events') return handleWebhookEvents(req, env);
+  if (path === '/api/cron/run-now') return json({ ok: true, version: VERSION, results: await cronRunSafe(env, 'manual_cron_run_now') });
+  if (path === '/api/cron/status') return handleCronStatus(env);
+  return json({ ok: false, error: 'Not found', path }, 404);
+}
+export default {
+  async fetch(req, env, ctx) {
+    try { return await route(req, env, ctx); }
+    catch (e) { return json({ ok: false, version: VERSION, error: String(e.message || e), stack: String(e.stack || '') }, 500); }
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(cronRunSafe(env, 'cloudflare_scheduled_cron'));
+  }
+};
