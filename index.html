@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V61</title>
+  <title>Gooby BI Dashboard V63</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -31,7 +31,7 @@
     <section class="hero">
       <div>
         <h1>Gooby BI Dashboard</h1>
-        <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục · V62 chia tab · Hiệu quả hoạt động lấy từ Shopee AccountHealth API</p>
+        <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục · V63 sửa lỗi cron + tải đơn nhanh (phân trang tại database) + AccountHealth tự đồng bộ</p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
         <div class="pill"><span class="dot"></span><span id="runMode">Gooby / LazyMom / Rouya internal report</span></div>
@@ -248,16 +248,70 @@ function renderDiagnostics(d){
 
 function statusBadge(st){ st=String(st||'UNKNOWN'); const bad=['CANCELLED','IN_CANCEL'].includes(st); const warn=['UNPAID'].includes(st); return `<span class="badge ${bad?'bad':warn?'warn':'good'}">${st}</span>`; }
 function shopNameText(){ const sel=$('shop'); return sel.options[sel.selectedIndex]?.textContent || sel.value; }
+const perfAutoSynced = new Set();
 async function loadPerformance(){
   const r=getRange(); const shop=$('shop').value||'all';
   const date = r.to || r.from;
   const qs=new URLSearchParams({date,shop_id:shop});
-  const data=await api('/api/account-health/dashboard?'+qs.toString());
-  const one = data.summaries?.[0] || null;
-  if(!one){
-    $('perfSummary').innerHTML='⚠️ Chưa có snapshot AccountHealth cho shop/ngày này. Chọn 1 shop cụ thể rồi bấm <b>Đồng bộ AccountHealth</b>.';
+  let data=await api('/api/account-health/dashboard?'+qs.toString());
+  // V63: nếu chưa có snapshot cho shop cụ thể thì tự đồng bộ 1 lần, không cần bấm tay.
+  const autoKey=shop+'_'+date;
+  if(!(data.summaries||[]).length && shop!=='all' && !perfAutoSynced.has(autoKey)){
+    perfAutoSynced.add(autoKey);
+    $('perfSummary').innerHTML='⏳ Chưa có snapshot hôm nay — đang tự động gọi Shopee AccountHealth và lưu lại, chờ vài giây...';
+    data=await api('/api/account-health/dashboard?'+new URLSearchParams({date,shop_id:shop,sync:'1'}).toString());
+  }
+  const summaries=data.summaries||[];
+  if(shop==='all' && summaries.length){
+    const sumNum=(k)=>summaries.reduce((t,s)=>t+Number(s[k]||0),0);
+    $('perfLabel').innerHTML=summaries.map(s=>`<span class="badge ${String(s.health_status).includes('Xuất')||String(s.health_status).toLowerCase().includes('excellent')?'good':'warn'}" title="${s.shop_name}">${fmtDetailVal(s.health_status)}</span>`).join(' ');
+    $('perfPenalty').textContent=num(sumNum('penalty_points'));
+    $('perfMetricIssues').textContent='-';
+    $('perfComplaints').textContent='-';
+    $('perfListings').textContent=num(sumNum('listings_with_issues_count'));
+    $('perfLateOrders').textContent=num(sumNum('late_orders_count'));
+    $('perfNote').textContent='Tổng hợp '+summaries.length+' shop có snapshot ngày '+data.date;
+    $('perfSummary').innerHTML='✅ Đang xem tổng hợp AccountHealth của <b>'+summaries.length+' shop</b> · snapshot ngày <b>'+data.date+'</b>. Chọn 1 shop ở bộ lọc để xem chi tiết từng chỉ số.';
+    $('perfStatusRows').innerHTML=summaries.map(s=>`<tr><td>${fmtDetailVal(s.shop_name)}</td><td><b>${fmtDetailVal(s.health_status)}</b> · điểm phạt ${num(s.penalty_points||0)} · sp có vấn đề ${num(s.listings_with_issues_count||0)} · đơn muộn ${num(s.late_orders_count||0)} · sync ${fmtDetailVal(s.sync_status)}</td></tr>`).join('');
     $('perfRaw').textContent=JSON.stringify(data,null,2);
     return;
+  }
+  const one = summaries[0] || null;
+  if(!one){
+    $('perfSummary').innerHTML= shop==='all'
+      ? '⚠️ Chưa có snapshot AccountHealth hôm nay. Worker sẽ tự đồng bộ theo cron (mỗi ~15 phút kiểm tra 1 lần); hoặc chọn 1 shop cụ thể để web tự đồng bộ ngay.'
+      : '⚠️ Chưa lấy được AccountHealth cho shop này. Bấm <b>Đồng bộ AccountHealth</b> để thử lại; nếu vẫn lỗi, xem raw bên dưới.';
+    $('perfRaw').textContent=JSON.stringify(data,null,2);
+    return;
+  }
+  // V63: nếu Shopee chặn AccountHealth (403 - app chưa được cấp quyền) thì hiển thị chỉ số tạm tính từ đơn trong Supabase.
+  const ahAllFailed=(one.sync_errors||[]).length && String(one.health_status||'-')==='-' && one.sync_status!=='success';
+  if(ahAllFailed){
+    try{
+      const perf=await api('/api/shop-performance?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}).toString());
+      const p=perf.performance||{};
+      $('perfLabel').innerHTML=`<span class="badge ${p.performance_label==='Cần theo dõi'?'warn':'good'}">${fmtDetailVal(p.performance_label||'-')} (tạm tính)</span>`;
+      $('perfPenalty').textContent=num(p.penalty_points_estimate||0)+' (ước tính)';
+      $('perfMetricIssues').textContent='-';
+      $('perfComplaints').textContent='-';
+      $('perfListings').textContent='-';
+      $('perfLateOrders').textContent=p.late_rate==null?'-':percent(p.late_rate)+' trễ';
+      $('perfNote').textContent=(p.shop_name||shopNameText())+' · tạm tính từ đơn trong Supabase';
+      $('perfSummary').innerHTML='⚠️ Shopee đang từ chối AccountHealth API (HTTP 403): app Open Platform <b>chưa được cấp quyền nhóm Account Health</b>. Vào Shopee Open Platform Console → App → API để đăng ký quyền này, sau đó ủy quyền lại shop. Trong lúc chờ, số dưới đây <b>tạm tính từ đơn đã lưu</b>, không phải số chính thức từ Shopee.';
+      const rows=[
+        ['Tỷ lệ đơn không thành công (tạm tính)', p.failure_rate==null?'-':percent(p.failure_rate)],
+        ['Tỷ lệ hủy (tạm tính)', p.cancel_rate==null?'-':percent(p.cancel_rate)],
+        ['Tỷ lệ giao trễ (tạm tính)', p.late_rate==null?'-':percent(p.late_rate)+' trên '+num(p.late_known_orders||0)+' đơn có dữ liệu'],
+        ['Thời gian chuẩn bị hàng trung bình (tạm tính)', p.avg_preparation_days==null?'-':p.avg_preparation_days+' ngày'],
+        ['Tổng đơn trong khoảng', num(p.total_orders||0)],
+        ['Đơn hủy', num(p.cancel_orders||0)],
+        ['GMV', money(p.gmv||0)],
+        ['Lỗi AccountHealth', (one.sync_errors||[]).map(e=>e.label+': '+e.error).join(' | ')],
+      ];
+      $('perfStatusRows').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td><b>${fmtDetailVal(v)}</b></td></tr>`).join('');
+      $('perfRaw').textContent=JSON.stringify({account_health:data,ledger_performance:perf},null,2);
+      return;
+    }catch(e){ /* nếu fallback lỗi thì hiển thị AccountHealth như cũ */ }
   }
   $('perfLabel').innerHTML = `<span class="badge ${String(one.health_status).includes('Xuất')||String(one.health_status).toLowerCase().includes('excellent')?'good':'warn'}">${fmtDetailVal(one.health_status)}</span>`;
   $('perfPenalty').textContent = num(one.penalty_points||0);
@@ -291,7 +345,7 @@ async function syncAccountHealth(){
   await loadPerformance();
 }
 function renderOrdersTable(data){
-  const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.offset+1)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`;
+  const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.total?data.offset+1:0)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`+(data.search_note?' · '+data.search_note:'');
   $('ordersRows').innerHTML=rows.map(o=>`<tr><td><b>${o.order_sn}</b></td><td>${o.shop_id}</td><td>${o.create_time_iso?new Date(o.create_time_iso).toLocaleString('vi-VN'):'-'}</td><td>${statusBadge(o.order_status)}</td><td class="right"><b>${money(o.gmv_amount)}</b></td><td class="right">${money(o.total_amount)}</td><td class="right">${money(o.item_subtotal)}</td><td class="right">${num(o.quantity_total||0)}</td><td><button class="linkbtn" data-order-sn="${o.order_sn}">Chi tiết</button></td></tr>`).join('') || '<tr><td colspan="9" class="empty">Không có đơn trong bộ lọc này.</td></tr>';
   document.querySelectorAll('[data-order-sn]').forEach(btn=>btn.addEventListener('click',()=>loadOrderDetail(btn.dataset.orderSn)));
 }
@@ -363,12 +417,12 @@ function setTab(tab){
   if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; });
   if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; });
 }
-async function loadDashboard(){ try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
-function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard(); },60000); }
+async function loadDashboard(opts){ opts=opts||{}; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
+function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv') loadDashboard(); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv') loadDashboard({skipDiagnostics:true}); }); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
