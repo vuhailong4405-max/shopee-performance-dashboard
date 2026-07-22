@@ -31,7 +31,7 @@
     <section class="hero">
       <div>
         <h1>Gooby BI Dashboard</h1>
-        <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục · V60 chia tab GMV / đơn hàng / hiệu quả shop</p>
+        <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục · V62 chia tab · Hiệu quả hoạt động lấy từ Shopee AccountHealth API</p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
         <div class="pill"><span class="dot"></span><span id="runMode">Gooby / LazyMom / Rouya internal report</span></div>
@@ -62,7 +62,7 @@
     </nav>
 
     <section class="tab-panel active" id="tab-gmv">
-      <div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V60 hỗ trợ luồng đồng bộ riêng từng shop và tự quét vòng lại khung giờ gần đây để bù đơn thiếu.</p></div></div>
+      <div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V62 giữ luồng sync riêng từng shop và thêm AccountHealth chính thức cho tab hiệu quả hoạt động.</p></div></div>
 
     <section class="metrics">
       <div class="card metric"><div class="label">Doanh số đã đặt / Data Center</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
@@ -98,15 +98,18 @@
 
     <section class="tab-panel hidden" id="tab-performance">
     <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Hiệu quả hoạt động shop</h2><p>Chỉ số nội bộ tính từ đơn đã lưu: tỷ lệ hủy/không thành công, trạng thái đơn, thời gian xử lý ước tính.</p></div><button class="ghost" id="perfBtn">Tải hiệu quả shop</button></div>
-      <div id="perfSummary" class="notice">Chọn shop ở bộ lọc phía trên để xem hiệu quả hoạt động của từng shop. Phần này tính từ dữ liệu ledger đã lưu, không lấy trực tiếp màn Seller Center.</div>
+      <div class="section-title"><div><h2>Hiệu quả hoạt động shop</h2><p>Lấy từ Shopee AccountHealth API: hiệu suất shop, điểm phạt, nguồn lỗi chỉ số, sản phẩm có vấn đề, đơn muộn. Nếu API không trả trường nào, web sẽ để trống.</p></div><div class="mini-actions"><button class="ghost" id="perfBtn">Tải hiệu quả shop</button><button id="perfSyncBtn">Đồng bộ AccountHealth</button></div></div>
+      <div id="perfSummary" class="notice">Chọn 1 shop ở bộ lọc phía trên rồi bấm “Đồng bộ AccountHealth”. Dữ liệu sẽ lưu vào Supabase để lần sau mở web chỉ đọc snapshot.</div>
       <div class="perf-grid">
-        <div class="perf-card"><div class="k">Xếp loại nội bộ</div><div class="v" id="perfLabel">-</div><div class="muted" id="perfNote">-</div></div>
-        <div class="perf-card"><div class="k">Tỷ lệ đơn không thành công</div><div class="v" id="perfFailRate">-</div><div class="muted">Mục tiêu &lt; 10%</div></div>
-        <div class="perf-card"><div class="k">Tỷ lệ hủy</div><div class="v" id="perfCancelRate">-</div><div class="muted" id="perfCancelInfo">-</div></div>
-        <div class="perf-card"><div class="k">Chuẩn bị hàng TB</div><div class="v" id="perfPrep">-</div><div class="muted" id="perfPrepInfo">Ước tính nếu có trường thời gian</div></div>
+        <div class="perf-card"><div class="k">Xếp loại / trạng thái</div><div class="v" id="perfLabel">-</div><div class="muted" id="perfNote">Shopee AccountHealth</div></div>
+        <div class="perf-card"><div class="k">Điểm phạt</div><div class="v" id="perfPenalty">-</div><div class="muted">Sao Quả Tạ / penalty points</div></div>
+        <div class="perf-card"><div class="k">Chỉ số không đạt</div><div class="v" id="perfMetricIssues">-</div><div class="muted">Nếu API trả metric failed count</div></div>
+        <div class="perf-card"><div class="k">Khiếu nại / lỗi xử lý</div><div class="v" id="perfComplaints">-</div><div class="muted">Pending complaints / issue count</div></div>
+        <div class="perf-card"><div class="k">Sản phẩm có vấn đề</div><div class="v" id="perfListings">-</div><div class="muted">Listings with issues</div></div>
+        <div class="perf-card"><div class="k">Đơn muộn</div><div class="v" id="perfLateOrders">-</div><div class="muted">Late orders từ AccountHealth</div></div>
       </div>
-      <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Trạng thái</th><th class="right">Số đơn</th></tr></thead><tbody id="perfStatusRows"><tr><td colspan="2" class="empty">Chưa tải</td></tr></tbody></table></div>
+      <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Chỉ số</th><th>Giá trị</th></tr></thead><tbody id="perfStatusRows"><tr><td colspan="2" class="empty">Chưa tải</td></tr></tbody></table></div>
+      <details class="settings" style="margin-top:14px"><summary>Raw AccountHealth từ Shopee</summary><pre id="perfRaw" class="diag-raw">Chưa tải</pre></details>
     </section>
 
     </section>
@@ -246,20 +249,46 @@ function renderDiagnostics(d){
 function statusBadge(st){ st=String(st||'UNKNOWN'); const bad=['CANCELLED','IN_CANCEL'].includes(st); const warn=['UNPAID'].includes(st); return `<span class="badge ${bad?'bad':warn?'warn':'good'}">${st}</span>`; }
 function shopNameText(){ const sel=$('shop'); return sel.options[sel.selectedIndex]?.textContent || sel.value; }
 async function loadPerformance(){
-  const r=getRange(); const shop=$('shop').value||'all'; const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
-  const data=await api('/api/shop-performance?'+qs.toString());
-  const perf = data.performance || (data.performances||[])[0] || null;
-  if(!perf){ $('perfSummary').innerHTML='Chưa có dữ liệu hiệu quả hoạt động cho khoảng đang xem.'; return; }
-  $('perfLabel').innerHTML = `<span class="badge ${perf.performance_label==='Xuất sắc'?'good':perf.performance_label==='Cần theo dõi'?'warn':'good'}">${perf.performance_label||'-'}</span>`;
-  $('perfNote').textContent = `${perf.shop_name||shopNameText()} · ${num(perf.total_orders)} đơn · ${money(perf.gmv)}`;
-  $('perfFailRate').textContent = percent(perf.failure_rate||0);
-  $('perfCancelRate').textContent = percent(perf.cancel_rate||0);
-  $('perfCancelInfo').textContent = `${num(perf.cancel_orders)} đơn hủy · ${money(perf.cancel_gmv)}`;
-  $('perfPrep').textContent = perf.avg_preparation_days==null ? 'Chưa đủ dữ liệu' : (Number(perf.avg_preparation_days).toLocaleString('vi-VN',{maximumFractionDigits:2})+' ngày');
-  $('perfPrepInfo').textContent = `${num(perf.prep_known_orders||0)} đơn có trường thời gian để ước tính`;
-  $('perfSummary').innerHTML = `Hiệu quả nội bộ của <b>${perf.shop_name||shop}</b>. ${perf.data_note||''}`;
-  const entries=Object.entries(perf.status_counts||{}).sort((a,b)=>b[1]-a[1]);
-  $('perfStatusRows').innerHTML = entries.map(([k,v])=>`<tr><td>${statusBadge(k)}</td><td class="right"><b>${num(v)}</b></td></tr>`).join('') || '<tr><td colspan="2" class="empty">Không có trạng thái đơn</td></tr>';
+  const r=getRange(); const shop=$('shop').value||'all';
+  const date = r.to || r.from;
+  const qs=new URLSearchParams({date,shop_id:shop});
+  const data=await api('/api/account-health/dashboard?'+qs.toString());
+  const one = data.summaries?.[0] || null;
+  if(!one){
+    $('perfSummary').innerHTML='⚠️ Chưa có snapshot AccountHealth cho shop/ngày này. Chọn 1 shop cụ thể rồi bấm <b>Đồng bộ AccountHealth</b>.';
+    $('perfRaw').textContent=JSON.stringify(data,null,2);
+    return;
+  }
+  $('perfLabel').innerHTML = `<span class="badge ${String(one.health_status).includes('Xuất')||String(one.health_status).toLowerCase().includes('excellent')?'good':'warn'}">${fmtDetailVal(one.health_status)}</span>`;
+  $('perfPenalty').textContent = num(one.penalty_points||0);
+  $('perfMetricIssues').textContent = one.failed_metric_count==null?'-':num(one.failed_metric_count);
+  $('perfComplaints').textContent = one.pending_complaints==null?'-':num(one.pending_complaints);
+  $('perfListings').textContent = num(one.listings_with_issues_count||0);
+  $('perfLateOrders').textContent = num(one.late_orders_count||0);
+  $('perfNote').textContent = `${one.shop_name||shopNameText()} · cập nhật ${one.updated_at?new Date(one.updated_at).toLocaleString('vi-VN'):'-'}`;
+  const errs=(one.sync_errors||[]).length;
+  $('perfSummary').innerHTML = `${errs?'⚠️':'✅'} AccountHealth của <b>${one.shop_name||shopNameText()}</b> · snapshot ngày <b>${data.date}</b> · trạng thái sync: <b>${one.sync_status}</b>${errs?` · ${errs} lỗi API phụ, xem raw bên dưới`:''}`;
+  const rows=[
+    ['Tỷ lệ đơn không thành công', one.unsuccessful_order_rate ?? '-'],
+    ['Tỷ lệ giao hàng trễ', one.late_shipment_rate ?? '-'],
+    ['Thời gian chuẩn bị hàng', one.avg_preparation_time ?? '-'],
+    ['Lịch sử điểm phạt', num(one.penalty_history_count||0)],
+    ['Lịch sử hình phạt', num(one.punishment_history_count||0)],
+    ['Nguồn lỗi chỉ số', num(one.metric_source_count||0)],
+    ['API lỗi khi đồng bộ', errs ? one.sync_errors.map(e=>`${e.label}: ${e.error}`).join(' | ') : 'Không'],
+  ];
+  $('perfStatusRows').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td><b>${fmtDetailVal(v)}</b></td></tr>`).join('');
+  $('perfRaw').textContent=JSON.stringify(data,null,2);
+}
+async function syncAccountHealth(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'){ $('perfSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể rồi mới đồng bộ AccountHealth.'; return; }
+  const r=getRange(); const date=r.to||r.from;
+  $('perfSummary').innerHTML='Đang gọi Shopee AccountHealth API và lưu snapshot...';
+  const qs=new URLSearchParams({shop_id:shop,date});
+  const data=await api('/api/account-health/sync?'+qs.toString());
+  $('perfRaw').textContent=JSON.stringify(data,null,2);
+  await loadPerformance();
 }
 function renderOrdersTable(data){
   const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.offset+1)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`;
@@ -339,7 +368,7 @@ function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ con
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv') loadDashboard(); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv') loadDashboard(); }); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
