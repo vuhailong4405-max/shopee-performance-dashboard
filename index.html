@@ -401,14 +401,31 @@ async function recomputeFromLedger(){
   await loadDashboard();
 }
 
+// V63.3: quét bù liên tục đến khi xong (120 phút dữ liệu × 2 vòng mỗi lượt gọi), quét đủ mọi ngày trong khoảng đang chọn.
 async function catchupMissingOrders(){
   const r=getRange();
   const shop=$('shop').value||'all';
   if(shop==='all'){ alert('Hãy chọn một shop cụ thể trước khi quét bù để tránh quá tải Worker.'); return; }
-  $('diagSummary').innerHTML='Đang quét bù đơn thiếu từ Shopee API...';
-  const qs=new URLSearchParams({date:r.to,shop_id:shop,minutes:'5',runs:'1'});
-  await api('/api/sync/catchup-date?'+qs.toString());
-  await recomputeFromLedger();
+  const totalDays=daysInclusive(r.from,r.to);
+  if(totalDays>7){ alert('Chỉ quét bù tối đa 7 ngày/lần. Hãy chọn khoảng ngắn hơn.'); return; }
+  let day=r.from;
+  for(let d=0; d<totalDays; d++){
+    let prev=-1;
+    for(let i=0;i<20;i++){
+      $('diagSummary').innerHTML=`⏳ Đang quét bù ngày <b>${vnDateLabel(day)}</b> (lượt ${i+1})...`;
+      let data;
+      try{ data=await api('/api/sync/catchup-date?'+new URLSearchParams({date:day,shop_id:shop,minutes:'120',runs:'2'}).toString()); }
+      catch(e){ $('diagSummary').innerHTML='⚠️ Quét bù '+vnDateLabel(day)+' bị lỗi: '+e.message+' — bấm lại để tiếp tục từ chỗ đang dở.'; return; }
+      const res=data.results?.[data.results.length-1]?.result||{};
+      const next=Number(res.next_minute??0), allowed=Number(res.latest_allowed_minute??1439);
+      $('diagSummary').innerHTML=`⏳ Quét bù <b>${vnDateLabel(day)}</b>: đã tới phút ${Math.min(next,1440)}/${allowed+1} (${Math.min(100,Math.round(next/(allowed+1)*100))}%)...`;
+      if(res.mode==='create_time_window_waiting' || res.ok===false || next>allowed || next===prev) break;
+      prev=next;
+    }
+    day=addDaysISO(day,1);
+  }
+  $('diagSummary').innerHTML='✅ Quét bù xong toàn bộ khoảng đã chọn. Đang tải lại số liệu...';
+  await loadDashboard();
 }
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
