@@ -1,3 +1,9 @@
+/**
+ * V60 - Shopee Ledger Sync Worker
+ * Mục tiêu: tách luồng đồng bộ riêng theo từng shop bằng SHOP_SYNC_ONLY + Cron/Webhook; web chỉ đọc snapshot Supabase.
+ * Kiến trúc: Shopee Webhook + Cron 1 phút + Supabase PostgreSQL ledger.
+ * Metric basis: create_time (thời gian tạo đơn theo giờ Việt Nam).
+ */
 const VERSION = 'V61 Shopee Excel-style order detail fields + dedicated shop flows';
 const SHOPEE_AUTH_PATH = '/api/v2/shop/auth_partner';
 const TOKEN_GET_PATH = '/api/v2/auth/token/get';
