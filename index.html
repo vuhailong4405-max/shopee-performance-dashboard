@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V63</title>
+  <title>Gooby BI Dashboard V64</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -76,7 +76,7 @@
     <section class="grid2">
       <div class="card">
         <div class="section-title">
-          <div><h2>GMV theo khung giờ</h2><p>Biểu đồ cột theo doanh số Data Center, gom theo create_time.</p></div>
+          <div><h2 id="chartTitle">GMV theo khung giờ</h2><p id="chartDesc">Biểu đồ cột theo doanh số Data Center, gom theo create_time.</p></div>
           <div class="legend"><span><i class="sw"></i>Kỳ đang xem</span><span><i class="sw gray"></i>Kỳ so sánh</span></div>
         </div>
         <div class="chart-wrap"><svg id="hourlyChart" class="chart" role="img"></svg></div>
@@ -147,7 +147,7 @@
       <div class="mini-actions">
         <button class="ghost" id="catchupBtn">Quét bù đơn thiếu</button>
         <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
-        <span class="muted">Quét bù sẽ gọi Open API qua Worker theo cursor; recompute chỉ tính lại từ Supabase, không gọi lại API bên ngoài.</span>
+        <span class="muted">Quét bù: tự dò mọi ngày thiếu (14 ngày gần nhất + khoảng đang chọn) và quét từng ngày đến khi đủ, tiến độ lưu theo cursor nên bấm lại sẽ tiếp tục chỗ dở. Tính lại snapshot: chỉ tính lại từ Supabase theo khoảng đang chọn, không gọi Shopee.</span>
       </div>
       <details style="margin-top:14px">
         <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
@@ -213,9 +213,66 @@ function renderChart(current, previous){
   html+=`<text class="axis" x="${m.l}" y="${H-2}">Giờ</text>`; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=html;
   svg.querySelectorAll('.bar').forEach(b=>{ b.addEventListener('mousemove',ev=>{ tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px'; tip.innerHTML=`<b>${b.dataset.hour}</b><br>GMV: ${money(b.dataset.gmv)}<br>Đơn: ${num(b.dataset.orders)}`; }); b.addEventListener('mouseleave',()=>tip.style.display='none'); });
 }
+// ===== V64: biểu đồ theo ngày cho tuần/tháng + bấm vào ngày xem chi tiết theo giờ =====
+let chartState={payload:null,drillDate:null};
+function setChartHeader(title,descHtml){ $('chartTitle').textContent=title; $('chartDesc').innerHTML=descHtml; }
+function dailyList(data){
+  const out=[]; if(!data||!data.date_from||!data.date_to) return out;
+  const map=new Map(); for(const d of (data.daily_gmv||[])) map.set(String(d.date).slice(0,10),d);
+  let d=String(data.date_from).slice(0,10); const to=String(data.date_to).slice(0,10); let guard=0;
+  while(d<=to && guard++<370){ const row=map.get(d)||{date:d,gmv:0,orders:0,hourly_gmv:[]}; out.push({...row,date:d}); d=addDaysISO(d,1); }
+  return out;
+}
+function renderMainChart(){
+  const p=chartState.payload; if(!p) return;
+  if(p.date_from===p.date_to){
+    setChartHeader('GMV theo khung giờ','Biểu đồ cột theo doanh số Data Center, gom theo create_time.');
+    renderChart(p.data?.hourly_gmv||[], p.compare?.data?.hourly_gmv||[]);
+    return;
+  }
+  if(!(p.data?.daily_gmv||[]).length){
+    setChartHeader('GMV theo khung giờ (gộp cả kỳ)','Worker chưa nâng cấp V64 nên tạm hiển thị gộp theo giờ. Dán Worker mới để xem biểu đồ theo ngày.');
+    renderChart(p.data?.hourly_gmv||[], p.compare?.data?.hourly_gmv||[]);
+    return;
+  }
+  if(chartState.drillDate){ renderDrillHourly(); return; }
+  setChartHeader('GMV theo ngày','Mỗi cột là 1 ngày trong kỳ đang xem. <b>Bấm vào cột</b> để xem chi tiết GMV theo khung giờ của ngày đó.');
+  renderDailyChart();
+}
+function renderDailyChart(){
+  const p=chartState.payload; const svg=$('hourlyChart'); const tip=$('tip');
+  const cur=dailyList(p.data); const prev=dailyList(p.compare?.data);
+  const W=svg.clientWidth||900,H=svg.clientHeight||340; const m={l:62,r:18,t:22,b:42}; const cw=W-m.l-m.r,ch=H-m.t-m.b;
+  const n=Math.max(1,cur.length); const step=cw/n; const bw=Math.max(5,Math.min(38,step*.55));
+  const max=Math.max(1,...cur.map(x=>x.gmv),...prev.map(x=>x.gmv||0));
+  const nice=Math.ceil(max/1000000)*1000000||max;
+  let html=`<defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a37"/><stop offset="1" stop-color="#ffb067"/></linearGradient></defs>`;
+  for(let i=0;i<=4;i++){ const v=nice*i/4; const y=m.t+ch-(v/nice)*ch; html+=`<line class="gridline" x1="${m.l}" y1="${y}" x2="${W-m.r}" y2="${y}"/><text class="axis" x="${m.l-10}" y="${y+4}" text-anchor="end">${compactAxis(v)}</text>`; }
+  cur.forEach((d,i)=>{ const x=m.l+i*step+step/2; const hp=(prev[i]?.gmv||0)/nice*ch; const yp=m.t+ch-hp; html+=`<rect class="bar-compare" x="${x-bw*.52}" y="${yp}" width="${bw}" height="${Math.max(0,hp)}" rx="5"/>`; });
+  const labelEvery=Math.max(1,Math.ceil(n/12));
+  cur.forEach((d,i)=>{ const x=m.l+i*step+step/2; const h=d.gmv/nice*ch; const y=m.t+ch-h; html+=`<rect class="bar bar-day" style="cursor:pointer" data-date="${d.date}" data-gmv="${d.gmv}" data-orders="${d.orders}" x="${x+bw*.08}" y="${y}" width="${bw}" height="${Math.max(0,h)}" rx="5"/>`; if(i%labelEvery===0){ const parts=d.date.split('-'); html+=`<text class="axis" x="${x}" y="${H-15}" text-anchor="middle">${parts[2]}/${parts[1]}</text>`; } });
+  html+=`<text class="axis" x="${m.l}" y="${H-2}">Ngày · bấm cột để xem theo giờ</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=html;
+  svg.querySelectorAll('.bar-day').forEach(b=>{
+    b.addEventListener('mousemove',ev=>{ tip.style.display='block'; tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY+14)+'px'; tip.innerHTML=`<b>${vnDateLabel(b.dataset.date)}</b><br>GMV: ${money(b.dataset.gmv)}<br>Đơn: ${num(b.dataset.orders)}<br><span style="opacity:.75">Bấm để xem chi tiết theo giờ</span>`; });
+    b.addEventListener('mouseleave',()=>tip.style.display='none');
+    b.addEventListener('click',()=>{ tip.style.display='none'; chartState.drillDate=b.dataset.date; renderMainChart(); });
+  });
+}
+function renderDrillHourly(){
+  const p=chartState.payload;
+  const cur=dailyList(p.data).find(x=>x.date===chartState.drillDate);
+  if(!cur){ chartState.drillDate=null; renderMainChart(); return; }
+  const idx=Math.max(0,Math.round((Date.parse(chartState.drillDate+'T00:00:00Z')-Date.parse(String(p.data.date_from).slice(0,10)+'T00:00:00Z'))/86400000));
+  const prevDay=dailyList(p.compare?.data)[idx]||null;
+  setChartHeader('GMV theo khung giờ · '+vnDateLabel(chartState.drillDate),
+    `<button class="linkbtn" id="chartBackBtn">← Quay lại biểu đồ theo ngày</button> · GMV ngày: <b>${money(cur.gmv)}</b> · ${num(cur.orders)} đơn${prevDay?' · so với '+vnDateLabel(prevDay.date)+' kỳ trước':''}`);
+  renderChart(cur.hourly_gmv||[], prevDay?.hourly_gmv||[]);
+  const back=$('chartBackBtn'); if(back) back.addEventListener('click',()=>{ chartState.drillDate=null; renderMainChart(); });
+}
 function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho khoảng thời gian này.</td></tr>'; }
 function renderStatus(payload){ const r={from:payload.date_from,to:payload.date_to}; const cr={from:payload.compare?.date_from,to:payload.compare?.date_to}; const rows=payload.rows||0; const isCurrent = r.to>=todayVN(); $('storageBox').innerHTML = isCurrent ? '🟢 Khoảng thời gian có hôm nay: số liệu hôm nay được Worker cập nhật nền bằng Cron/Webhook, giao diện chỉ đọc database.' : '✅ Đây là dữ liệu lịch sử: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi lại API Shopee.'; $('statusTable').innerHTML=`<tr><td>Kiểu xem</td><td class="right"><b>Theo ${periodName()}</b></td></tr><tr><td>Kỳ đang xem</td><td class="right"><b>${rangeLabel(r)}</b></td></tr><tr><td>Kỳ so sánh</td><td class="right"><b>${rangeLabel(cr)}</b></td></tr><tr><td>Snapshot đã đọc</td><td class="right">${rows} dòng ngày/shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time · Đơn hàng đã đặt</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
-function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); renderChart(payload.data?.hourly_gmv||[], payload.compare?.data?.hourly_gmv||[]); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
+function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
 function shortMoney(n){ return money(n||0); }
 function issueClass(level){ return level==='error'?'issue error':level==='warn'?'issue warn':'issue ok'; }
@@ -401,30 +458,38 @@ async function recomputeFromLedger(){
   await loadDashboard();
 }
 
-// V63.3: quét bù liên tục đến khi xong (120 phút dữ liệu × 2 vòng mỗi lượt gọi), quét đủ mọi ngày trong khoảng đang chọn.
+// V63.4: quét bù 1 ngày đến khi đủ (120 phút dữ liệu × 2 vòng mỗi lượt gọi, tối đa 20 lượt).
+async function catchupOneDay(shop, day, labelPrefix){
+  let prev=-1;
+  for(let i=0;i<20;i++){
+    const data=await api('/api/sync/catchup-date?'+new URLSearchParams({date:day,shop_id:shop,minutes:'120',runs:'2'}).toString());
+    const res=data.results?.[data.results.length-1]?.result||{};
+    const next=Number(res.next_minute??0), allowed=Number(res.latest_allowed_minute??1439);
+    $('diagSummary').innerHTML=`${labelPrefix} <b>${vnDateLabel(day)}</b>: phút ${Math.min(next,1440)}/${allowed+1} (${Math.min(100,Math.round(next/(allowed+1)*100))}%)...`;
+    if(res.mode==='create_time_window_waiting' || res.ok===false || next>allowed || next===prev) break;
+    prev=next;
+  }
+}
+// V63.4: nút quét bù giờ TỰ DÒ mọi ngày còn thiếu (14 ngày gần nhất + khoảng đang chọn) và quét từng ngày đến khi bù đủ hết.
 async function catchupMissingOrders(){
   const r=getRange();
   const shop=$('shop').value||'all';
   if(shop==='all'){ alert('Hãy chọn một shop cụ thể trước khi quét bù để tránh quá tải Worker.'); return; }
-  const totalDays=daysInclusive(r.from,r.to);
-  if(totalDays>7){ alert('Chỉ quét bù tối đa 7 ngày/lần. Hãy chọn khoảng ngắn hơn.'); return; }
-  let day=r.from;
-  for(let d=0; d<totalDays; d++){
-    let prev=-1;
-    for(let i=0;i<20;i++){
-      $('diagSummary').innerHTML=`⏳ Đang quét bù ngày <b>${vnDateLabel(day)}</b> (lượt ${i+1})...`;
-      let data;
-      try{ data=await api('/api/sync/catchup-date?'+new URLSearchParams({date:day,shop_id:shop,minutes:'120',runs:'2'}).toString()); }
-      catch(e){ $('diagSummary').innerHTML='⚠️ Quét bù '+vnDateLabel(day)+' bị lỗi: '+e.message+' — bấm lại để tiếp tục từ chỗ đang dở.'; return; }
-      const res=data.results?.[data.results.length-1]?.result||{};
-      const next=Number(res.next_minute??0), allowed=Number(res.latest_allowed_minute??1439);
-      $('diagSummary').innerHTML=`⏳ Quét bù <b>${vnDateLabel(day)}</b>: đã tới phút ${Math.min(next,1440)}/${allowed+1} (${Math.min(100,Math.round(next/(allowed+1)*100))}%)...`;
-      if(res.mode==='create_time_window_waiting' || res.ok===false || next>allowed || next===prev) break;
-      prev=next;
-    }
-    day=addDaysISO(day,1);
+  $('diagSummary').innerHTML='🔍 Đang dò các ngày còn thiếu dữ liệu (14 ngày gần nhất + khoảng đang chọn)...';
+  const days=new Set();
+  try{
+    const to=todayVN(), from=addDaysISO(to,-13);
+    const diag=await api('/api/diagnostics?'+new URLSearchParams({date_from:from,date_to:to,shop_id:shop}).toString());
+    for(const c of diag.cursors||[]) if(!c.completed) days.add(c.date);
+  }catch(e){ /* nếu dò lỗi vẫn quét theo khoảng đang chọn */ }
+  if(daysInclusive(r.from,r.to)<=7){ let d=r.from; for(let i=0;i<daysInclusive(r.from,r.to);i++){ days.add(d); d=addDaysISO(d,1); } }
+  const list=[...days].sort();
+  if(!list.length){ $('diagSummary').innerHTML='✅ Không phát hiện ngày nào thiếu dữ liệu trong 14 ngày gần nhất — không cần quét bù.'; return; }
+  for(let i=0;i<list.length;i++){
+    try{ await catchupOneDay(shop, list[i], `⏳ [${i+1}/${list.length}] Quét bù`); }
+    catch(e){ $('diagSummary').innerHTML='⚠️ Quét bù '+vnDateLabel(list[i])+' bị lỗi: '+e.message+' — bấm lại nút để tiếp tục từ chỗ đang dở (tiến độ đã lưu).'; return; }
   }
-  $('diagSummary').innerHTML='✅ Quét bù xong toàn bộ khoảng đã chọn. Đang tải lại số liệu...';
+  $('diagSummary').innerHTML='✅ Đã tự quét bù xong '+list.length+' ngày. Đang tải lại số liệu...';
   await loadDashboard();
 }
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
@@ -439,7 +504,7 @@ function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ con
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv') loadDashboard({skipDiagnostics:true}); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
