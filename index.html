@@ -427,12 +427,20 @@ function renderExcelItemRows(rows){
   const cols=['SKU sản phẩm','Tên sản phẩm','Cân nặng sản phẩm','Tổng cân nặng','Tên kho hàng','SKU phân loại hàng','Tên phân loại hàng','Sở hữu bởi Shopee','Giá gốc','Người bán trợ giá','Được Shopee trợ giá','Tổng số tiền được người bán trợ giá','Giá ưu đãi','Số lượng','Số lượng sản phẩm được hoàn trả','Tổng số tiền người mua thanh toán'];
   return `<div class="detail-section" style="grid-column:1/-1"><h3>Thông tin sản phẩm theo cột Excel Shopee</h3><div class="scroll-x"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${list.map(r=>`<tr>${cols.map(c=>`<td>${fmtDetailVal(r[c])}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="empty">Không có dòng sản phẩm.</td></tr>`}</tbody></table></div></div>`;
 }
-async function loadOrderDetail(orderSn){
-  const data=await api('/api/order-detail?order_sn='+encodeURIComponent(orderSn)); const o=data.order||{}; const items=data.items||[]; const ex=data.excel_detail||{};
+async function loadOrderDetail(orderSn,refresh=false){
+  const box=$('orderDetailBox'); box.classList.remove('hidden');
+  if(refresh) box.innerHTML='<div class="empty">Đang cập nhật chi tiết từ Shopee, logistics và thanh toán…</div>';
+  const data=await api('/api/order-detail?order_sn='+encodeURIComponent(orderSn)+(refresh?'&refresh=1':'')); const o=data.order||{}; const items=data.items||[]; const ex=data.excel_detail||{};
   $('orderDetailBox').classList.remove('hidden');
+  const enrich=data.enrichment||{};
+  const sourceNote=data.refresh_error
+    ? `<div class="notice">Không thể làm mới toàn bộ: ${fmtDetailVal(data.refresh_error)}. Dữ liệu cache gần nhất vẫn được hiển thị.</div>`
+    : `<p class="detail-note">${data.refreshed?'Đã cập nhật trực tiếp từ Shopee.':'Đang hiển thị dữ liệu cache để tải nhanh.'} Logistics: ${enrich.logistics?.ok?'đã lấy':'chưa có hoặc chưa được cấp quyền'} · Thanh toán/phí: ${enrich.escrow?.ok?'đã lấy':'chưa có hoặc chưa được cấp quyền'}.</p>`;
   const itemTable=`<div class="detail-section" style="grid-column:1/-1"><h3>Sản phẩm trong đơn từ ledger</h3><div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">Giá</th><th class="right">GMV item</th></tr></thead><tbody>${items.map(it=>`<tr><td>${fmtDetailVal(it.item_name||'-')}</td><td>${fmtDetailVal(it.model_name||'-')}</td><td>${fmtDetailVal(it.sku||'')}</td><td class="right">${num(it.quantity)}</td><td class="right">${money(it.item_price)}</td><td class="right"><b>${money(it.item_gmv)}</b></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Không có item rows, xem raw order bên dưới.</td></tr>'}</tbody></table></div></div>`;
   $('orderDetailBox').innerHTML=`
     <div class="section-title"><div><h2>Chi tiết đơn ${o.order_sn}</h2><p>${statusBadge(o.order_status)} · GMV ${money(o.gmv_amount)} · total_amount ${money(o.total_amount)} · item_subtotal ${money(o.item_subtotal)}</p><p class="detail-note">Bảng dưới mô phỏng các cột trong file Excel Shopee. Trường nào Open API chưa trả về sẽ để trống.</p></div><button class="ghost" onclick="document.getElementById('orderDetailBox').classList.add('hidden')">Đóng</button></div>
+    <div class="mini-actions"><button onclick="loadOrderDetail('${String(o.order_sn).replace(/'/g,"\\'")}',true)">Làm mới từ Shopee</button></div>
+    ${sourceNote}
     <div class="detail-grid">
       ${kvBlock('Thông tin đơn hàng', ex.order||{})}
       ${kvBlock('Thanh toán / khuyến mãi / phí', ex.payment||{})}
