@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V65.1</title>
+  <title>Gooby BI Dashboard V65.2</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -437,10 +437,21 @@ async function syncAccountHealth(){
 
 // ===== V65.1: tab Chi phí Marketing (Ads + Xu Shop) =====
 function roundedPercent(n){ return n==null?'-':(Number(n)).toLocaleString('vi-VN',{maximumFractionDigits:2})+'%'; }
+// V65.2: tự động đồng bộ 1 lần khi đổi shop/ngày mà chưa có dữ liệu — giống hệt cơ chế perfAutoSynced ở tab Hiệu quả hoạt động.
+const adsAutoSynced = new Set();
 async function loadAdsCost(){
   const r=getRange(); const shop=$('shop').value||'all';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
-  const data=await api('/api/marketing/ads/dashboard?'+qs.toString());
+  let data=await api('/api/marketing/ads/dashboard?'+qs.toString());
+  const autoKey=shop+'_'+r.from+'_'+r.to;
+  if(!data.rows && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !adsAutoSynced.has(autoKey)){
+    adsAutoSynced.add(autoKey);
+    $('adsSummary').innerHTML='⏳ Chưa có dữ liệu Ads cho shop/khoảng này — đang tự động gọi Shopee Ads API...';
+    try{
+      await api('/api/marketing/ads/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString());
+      data=await api('/api/marketing/ads/dashboard?'+qs.toString());
+    }catch(e){ $('adsSummary').innerHTML='⚠️ Tự động đồng bộ Ads lỗi: '+e.message+' — bấm "Đồng bộ Ads" để thử lại.'; }
+  }
   const s=data.summary||{};
   $('adsExpense').textContent=money(s.expense||0);
   $('adsGmv').textContent=money(s.broad_gmv||0);
@@ -449,8 +460,8 @@ async function loadAdsCost(){
   $('adsCtr').textContent='CTR '+roundedPercent(s.ctr);
   if(!data.rows){
     $('adsSummary').innerHTML = shop==='all'
-      ? 'ℹ️ Chưa có dữ liệu Ads đã lưu cho khoảng này. Chọn 1 shop cụ thể rồi bấm "Đồng bộ Ads".'
-      : '⚠️ Chưa có dữ liệu Ads cho khoảng đang chọn. Bấm "Đồng bộ Ads" để lấy từ Shopee (tối đa 31 ngày/lần).';
+      ? 'ℹ️ Chưa có dữ liệu Ads đã lưu cho khoảng này. Chọn 1 shop cụ thể để web tự đồng bộ, hoặc bấm "Đồng bộ Ads".'
+      : '⚠️ Không lấy được dữ liệu Ads cho khoảng đang chọn (có thể shop chưa chạy quảng cáo, hoặc Shopee chưa cấp quyền Ads). Bấm "Đồng bộ Ads" để thử lại.';
   } else {
     $('adsSummary').innerHTML = `✅ Đang xem chi phí quảng cáo <b>${rangeLabel(r)}</b>${shop!=='all'?'':' (tổng hợp tất cả shop có dữ liệu)'} — ${data.rows} dòng ngày/shop đã lưu.`;
   }
@@ -469,10 +480,21 @@ async function syncAdsCost(){
     await loadAdsCost();
   }catch(e){ $('adsSummary').innerHTML='⚠️ Đồng bộ Ads lỗi: '+e.message; }
 }
+// V65.2: tự động đồng bộ Xu Shop 1 lần khi đổi shop/ngày mà chưa có dữ liệu (giới hạn max_orders=150/lần để không quá tải).
+const coinAutoSynced = new Set();
 async function loadCoinCost(){
   const r=getRange(); const shop=$('shop').value||'all';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
-  const data=await api('/api/marketing/coin/dashboard?'+qs.toString());
+  let data=await api('/api/marketing/coin/dashboard?'+qs.toString());
+  const autoKey=shop+'_'+r.from+'_'+r.to;
+  if(!(data.summary?.orders_counted) && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !coinAutoSynced.has(autoKey)){
+    coinAutoSynced.add(autoKey);
+    $('coinSummary').innerHTML='⏳ Chưa có dữ liệu Xu Shop cho shop/khoảng này — đang tự động quét đơn COMPLETED...';
+    try{
+      await api('/api/marketing/coin/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to,max_orders:'150'}).toString());
+      data=await api('/api/marketing/coin/dashboard?'+qs.toString());
+    }catch(e){ $('coinSummary').innerHTML='⚠️ Tự động đồng bộ Xu Shop lỗi: '+e.message+' — bấm "Đồng bộ Xu Shop" để thử lại.'; }
+  }
   const s=data.summary||{};
   $('coinCost').textContent=money(s.seller_coin_cash_back||0);
   $('coinCommission').textContent=money(s.commission_fee||0);
@@ -481,8 +503,8 @@ async function loadCoinCost(){
   $('coinCoverageNote').textContent=`${num(s.orders_counted||0)} / ${num(data.total_completed_orders||0)} đơn COMPLETED`;
   if(!(s.orders_counted)){
     $('coinSummary').innerHTML = shop==='all'
-      ? 'ℹ️ Chưa có dữ liệu Xu Shop đã lưu cho khoảng này. Chọn 1 shop cụ thể rồi bấm "Đồng bộ Xu Shop".'
-      : '⚠️ Chưa có dữ liệu Xu Shop cho khoảng đang chọn. Bấm "Đồng bộ Xu Shop" (chỉ tính đơn COMPLETED, tối đa 31 ngày/lần).';
+      ? 'ℹ️ Chưa có dữ liệu Xu Shop đã lưu cho khoảng này. Chọn 1 shop cụ thể để web tự đồng bộ, hoặc bấm "Đồng bộ Xu Shop".'
+      : (data.total_completed_orders ? '⚠️ Có '+num(data.total_completed_orders)+' đơn COMPLETED nhưng chưa đồng bộ hết — bấm "Đồng bộ Xu Shop" để quét tiếp (đã giới hạn 150 đơn/lượt).' : 'ℹ️ Không có đơn COMPLETED nào trong khoảng đang chọn.');
   } else {
     $('coinSummary').innerHTML = `✅ Đã đồng bộ <b>${num(s.orders_counted)}</b> đơn COMPLETED (${roundedPercent(data.coverage_percent)} tổng số đơn COMPLETED trong khoảng) · ${rangeLabel(r)}.`;
   }
@@ -615,7 +637,7 @@ function setTab(tab){
   if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; });
   if(tab==='marketing') loadMarketing();
 }
-async function loadDashboard(opts){ opts=opts||{}; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
+async function loadDashboard(opts){ opts=opts||{}; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
