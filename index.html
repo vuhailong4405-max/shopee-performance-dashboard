@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.1</title>
+  <title>Gooby BI Dashboard V66.2</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -575,6 +575,9 @@ async function loadWarehouse(){
     $('warehouseSummary').innerHTML='🟡 Đã có tồn kho SKU đơn nhưng chưa đồng bộ Combo — số bán qua combo sẽ chưa được quy đổi vào SKU đơn. Bấm "Đồng bộ Combo SSC".';
   } else {
     $('warehouseSummary').innerHTML=`✅ Đang xem tháng <b>${month}</b> · ${rows.length} SKU đơn (đã lọc) · ${warehouseComboRowsAll.length} combo.`;
+  }
+  if(data.sold_calc_error){
+    $('warehouseSummary').innerHTML+='<br>⚠️ Không tính được số lượng đã bán trên Shopee (mọi SKU đang hiện 0): '+data.sold_calc_error;
   }
   renderWarehouseSkuTable();
   renderWarehouseComboTable();
