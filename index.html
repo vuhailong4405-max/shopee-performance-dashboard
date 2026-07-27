@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.2</title>
+  <title>Gooby BI Dashboard V66.3</title>
   <style>
     :root{
       --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
@@ -573,11 +573,10 @@ async function loadWarehouse(){
     $('warehouseSummary').innerHTML='⚠️ Chưa có dữ liệu tồn kho SSC cho tháng '+month+'. Bấm "Đồng bộ tồn kho SSC".';
   } else if(!data.has_combo_data){
     $('warehouseSummary').innerHTML='🟡 Đã có tồn kho SKU đơn nhưng chưa đồng bộ Combo — số bán qua combo sẽ chưa được quy đổi vào SKU đơn. Bấm "Đồng bộ Combo SSC".';
+  } else if(!data.has_sold_data){
+    $('warehouseSummary').innerHTML='🟡 Chưa có số đã bán trên Shopee cho tháng '+month+' — số này chỉ tính khi bấm "Đồng bộ tồn kho SSC" hoặc "Đồng bộ Combo SSC" (không tự tính khi xem, đỡ tốn tài nguyên). Bấm 1 trong 2 nút đó để tính.';
   } else {
     $('warehouseSummary').innerHTML=`✅ Đang xem tháng <b>${month}</b> · ${rows.length} SKU đơn (đã lọc) · ${warehouseComboRowsAll.length} combo.`;
-  }
-  if(data.sold_calc_error){
-    $('warehouseSummary').innerHTML+='<br>⚠️ Không tính được số lượng đã bán trên Shopee (mọi SKU đang hiện 0): '+data.sold_calc_error;
   }
   renderWarehouseSkuTable();
   renderWarehouseComboTable();
@@ -617,9 +616,10 @@ async function syncWarehouseGoods(){
   }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ tồn kho SSC lỗi: '+e.message; }
 }
 async function syncWarehouseCombo(){
+  const month=warehouseMonthValue();
   $('warehouseSummary').innerHTML='⏳ Đang gọi SSC lấy danh sách combo (có thể mất chút thời gian vì catalog combo khá lớn)...';
   try{
-    const r=await api('/api/warehouse/ssc/sync-combo');
+    const r=await api('/api/warehouse/ssc/sync-combo?month='+encodeURIComponent(month));
     await loadWarehouse();
     if(r.truncated) $('warehouseSummary').innerHTML+='<br>⚠️ Đã đồng bộ '+num(r.active_rows_scanned||0)+' combo active nhưng có thể còn nữa (đã chạm giới hạn an toàn số trang) — báo lại để tăng giới hạn.';
   }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ Combo SSC lỗi: '+e.message; }
