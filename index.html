@@ -4,42 +4,150 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.4</title>
+  <title>Gooby BI Dashboard V66.5</title>
   <style>
     :root{
-      --bg:#f4f6fb;--surface:#ffffff;--surface2:#fff7f2;--text:#101828;--muted:#667085;--line:#e6eaf2;
-      --brand:#ff6b35;--brand2:#ff9f43;--good:#0f9f6e;--bad:#d92d20;--warn:#b7791f;--ink:#1d2939;
-      --shadow:0 18px 45px rgba(16,24,40,.08);--shadow2:0 8px 24px rgba(16,24,40,.06);--radius:22px;
+      --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
+      --brand:#ff6b35;--brand2:#ff9f43;--good:#059669;--bad:#dc2626;--warn:#b45309;
+      --shadow:0 20px 45px rgba(15,23,42,.07);--shadow2:0 8px 22px rgba(15,23,42,.05);--radius:18px;--radius-sm:12px;
+      --accent:var(--brand);--accent2:var(--brand2);--accent-soft:#fff3ec;--accent-ink:#9a3412;
     }
-    *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:radial-gradient(circle at 15% 0%,#fff1e8 0,#f4f6fb 32%,#f7f8fc 100%);color:var(--text)}
-    .app{max-width:1440px;margin:0 auto;padding:22px 22px 44px}.hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;padding:28px 30px;border-radius:30px;background:linear-gradient(135deg,#ff6b35,#ff9f43 62%,#ffd3a8);color:#fff;box-shadow:0 22px 60px rgba(255,107,53,.24);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-90px;top:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.22)}.hero h1{position:relative;margin:0;font-size:34px;letter-spacing:-.04em}.hero p{position:relative;margin:8px 0 0;opacity:.92;font-size:15px}.pill{display:inline-flex;gap:8px;align-items:center;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);font-weight:700;font-size:13px}.dot{width:9px;height:9px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 4px rgba(18,183,106,.18)}
-    .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:18px}.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}input,select,button{height:44px;border:1px solid var(--line);border-radius:14px;padding:0 13px;font:inherit;background:#fff;color:var(--text)}select,input[type=date]{min-width:170px}button{border:0;background:var(--brand);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(255,107,53,.2)}button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}.status{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.card{background:rgba(255,255,255,.92);border:1px solid rgba(230,234,242,.9);border-radius:var(--radius);box-shadow:var(--shadow2);padding:18px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:16px}.metric{min-height:132px;position:relative;overflow:hidden}.metric:after{content:"";position:absolute;right:-34px;bottom:-38px;width:104px;height:104px;border-radius:50%;background:#fff3ec}.metric .label{position:relative;color:var(--muted);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.metric .value{position:relative;font-size:30px;line-height:1.08;font-weight:900;letter-spacing:-.04em;margin-top:12px}.metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}.delta{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:12px}.delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f2f4f7;color:#475467}.grid2{display:grid;grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.section-title h2{margin:0;font-size:20px;letter-spacing:-.02em}.section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.chart-wrap{height:370px;border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcff);border:1px solid var(--line);padding:14px 12px 8px}.chart{width:100%;height:100%}.bar{fill:url(#barGrad)}.bar-compare{fill:#d0d5dd;opacity:.75}.axis{font-size:11px;fill:#667085}.gridline{stroke:#edf0f5;stroke-width:1}.tooltip{position:fixed;pointer-events:none;background:#101828;color:white;border-radius:12px;padding:9px 10px;font-size:12px;box-shadow:0 12px 30px rgba(16,24,40,.22);display:none;z-index:10}.legend{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;flex-wrap:wrap}.legend span{display:inline-flex;gap:6px;align-items:center}.sw{width:11px;height:11px;border-radius:4px;background:var(--brand)}.sw.gray{background:#d0d5dd}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{font-size:12px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.04em;background:#fbfcff}td:first-child{white-space:normal;min-width:280px}.muted{color:var(--muted)}.right{text-align:right}.product-name{font-weight:800}.settings{margin-top:16px}.settings summary{cursor:pointer;color:var(--muted);font-weight:800}.settings-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:14px}.hidden{display:none!important}.range-note{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#fff;color:var(--ink);border:1px solid rgba(255,255,255,.45);font-weight:800;font-size:13px}.notice{display:flex;gap:10px;align-items:flex-start;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:18px;padding:13px 14px;font-size:13px;margin-top:16px}.empty{padding:30px;text-align:center;color:var(--muted)}
+    /* Mỗi trang (tab) có 1 màu chủ đạo riêng — áp dụng cho viền thẻ, tiêu đề mục, nút chính trong trang đó. */
+    #tab-gmv{--accent:#2563eb;--accent2:#3b82f6;--accent-soft:#eff6ff;}
+    #tab-orders{--accent:#7c3aed;--accent2:#9333ea;--accent-soft:#f5f3ff;}
+    #tab-performance{--accent:#059669;--accent2:#10b981;--accent-soft:#ecfdf5;}
+    #tab-marketing{--accent:#ea580c;--accent2:#f97316;--accent-soft:#fff7ed;}
+    #tab-warehouse{--accent:#0891b2;--accent2:#06b6d4;--accent-soft:#ecfeff;}
+    #tab-system{--accent:#475569;--accent2:#64748b;--accent-soft:#f8fafc;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{max-width:1480px;margin:0 auto;padding:20px 22px 48px}
 
+    /* ---- Masthead (thanh thương hiệu trên cùng, giữ màu brand xuyên suốt mọi trang) ---- */
+    .hero{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:20px 26px;border-radius:20px;background:linear-gradient(120deg,#ff6b35,#ff9245 70%,#ffab5e);color:#fff;box-shadow:0 16px 40px rgba(255,107,53,.22);position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;right:-70px;top:-70px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.14)}
+    .hero .brandmark{display:flex;align-items:center;gap:14px;position:relative}
+    .hero .logo{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex:none}
+    .hero h1{margin:0;font-size:22px;letter-spacing:-.02em;font-weight:900}
+    .hero p{margin:3px 0 0;opacity:.92;font-size:12.5px;max-width:640px}
+    .hero .heroRight{display:flex;gap:10px;flex-wrap:wrap;position:relative;align-items:center;justify-content:flex-end}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);font-weight:700;font-size:12.5px;white-space:nowrap}
+    .dot{width:8px;height:8px;border-radius:50%;background:#baf7d5;box-shadow:0 0 0 4px rgba(255,255,255,.18)}
 
-    .perf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}.perf-card{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fbfcff}.perf-card .k{font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:900;letter-spacing:.04em}.perf-card .v{font-size:24px;font-weight:900;margin-top:8px;letter-spacing:-.03em}.badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900}.badge.good{background:#ecfdf3;color:#067647}.badge.warn{background:#fffaeb;color:#b54708}.badge.bad{background:#fef3f2;color:#b42318}.orders-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}.orders-toolbar input,.orders-toolbar select{min-width:160px}.order-detail{margin-top:12px;border:1px solid var(--line);border-radius:18px;background:#fbfcff;padding:14px}.order-detail pre{white-space:pre-wrap;max-height:260px;overflow:auto;background:#0b1220;color:#e5e7eb;border-radius:14px;padding:12px;font-size:12px}.linkbtn{background:transparent;border:0;color:var(--brand);box-shadow:none;font-weight:900;padding:0;height:auto}.sync-plan{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.sync-plan .item{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.detail-section{border:1px solid var(--line);border-radius:18px;background:#fff;padding:14px}.detail-section h3{margin:0 0 10px;font-size:16px}.kv{display:grid;grid-template-columns:220px 1fr;border-top:1px solid var(--line);font-size:13px}.kv div{padding:9px 10px;border-bottom:1px solid var(--line)}.kv div:nth-child(odd){color:var(--muted);font-weight:800;background:#fbfcff}.nowrap{white-space:nowrap}.scroll-x{overflow:auto}.detail-note{font-size:13px;color:var(--muted);margin:8px 0 0}
+    .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:16px}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+    input,select,button{height:42px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;background:#fff;color:var(--text)}
+    select,input[type=date]{min-width:160px}
+    button{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 16px -4px color-mix(in srgb, var(--accent) 55%, transparent)}
+    button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+    button.ghost:hover{border-color:var(--accent)}
+    .status{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 
+    .card{background:#fff;border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:var(--radius);box-shadow:var(--shadow2);padding:18px}
+    .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:16px}
+    .metric{min-height:126px;position:relative;overflow:hidden}
+    .metric:after{content:"";position:absolute;right:-30px;bottom:-34px;width:96px;height:96px;border-radius:50%;background:var(--accent-soft)}
+    .metric .label{position:relative;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .metric .value{position:relative;font-size:27px;line-height:1.1;font-weight:900;letter-spacing:-.03em;margin-top:10px;color:var(--text)}
+    .metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:9px;font-size:12.5px;color:var(--muted)}
+    .delta{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-weight:900;font-size:11.5px}
+    .delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f1f5f9;color:#475467}
+    .grid2{display:grid;grid-template-columns:1.45fr .95fr;gap:16px;margin-top:16px}
+    .section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+    .section-title h2{margin:0;font-size:17px;letter-spacing:-.01em;font-weight:900;color:var(--text);padding-left:12px;border-left:4px solid var(--accent)}
+    .section-title p{margin:5px 0 0 16px;color:var(--muted);font-size:12.5px;max-width:640px}
+    .chart-wrap{height:360px;border-radius:14px;background:#fbfcfe;border:1px solid var(--line);padding:14px 12px 8px}
+    .chart{width:100%;height:100%}
+    .bar{fill:url(#barGrad)}.bar-compare{fill:#d0d5dd;opacity:.75}.axis{font-size:11px;fill:#667085}.gridline{stroke:#edf0f5;stroke-width:1}
+    .tooltip{position:fixed;pointer-events:none;background:#101828;color:white;border-radius:12px;padding:9px 10px;font-size:12px;box-shadow:0 12px 30px rgba(16,24,40,.22);display:none;z-index:10}
+    .legend{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:12.5px;flex-wrap:wrap}
+    .legend span{display:inline-flex;gap:6px;align-items:center}
+    .sw{width:11px;height:11px;border-radius:4px;background:var(--accent)}.sw.gray{background:#d0d5dd}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+    table{border-collapse:collapse;width:100%;font-size:13.5px;background:#fff}
+    th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+    th{font-size:11.5px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.04em;background:#fbfcfe;position:sticky;top:0}
+    td:first-child{white-space:normal;min-width:260px}
+    .muted{color:var(--muted)}.right{text-align:right}.product-name{font-weight:800}
+    .settings{margin-top:16px}.settings summary{cursor:pointer;color:var(--muted);font-weight:800}
+    .settings-panel{margin-top:12px;border-top:1px dashed var(--line);padding-top:14px}
+    .hidden{display:none!important}
+    .range-note{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:800;font-size:12.5px}
+    .notice{display:flex;gap:10px;align-items:flex-start;background:#f8fafc;border:1px solid var(--line);color:var(--ink);border-radius:14px;padding:12px 14px;font-size:13px;margin-top:16px}
+    .notice.warn-note{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+    .empty{padding:30px;text-align:center;color:var(--muted)}
 
-    .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;position:sticky;top:0;z-index:5;background:rgba(244,246,251,.78);backdrop-filter:blur(10px);padding:10px 0}.tabbtn{height:46px;border-radius:999px;padding:0 18px;background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow2);font-weight:900}.tabbtn.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-color:transparent}.tab-panel{margin-top:14px}.tab-hint{margin-top:10px;color:var(--muted);font-size:13px}.tab-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}.tab-title h2{margin:0;font-size:18px}.tab-title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .perf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+    .perf-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfcfe}
+    .perf-card .k{font-size:11.5px;text-transform:uppercase;color:var(--muted);font-weight:900;letter-spacing:.04em}
+    .perf-card .v{font-size:22px;font-weight:900;margin-top:8px;letter-spacing:-.02em;color:var(--text)}
+    .badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:900}
+    .badge.good{background:#ecfdf3;color:#067647}.badge.warn{background:#fffaeb;color:#b54708}.badge.bad{background:#fef3f2;color:#b42318}
+    .orders-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+    .orders-toolbar input,.orders-toolbar select{min-width:150px}
+    .order-detail{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fbfcfe;padding:14px}
+    .order-detail pre{white-space:pre-wrap;max-height:260px;overflow:auto;background:#0b1220;color:#e5e7eb;border-radius:12px;padding:12px;font-size:12px}
+    .linkbtn{background:transparent;border:0;color:var(--accent);box-shadow:none;font-weight:900;padding:0;height:auto}
+    .sync-plan{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+    .sync-plan .item{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+    .detail-section{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}
+    .detail-section h3{margin:0 0 10px;font-size:15px}
+    .kv{display:grid;grid-template-columns:220px 1fr;border-top:1px solid var(--line);font-size:13px}
+    .kv div{padding:9px 10px;border-bottom:1px solid var(--line)}
+    .kv div:nth-child(odd){color:var(--muted);font-weight:800;background:#fbfcfe}
+    .nowrap{white-space:nowrap}.scroll-x{overflow:auto}.detail-note{font-size:13px;color:var(--muted);margin:8px 0 0}
 
-    .diag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}.diag-card{border:1px solid var(--line);background:#fbfcff;border-radius:18px;padding:14px}.diag-card .k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:900}.diag-card .v{font-size:22px;font-weight:900;margin-top:8px;letter-spacing:-.03em}.issue-list{display:grid;gap:10px;margin-top:12px}.issue{display:flex;gap:10px;align-items:flex-start;border-radius:16px;padding:12px 13px;border:1px solid var(--line);background:#fff}.issue .tag{min-width:76px;text-align:center;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900}.issue.ok .tag{background:#ecfdf3;color:#067647}.issue.warn .tag{background:#fffaeb;color:#b54708}.issue.error .tag{background:#fef3f2;color:#b42318}.issue .area{font-weight:900}.diag-raw{max-height:360px;overflow:auto;background:#0b1220;color:#e5e7eb;border-radius:16px;padding:14px;font-size:12px;line-height:1.5}.mini-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.progress{height:8px;background:#eef2f6;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#ff7a37,#ffb067);border-radius:999px}.log-table td:first-child{min-width:120px}.log-error{color:#b42318;font-weight:800}
-    @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.perf-grid,.sync-plan{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
-    @media(max-width:760px){.app{padding:12px}.perf-grid,.sync-plan{grid-template-columns:1fr}.hero{padding:22px;border-radius:24px}.hero h1{font-size:28px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:24px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:330px}}
+    /* ---- Thanh chuyển tab: mỗi tab có màu riêng (đặt qua --accent/--accent2 ngay trên từng nút) ---- */
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:sticky;top:0;z-index:5;background:rgba(241,243,248,.86);backdrop-filter:blur(10px);padding:10px 0;border-bottom:1px solid var(--line)}
+    .tabbtn{height:44px;border-radius:12px;padding:0 16px;background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:800;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
+    .tabbtn .ic{font-size:15px;line-height:1}
+    .tabbtn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;box-shadow:0 8px 18px -6px color-mix(in srgb, var(--accent) 60%, transparent)}
+    .tab-panel{margin-top:14px}
+    .tab-hint{margin-top:10px;color:var(--muted);font-size:13px}
+    .tab-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0 4px}
+    .tab-title h2{margin:0;font-size:19px;font-weight:900;letter-spacing:-.01em}
+    .tab-title p{margin:4px 0 0;color:var(--muted);font-size:13px;max-width:760px}
+
+    .diag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+    .diag-card{border:1px solid var(--line);background:#fbfcfe;border-radius:14px;padding:14px}
+    .diag-card .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:900}
+    .diag-card .v{font-size:21px;font-weight:900;margin-top:8px;letter-spacing:-.02em}
+    .issue-list{display:grid;gap:10px;margin-top:12px}
+    .issue{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:12px 13px;border:1px solid var(--line);background:#fff}
+    .issue .tag{min-width:76px;text-align:center;border-radius:999px;padding:4px 8px;font-size:11.5px;font-weight:900}
+    .issue.ok .tag{background:#ecfdf3;color:#067647}.issue.warn .tag{background:#fffaeb;color:#b54708}.issue.error .tag{background:#fef3f2;color:#b42318}
+    .issue .area{font-weight:900}
+    .diag-raw{max-height:360px;overflow:auto;background:#0b1220;color:#e5e7eb;border-radius:14px;padding:14px;font-size:12px;line-height:1.5}
+    .mini-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+    .progress{height:8px;background:#eef2f6;border-radius:999px;overflow:hidden}
+    .progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px}
+    .log-table td:first-child{min-width:120px}.log-error{color:#b42318;font-weight:800}
+
+    /* ---- Thẻ tổng quan hệ thống (mở đầu tab Hệ thống) ---- */
+    .sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+
+    @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.perf-grid,.sync-plan,.sys-grid{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
+    @media(max-width:760px){.app{padding:12px}.perf-grid,.sync-plan,.sys-grid{grid-template-columns:1fr}.hero{padding:18px;border-radius:18px}.hero h1{font-size:19px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:22px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:320px}}
   </style>
 </head>
 <body>
   <div class="app">
     <section class="hero">
-      <div>
-        <h1>Gooby BI Dashboard</h1>
-        <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục · V63 sửa lỗi cron + tải đơn nhanh (phân trang tại database) + AccountHealth tự đồng bộ</p>
+      <div class="brandmark">
+        <div class="logo">G</div>
+        <div>
+          <h1>Gooby BI Dashboard</h1>
+          <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục</p>
+        </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative">
+      <div class="heroRight">
         <div class="pill"><span class="dot"></span><span id="runMode">Gooby / LazyMom / Rouya internal report</span></div>
         <div class="range-note" id="heroRange">-</div>
       </div>
     </section>
-
-    <div class="notice">🔒 Internal dashboard for authorized Gooby / LazyMom / Rouya shops. This site does not collect Shopee login credentials; authorization is handled via Open Platform OAuth only.</div>
 
     <section class="topbar">
       <div class="filters">
@@ -56,11 +164,12 @@
     </section>
 
     <nav class="tabs" aria-label="Chuyển tab dashboard">
-      <button class="tabbtn active" data-tab="gmv">GMV tổng quan</button>
-      <button class="tabbtn" data-tab="orders">Chi tiết đơn hàng</button>
-      <button class="tabbtn" data-tab="performance">Hiệu quả hoạt động</button>
-      <button class="tabbtn" data-tab="marketing">Chi phí Marketing</button>
-      <button class="tabbtn" data-tab="warehouse">Kho hàng</button>
+      <button class="tabbtn active" data-tab="gmv" style="--accent:#2563eb;--accent2:#3b82f6"><span class="ic">📊</span>GMV tổng quan</button>
+      <button class="tabbtn" data-tab="orders" style="--accent:#7c3aed;--accent2:#9333ea"><span class="ic">🧾</span>Chi tiết đơn hàng</button>
+      <button class="tabbtn" data-tab="performance" style="--accent:#059669;--accent2:#10b981"><span class="ic">📈</span>Hiệu quả hoạt động</button>
+      <button class="tabbtn" data-tab="marketing" style="--accent:#ea580c;--accent2:#f97316"><span class="ic">💰</span>Chi phí Marketing</button>
+      <button class="tabbtn" data-tab="warehouse" style="--accent:#0891b2;--accent2:#06b6d4"><span class="ic">📦</span>Kho hàng</button>
+      <button class="tabbtn" data-tab="system" style="--accent:#475569;--accent2:#64748b"><span class="ic">⚙️</span>Hệ thống</button>
     </nav>
 
     <section class="tab-panel active" id="tab-gmv">
@@ -188,6 +297,10 @@
 
     </section>
 
+    <section class="tab-panel hidden" id="tab-system">
+    <div class="tab-title"><div><h2>Hệ thống</h2><p>Chẩn đoán đồng bộ dữ liệu, kiểm tra sai lệch số liệu, và cấu hình kết nối Worker/shop. Các mục này áp dụng chung cho toàn bộ dashboard, không riêng theo tab nào.</p></div></div>
+    <div class="notice warn-note">🔒 Trang nội bộ cho các shop Gooby / LazyMom / Rouya đã được ủy quyền. Trang này không thu thập tài khoản, mật khẩu hoặc thông tin thanh toán. Việc ủy quyền shop đi qua Open Platform OAuth.</div>
+
     <section class="card" style="margin-top:16px">
       <div class="section-title">
         <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, số đơn ledger thiếu, công thức GMV hoặc nguồn tiền total_amount/item_subtotal.</p></div>
@@ -213,9 +326,9 @@
       <div class="table-wrap" style="margin-top:14px"><table class="log-table"><thead><tr><th>Khu vực</th><th>Nội dung lỗi/cảnh báo</th></tr></thead><tbody id="diagLogRows"></tbody></table></div>
     </section>
 
-    <details class="card settings">
-      <summary>Cài đặt kỹ thuật / kết nối shop</summary>
-      <div class="notice">🔒 Trang nội bộ cho các shop Gooby / LazyMom / Rouya đã được ủy quyền. Trang này không thu thập tài khoản, mật khẩu hoặc thông tin thanh toán. Việc ủy quyền shop đi qua Open Platform OAuth.</div><div class="settings-panel">
+    <section class="card" style="margin-top:16px">
+      <div class="section-title"><div><h2>Cài đặt kỹ thuật / kết nối shop</h2><p>Cấu hình địa chỉ Worker backend và tạo link ủy quyền OAuth cho shop mới.</p></div></div>
+      <div class="settings-panel">
         <div class="filters">
           <div class="field" style="flex:1;min-width:300px"><label>Worker URL</label><input id="workerUrl" placeholder="https://shopee-ledger-sync.xxx.workers.dev"></div>
           <div class="field"><label>Tên kênh/shop</label><input id="channel" placeholder="Gooby"></div>
@@ -225,7 +338,9 @@
         <p class="muted">Webhook URL: <code id="pushUrl"></code><br>OAuth callback URL: <code id="callbackUrl"></code></p>
         <div id="oauthBox" class="muted"></div>
       </div>
-    </details>
+    </section>
+
+    </section>
   </div>
   <div id="tip" class="tooltip"></div>
 <script>
@@ -616,13 +731,22 @@ async function syncWarehouseGoods(){
   }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ tồn kho SSC lỗi: '+e.message; }
 }
 async function syncWarehouseCombo(){
+  // Catalog combo rất lớn (chục nghìn dòng) — Worker chỉ quét 1 đợt nhỏ/lần gọi rồi lưu tiến độ, nên ở đây
+  // phải tự gọi lặp lại tới khi done=true. Có thể mất vài phút, cứ để chạy, đừng đóng tab.
   const month=warehouseMonthValue();
-  $('warehouseSummary').innerHTML='⏳ Đang gọi SSC lấy danh sách combo (có thể mất chút thời gian vì catalog combo khá lớn)...';
+  let calls=0;
   try{
-    const r=await api('/api/warehouse/ssc/sync-combo?month='+encodeURIComponent(month));
-    await loadWarehouse();
-    if(r.truncated) $('warehouseSummary').innerHTML+='<br>⚠️ Đã đồng bộ '+num(r.active_rows_scanned||0)+' combo active nhưng có thể còn nữa (đã chạm giới hạn an toàn số trang) — báo lại để tăng giới hạn.';
-  }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ Combo SSC lỗi: '+e.message; }
+    while(true){
+      calls++;
+      const r=await api('/api/warehouse/ssc/sync-combo?month='+encodeURIComponent(month));
+      $('warehouseSummary').innerHTML='⏳ Đang đồng bộ Combo SSC — lượt '+calls+', đã quét '+num(r.rows_scanned||0)+' dòng ('+num(r.active_scanned||0)+' combo active)...';
+      if(r.done){
+        await loadWarehouse();
+        $('warehouseSummary').innerHTML+='<br>✅ Đồng bộ Combo SSC xong: '+num(r.active_scanned||0)+' combo active / '+num(r.rows_scanned||0)+' dòng đã quét.';
+        break;
+      }
+    }
+  }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ Combo SSC lỗi ở lượt '+calls+' (dữ liệu đã quét trước đó vẫn được giữ, bấm lại để tiếp tục): '+e.message; }
 }
 function renderOrdersTable(data){
   const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.total?data.offset+1:0)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`+(data.search_note?' · '+data.search_note:'');
