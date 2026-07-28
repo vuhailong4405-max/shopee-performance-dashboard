@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.5</title>
+  <title>Gooby BI Dashboard V66.6</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -213,6 +213,8 @@
       <div id="perfSummary" class="notice">Chọn 1 shop ở bộ lọc phía trên rồi bấm “Đồng bộ AccountHealth”. Dữ liệu sẽ lưu vào Supabase để lần sau mở web chỉ đọc snapshot.</div>
       <div class="perf-grid">
         <div class="perf-card"><div class="k">Xếp loại / trạng thái</div><div class="v" id="perfLabel">-</div><div class="muted" id="perfNote">Shopee AccountHealth</div></div>
+        <div class="perf-card"><div class="k">Đánh giá sao shop</div><div class="v" id="perfRating">-</div><div class="muted">shop_rating (mục tiêu ≥4.0)</div></div>
+        <div class="perf-card"><div class="k">Tỷ lệ phản hồi chat</div><div class="v" id="perfResponseRate">-</div><div class="muted">response_rate (mục tiêu ≥80%)</div></div>
         <div class="perf-card"><div class="k">Điểm phạt</div><div class="v" id="perfPenalty">-</div><div class="muted">Sao Quả Tạ / penalty points</div></div>
         <div class="perf-card"><div class="k">Chỉ số không đạt</div><div class="v" id="perfMetricIssues">-</div><div class="muted">Nếu API trả metric failed count</div></div>
         <div class="perf-card"><div class="k">Hình phạt đang/đã áp dụng</div><div class="v" id="perfComplaints">-</div><div class="muted">Punishment history (quý hiện tại)</div></div>
@@ -220,6 +222,18 @@
         <div class="perf-card"><div class="k">Đơn muộn</div><div class="v" id="perfLateOrders">-</div><div class="muted">Late orders từ AccountHealth</div></div>
       </div>
       <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Chỉ số</th><th>Giá trị</th></tr></thead><tbody id="perfStatusRows"><tr><td colspan="2" class="empty">Chưa tải</td></tr></tbody></table></div>
+      <div id="perfLateOrdersBox" class="hidden">
+        <div class="section-title" style="margin-top:16px"><div><h2>Chi tiết đơn giao trễ</h2><p>Danh sách cụ thể từng đơn đang bị Shopee tính là trễ hạn giao — trước đây chỉ hiện số lượng, không có mã đơn.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th class="right">Trễ (ngày)</th><th>Hạn giao (deadline)</th></tr></thead><tbody id="perfLateOrdersRows"></tbody></table></div>
+      </div>
+      <div id="perfListingsBox" class="hidden">
+        <div class="section-title" style="margin-top:16px"><div><h2>Chi tiết sản phẩm có vấn đề</h2><p>Danh sách listing đang bị Shopee gắn cờ vi phạm/cần xử lý.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Sản phẩm / item_id</th><th>Vấn đề</th></tr></thead><tbody id="perfListingsRows"></tbody></table></div>
+      </div>
+      <div id="perfPunishBox" class="hidden">
+        <div class="section-title" style="margin-top:16px"><div><h2>Chi tiết hình phạt</h2><p>Danh sách hình phạt đang/đã áp dụng cho shop.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Loại hình phạt</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody id="perfPunishRows"></tbody></table></div>
+      </div>
       <details class="settings" style="margin-top:14px"><summary>Raw AccountHealth từ Shopee</summary><pre id="perfRaw" class="diag-raw">Chưa tải</pre></details>
     </section>
 
@@ -477,6 +491,8 @@ function renderDiagnostics(d){
 
 function statusBadge(st){ st=String(st||'UNKNOWN'); const bad=['CANCELLED','IN_CANCEL'].includes(st); const warn=['UNPAID'].includes(st); return `<span class="badge ${bad?'bad':warn?'warn':'good'}">${st}</span>`; }
 function shopNameText(){ const sel=$('shop'); return sel.options[sel.selectedIndex]?.textContent || sel.value; }
+function fmtTarget(t){ return t&&t.value!=null ? ` (mục tiêu ${t.comparator||''}${t.value}${t.value<=100?'%':''})` : ''; }
+function hidePerfDetailBoxes(){ $('perfLateOrdersBox').classList.add('hidden'); $('perfListingsBox').classList.add('hidden'); $('perfPunishBox').classList.add('hidden'); }
 const perfAutoSynced = new Set();
 async function loadPerformance(){
   const r=getRange(); const shop=$('shop').value||'all';
@@ -494,14 +510,19 @@ async function loadPerformance(){
   if(shop==='all' && summaries.length){
     const sumNum=(k)=>summaries.reduce((t,s)=>t+Number(s[k]||0),0);
     $('perfLabel').innerHTML=summaries.map(s=>`<span class="badge ${String(s.health_status).includes('Xuất')||String(s.health_status).toLowerCase().includes('excellent')?'good':'warn'}" title="${s.shop_name}">${fmtDetailVal(s.health_status)}</span>`).join(' ');
+    const ratings=summaries.map(s=>s.shop_rating).filter(x=>x!=null);
+    $('perfRating').textContent = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(2)+' ★ (TB)' : '-';
+    const respRates=summaries.map(s=>s.response_rate).filter(x=>x!=null);
+    $('perfResponseRate').textContent = respRates.length ? percent(respRates.reduce((a,b)=>a+b,0)/respRates.length)+' (TB)' : '-';
     $('perfPenalty').textContent=num(sumNum('penalty_points'));
     $('perfMetricIssues').textContent='-';
     $('perfComplaints').textContent=num(sumNum('punishment_history_count'));
     $('perfListings').textContent=num(sumNum('listings_with_issues_count'));
     $('perfLateOrders').textContent=num(sumNum('late_orders_count'));
     $('perfNote').textContent='Tổng hợp '+summaries.length+' shop có snapshot ngày '+data.date;
-    $('perfSummary').innerHTML='✅ Đang xem tổng hợp AccountHealth của <b>'+summaries.length+' shop</b> · snapshot ngày <b>'+data.date+'</b>. Chọn 1 shop ở bộ lọc để xem chi tiết từng chỉ số.';
-    $('perfStatusRows').innerHTML=summaries.map(s=>`<tr><td>${fmtDetailVal(s.shop_name)}</td><td><b>${fmtDetailVal(s.health_status)}</b> · điểm phạt ${num(s.penalty_points||0)} · sp có vấn đề ${num(s.listings_with_issues_count||0)} · đơn muộn ${num(s.late_orders_count||0)} · sync ${fmtDetailVal(s.sync_status)}</td></tr>`).join('');
+    $('perfSummary').innerHTML='✅ Đang xem tổng hợp AccountHealth của <b>'+summaries.length+' shop</b> · snapshot ngày <b>'+data.date+'</b>. Chọn 1 shop ở bộ lọc để xem chi tiết từng chỉ số (kể cả danh sách đơn trễ, sản phẩm lỗi).';
+    $('perfStatusRows').innerHTML=summaries.map(s=>`<tr><td>${fmtDetailVal(s.shop_name)}</td><td><b>${fmtDetailVal(s.health_status)}</b> · sao ${s.shop_rating??'-'} · điểm phạt ${num(s.penalty_points||0)} · sp có vấn đề ${num(s.listings_with_issues_count||0)} · đơn muộn ${num(s.late_orders_count||0)} · sync ${fmtDetailVal(s.sync_status)}</td></tr>`).join('');
+    hidePerfDetailBoxes();
     $('perfRaw').textContent=JSON.stringify(data,null,2);
     return;
   }
@@ -510,6 +531,7 @@ async function loadPerformance(){
     $('perfSummary').innerHTML= shop==='all'
       ? '⚠️ Chưa có snapshot AccountHealth hôm nay. Worker sẽ tự đồng bộ theo cron (mỗi ~15 phút kiểm tra 1 lần); hoặc chọn 1 shop cụ thể để web tự đồng bộ ngay.'
       : '⚠️ Chưa lấy được AccountHealth cho shop này. Bấm <b>Đồng bộ AccountHealth</b> để thử lại; nếu vẫn lỗi, xem raw bên dưới.';
+    hidePerfDetailBoxes();
     $('perfRaw').textContent=JSON.stringify(data,null,2);
     return;
   }
@@ -520,6 +542,8 @@ async function loadPerformance(){
       const perf=await api('/api/shop-performance?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}).toString());
       const p=perf.performance||{};
       $('perfLabel').innerHTML=`<span class="badge ${p.performance_label==='Cần theo dõi'?'warn':'good'}">${fmtDetailVal(p.performance_label||'-')} (tạm tính)</span>`;
+      $('perfRating').textContent='-';
+      $('perfResponseRate').textContent='-';
       $('perfPenalty').textContent=num(p.penalty_points_estimate||0)+' (ước tính)';
       $('perfMetricIssues').textContent='-';
       $('perfComplaints').textContent='-';
@@ -538,6 +562,7 @@ async function loadPerformance(){
         ['Lỗi AccountHealth', (one.sync_errors||[]).map(e=>e.label+': '+e.error).join(' | ')],
       ];
       $('perfStatusRows').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td><b>${fmtDetailVal(v)}</b></td></tr>`).join('');
+      hidePerfDetailBoxes();
       $('perfRaw').textContent=JSON.stringify({account_health:data,ledger_performance:perf},null,2);
       return;
     }catch(e){ /* nếu fallback lỗi thì hiển thị AccountHealth như cũ */ }
@@ -545,6 +570,8 @@ async function loadPerformance(){
   // V65: dữ liệu chính thức đúng schema Shopee (rating 1-4, metric_list theo metric_id, penalty points cộng dồn latest_point_num).
   const ratingClass = one.health_rating>=3 ? 'good' : one.health_rating===2 ? 'warn' : one.health_rating===1 ? 'bad' : (String(one.health_status).includes('Xuất')?'good':'warn');
   $('perfLabel').innerHTML = `<span class="badge ${ratingClass}">${fmtDetailVal(one.health_status)}</span>`;
+  $('perfRating').textContent = one.shop_rating==null?'-':one.shop_rating.toFixed(2)+' ★';
+  $('perfResponseRate').textContent = one.response_rate==null?'-':percent(one.response_rate);
   $('perfPenalty').textContent = num(one.penalty_points||0);
   $('perfMetricIssues').textContent = one.failed_metric_count==null?'-':num(one.failed_metric_count);
   $('perfComplaints').textContent = num(one.punishment_history_count||0);
@@ -554,16 +581,34 @@ async function loadPerformance(){
   const errs=(one.sync_errors||[]).length;
   $('perfSummary').innerHTML = `${errs?'⚠️':'✅'} AccountHealth chính thức của <b>${one.shop_name||shopNameText()}</b> · snapshot ngày <b>${data.date}</b> · trạng thái sync: <b>${one.sync_status}</b>${errs?` · ${errs} lỗi API phụ, xem raw bên dưới`:''}`;
   const rows=[
-    ['Tỷ lệ đơn không thành công (Non-fulfilment)', one.unsuccessful_order_rate==null?'-':percent(one.unsuccessful_order_rate)+(one.unsuccessful_order_rate_last_period!=null?' (kỳ trước '+percent(one.unsuccessful_order_rate_last_period)+')':'')],
-    ['Tỷ lệ giao hàng trễ', one.late_shipment_rate==null?'-':percent(one.late_shipment_rate)+(one.late_shipment_rate_last_period!=null?' (kỳ trước '+percent(one.late_shipment_rate_last_period)+')':'')],
-    ['Tỷ lệ hủy đơn', one.cancellation_rate==null?'-':percent(one.cancellation_rate)],
-    ['Tỷ lệ hoàn trả', one.return_refund_rate==null?'-':percent(one.return_refund_rate)],
-    ['Thời gian chuẩn bị hàng', one.avg_preparation_time==null?'-':one.avg_preparation_time+' ngày'],
+    ['Tỷ lệ đơn không thành công (Non-fulfilment)', one.unsuccessful_order_rate==null?'-':percent(one.unsuccessful_order_rate)+fmtTarget(one.non_fulfillment_rate_target)+(one.unsuccessful_order_rate_last_period!=null?' (kỳ trước '+percent(one.unsuccessful_order_rate_last_period)+')':'')],
+    ['Tỷ lệ giao hàng trễ', one.late_shipment_rate==null?'-':percent(one.late_shipment_rate)+fmtTarget(one.late_shipment_rate_target)+(one.late_shipment_rate_last_period!=null?' (kỳ trước '+percent(one.late_shipment_rate_last_period)+')':'')],
+    ['Tỷ lệ hủy đơn', one.cancellation_rate==null?'-':percent(one.cancellation_rate)+fmtTarget(one.cancellation_rate_target)],
+    ['Tỷ lệ hoàn trả', one.return_refund_rate==null?'-':percent(one.return_refund_rate)+fmtTarget(one.return_refund_rate_target)],
+    ['Thời gian chuẩn bị hàng', one.avg_preparation_time==null?'-':one.avg_preparation_time+' ngày'+fmtTarget(one.preparation_time_target)],
+    ['Đánh giá sao shop (shop_rating)', one.shop_rating==null?'-':one.shop_rating.toFixed(2)+' ★'+fmtTarget(one.shop_rating_target)+(one.shop_rating_last_period!=null?' (kỳ trước '+one.shop_rating_last_period.toFixed(2)+' ★)':'')],
+    ['Tỷ lệ phản hồi chat (response_rate)', one.response_rate==null?'-':percent(one.response_rate)+fmtTarget(one.response_rate_target)],
+    ['Tỷ lệ đăng bán trước (pre_order_listing_rate)', one.pre_order_listing_rate==null?'-':percent(one.pre_order_listing_rate)+fmtTarget(one.pre_order_listing_rate_target)],
+    ['Vi phạm listing nghiêm trọng', one.severe_listing_violations==null?'-':num(one.severe_listing_violations)],
+    ['Vi phạm listing khác', one.other_listing_violations==null?'-':num(one.other_listing_violations)],
+    ['Sản phẩm bị cấm bán', one.prohibited_listings==null?'-':num(one.prohibited_listings)],
+    ['Vi phạm bản quyền/hàng giả', one.counterfeit_ip_infringement==null?'-':num(one.counterfeit_ip_infringement)],
+    ['Sản phẩm bị nghi spam', one.spam_listings==null?'-':num(one.spam_listings)],
     ['Lịch sử điểm phạt (số bản ghi)', num(one.penalty_history_count||0)],
     ['Hình phạt (số bản ghi)', num(one.punishment_history_count||0)],
     ['API lỗi khi đồng bộ', errs ? one.sync_errors.map(e=>`${e.label}: ${e.error}`).join(' | ') : 'Không'],
   ];
   $('perfStatusRows').innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td><b>${fmtDetailVal(v)}</b></td></tr>`).join('');
+  // V66.6: danh sách chi tiết thay vì chỉ hiện số lượng — đơn trễ cụ thể, sản phẩm lỗi cụ thể, hình phạt cụ thể.
+  const lateList=one.late_orders_list||[];
+  $('perfLateOrdersBox').classList.toggle('hidden', !lateList.length);
+  $('perfLateOrdersRows').innerHTML=lateList.map(o=>`<tr><td>${fmtDetailVal(o.order_sn)}</td><td class="right">${num(o.late_by_days)}</td><td>${o.shipping_deadline?new Date(o.shipping_deadline*1000).toLocaleString('vi-VN'):'-'}</td></tr>`).join('');
+  const listingList=one.listings_with_issues_list||[];
+  $('perfListingsBox').classList.toggle('hidden', !listingList.length);
+  $('perfListingsRows').innerHTML=listingList.map(it=>`<tr><td>${fmtDetailVal(it.item_name||it.item_id)}</td><td>${fmtDetailVal(it.issue_type||it.violation_type||JSON.stringify(it))}</td></tr>`).join('');
+  const punishList=one.punishment_history_list||[];
+  $('perfPunishBox').classList.toggle('hidden', !punishList.length);
+  $('perfPunishRows').innerHTML=punishList.map(p=>`<tr><td>${fmtDetailVal(p.punishment_name||p.punishment_type)}</td><td>${fmtDetailVal(p.punishment_status||p.status)}</td><td>${p.start_time?new Date(p.start_time*1000).toLocaleDateString('vi-VN'):'-'} → ${p.end_time?new Date(p.end_time*1000).toLocaleDateString('vi-VN'):'-'}</td></tr>`).join('');
   $('perfRaw').textContent=JSON.stringify(data,null,2);
 }
 async function syncAccountHealth(){
