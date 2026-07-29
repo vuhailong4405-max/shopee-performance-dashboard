@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.9</title>
+  <title>Gooby BI Dashboard V66.10</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -271,8 +271,10 @@
       <div id="mktCoinSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên, sau đó tải file Excel/CSV đã xuất từ Shopee lên để xem.</div>
       <div class="orders-toolbar">
         <div class="field"><label>File Excel/CSV từ Shopee</label><input type="file" id="mktCoinFile" accept=".xlsx,.xls,.csv"></div>
-        <button id="mktCoinUploadBtn">Tải lên & lưu</button>
+        <button class="ghost" id="mktCoinReadBtn">1. Đọc file (xem trước)</button>
+        <button id="mktCoinSaveBtn" disabled>2. Lưu dữ liệu</button>
         <button class="ghost" id="mktCoinReloadBtn">Tải lại số liệu đã lưu</button>
+        <button class="ghost" id="mktCoinDeleteBtn" style="color:#b42318">Xóa dữ liệu đã lưu (shop này)</button>
       </div>
       <div class="perf-grid">
         <div class="perf-card"><div class="k">Tổng Xu đã chi</div><div class="v" id="mktCoinTotalSpend">-</div><div class="muted">Tổng các dòng "Chi" trong file đã tải lên</div></div>
@@ -814,14 +816,30 @@ function parseMarketingCoinSheetRows(aoa){
   }
   return out;
 }
-async function uploadMarketingCoinFile(){
-  const shop=$('shop').value||'all';
-  if(shop==='all'){ $('mktCoinSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể trước khi tải file lên (Xu Marketing tính riêng theo từng shop).'; return; }
+// V66.10: tách 2 bước — đọc file để xem trước (không lưu) rồi mới bấm nút riêng để lưu lên server,
+// và thêm nút xoá dữ liệu đã lưu (vì upload chưa có dedupe, tải trùng file sẽ cộng dồn 2 lần).
+let mktCoinPendingRows=null, mktCoinPendingFileName='';
+function renderMarketingCoinRows(rows){
+  const byCat={};
+  for(const r of rows){ const c=r.category||'Khác'; (byCat[c]=byCat[c]||{category:c,count:0,spend:0}).count++; byCat[c].spend+=r.coin_amount; }
+  const cats=Object.values(byCat).sort((a,b)=>b.spend-a.spend);
+  const total=rows.reduce((s,r)=>s+r.coin_amount,0);
+  $('mktCoinTotalSpend').textContent=num(total)+' Xu';
+  const findCat=(re)=>cats.filter(c=>re.test(c.category||'')).reduce((s,c)=>s+c.spend,0);
+  $('mktCoinLive').textContent=num(findCat(/livestream/i))+' Xu';
+  $('mktCoinPrize').textContent=num(findCat(/giải thưởng|prize|minigame/i))+' Xu';
+  $('mktCoinReview').textContent=num(findCat(/đánh giá|review/i))+' Xu';
+  $('mktCoinCategoryRows').innerHTML=cats.map(c=>`<tr><td>${fmtDetailVal(c.category)}</td><td class="right">${num(c.count)}</td><td class="right"><b>${num(c.spend)}</b></td></tr>`).join('') || '<tr><td colspan="3" class="empty">Chưa có dữ liệu.</td></tr>';
+  $('mktCoinRows').innerHTML=rows.slice(0,500).map(r=>`<tr><td>${r.tx_time_iso?new Date(r.tx_time_iso).toLocaleString('vi-VN'):(r.tx_time?new Date(r.tx_time).toLocaleString('vi-VN'):'-')}</td><td>${fmtDetailVal(r.category)}</td><td>${fmtDetailVal(r.campaign_name)}</td><td class="right">${num(r.coin_amount)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có dữ liệu.</td></tr>';
+}
+async function readMarketingCoinFile(){
   const fileInput=$('mktCoinFile');
   const file=fileInput.files && fileInput.files[0];
   if(!file){ $('mktCoinSummary').innerHTML='⚠️ Chưa chọn file.'; return; }
   if(typeof XLSX==='undefined'){ $('mktCoinSummary').innerHTML='⚠️ Chưa tải được thư viện đọc Excel (kiểm tra kết nối mạng rồi thử lại).'; return; }
   $('mktCoinSummary').innerHTML='⏳ Đang đọc file...';
+  $('mktCoinSaveBtn').disabled=true;
+  mktCoinPendingRows=null;
   try{
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array'});
@@ -829,14 +847,43 @@ async function uploadMarketingCoinFile(){
     const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,defval:''});
     const rows=parseMarketingCoinSheetRows(aoa);
     if(!rows.length){ $('mktCoinSummary').innerHTML='⚠️ Không đọc được dòng dữ liệu nào từ file. Cột nhận diện được ở dòng đầu: '+JSON.stringify(aoa[0]||[])+'. Báo lại cho tôi để chỉnh cách đọc cột.'; return; }
-    $('mktCoinSummary').innerHTML='⏳ Đang lưu '+num(rows.length)+' dòng lên server...';
-    const res=await fetch(getWorker()+'/api/marketing/coin-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:file.name,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows})});
+    mktCoinPendingRows=rows;
+    mktCoinPendingFileName=file.name;
+    renderMarketingCoinRows(rows);
+    $('mktCoinSummary').innerHTML='👀 <b>Xem trước</b> (chưa lưu): đọc được '+num(rows.length)+' dòng "Chi" từ file "'+file.name+'". Kiểm tra số liệu bên dưới, thấy đúng thì bấm <b>"2. Lưu dữ liệu"</b>.';
+    $('mktCoinSaveBtn').disabled=false;
+  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi đọc file: '+e.message; }
+}
+async function saveMarketingCoinRows(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'){ $('mktCoinSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể trước khi lưu (Xu Marketing tính riêng theo từng shop).'; return; }
+  if(!mktCoinPendingRows || !mktCoinPendingRows.length){ $('mktCoinSummary').innerHTML='⚠️ Chưa đọc file nào — bấm "1. Đọc file" trước.'; return; }
+  $('mktCoinSummary').innerHTML='⏳ Đang lưu '+num(mktCoinPendingRows.length)+' dòng lên server...';
+  try{
+    const res=await fetch(getWorker()+'/api/marketing/coin-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:mktCoinPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:mktCoinPendingRows})});
     const data=await res.json().catch(()=>null);
     if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
-    $('mktCoinSummary').innerHTML='✅ Đã lưu '+num(data.rows_saved)+' dòng từ file "'+file.name+'".';
-    fileInput.value='';
+    $('mktCoinSummary').innerHTML='✅ Đã lưu '+num(data.rows_saved)+' dòng từ file "'+mktCoinPendingFileName+'".';
+    mktCoinPendingRows=null;
+    $('mktCoinSaveBtn').disabled=true;
+    $('mktCoinFile').value='';
     await loadMarketingCoinSummary();
-  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi đọc/lưu file: '+e.message; }
+  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi lưu: '+e.message; }
+}
+async function deleteMarketingCoinData(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'){ $('mktCoinSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể trước khi xoá.'; return; }
+  if(!confirm('Xoá TOÀN BỘ dữ liệu Xu Marketing đã lưu của shop này? Không thể hoàn tác — nếu cần lại phải tải file lên lại.')) return;
+  $('mktCoinSummary').innerHTML='⏳ Đang xoá dữ liệu...';
+  try{
+    const res=await fetch(getWorker()+'/api/marketing/coin-delete?'+new URLSearchParams({shop_id:shop}).toString(),{method:'POST'});
+    const data=await res.json().catch(()=>null);
+    if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
+    $('mktCoinSummary').innerHTML='🗑️ Đã xoá dữ liệu Xu Marketing đã lưu của shop này.';
+    mktCoinPendingRows=null;
+    $('mktCoinSaveBtn').disabled=true;
+    await loadMarketingCoinSummary();
+  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi xoá: '+e.message; }
 }
 async function loadMarketingCoinSummary(){
   const shop=$('shop').value||'all';
@@ -1045,7 +1092,7 @@ function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ con
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinUploadBtn').addEventListener('click',uploadMarketingCoinFile); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
