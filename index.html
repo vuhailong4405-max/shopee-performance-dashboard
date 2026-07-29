@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.8</title>
+  <title>Gooby BI Dashboard V66.9</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -280,6 +280,7 @@
         <div class="perf-card"><div class="k">Giải thưởng của Shop</div><div class="v" id="mktCoinPrize">-</div><div class="muted">Xu cho minigame/giải thưởng</div></div>
         <div class="perf-card"><div class="k">Xu thưởng đánh giá</div><div class="v" id="mktCoinReview">-</div><div class="muted">Xu tặng khi khách đánh giá</div></div>
       </div>
+      <div class="table-wrap"><table><thead><tr><th>Phân loại (đầy đủ)</th><th class="right">Số dòng</th><th class="right">Tổng Xu đã chi</th></tr></thead><tbody id="mktCoinCategoryRows"><tr><td colspan="3" class="empty">Chưa có dữ liệu.</td></tr></tbody></table></div>
       <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Chương trình</th><th class="right">Xu</th></tr></thead><tbody id="mktCoinRows"><tr><td colspan="4" class="empty">Chưa có dữ liệu — hãy tải file lên.</td></tr></tbody></table></div>
     </section>
 
@@ -758,27 +759,55 @@ function parseVNDateTime(v){
   if(m){ const[,dd,mm,yyyy]=m; return new Date(Date.UTC(+yyyy,+mm-1,+dd)).toISOString(); }
   return null;
 }
+// V66.9: file Shopee thật xuất ra có 2 dòng "Lọc - Theo Ngày:...", "Lọc - Theo Loại:..." ở đầu TRƯỚC dòng
+// tiêu đề thật (Ngày,Loại,Loại,Tên chương trình khuyến mãi,Xu Của Shop) — phải tự dò đúng dòng tiêu đề,
+// không được giả định luôn là dòng đầu tiên.
+// QUAN TRỌNG: file CSV thật của Shopee lưu chữ có dấu KHÔNG đồng nhất Unicode — 2 cột cùng tên "Loại" trong
+// cùng 1 dòng nhưng 1 cột dùng dạng dấu liền (NFC), cột kia dùng dạng dấu tách rời (NFD) — nhìn giống hệt
+// nhau nhưng so sánh chuỗi thường (===) sẽ SAI với 1 trong 2. Phải .normalize('NFC') trước khi so sánh.
+function vnNorm(s){ return String(s||'').trim().toLowerCase().normalize('NFC'); }
+function scoreMarketingCoinHeaderRow(headers){
+  let score=0;
+  (headers||[]).forEach(h=>{
+    const hl=vnNorm(h);
+    if(hl==='ngày'||hl==='date'||hl==='thời gian') score+=2;
+    else if(hl==='loại'||hl==='type') score+=2;
+    else if(/chương trình|khuyến mãi|campaign/.test(hl)) score+=2;
+    else if(/^xu\b|coin/.test(hl)) score+=2;
+  });
+  return score;
+}
 function parseMarketingCoinSheetRows(aoa){
   if(!aoa||!aoa.length) return [];
-  const headers=(aoa[0]||[]).map(h=>String(h||'').trim());
+  let headerRowIdx=-1, bestScore=0;
+  for(let i=0;i<Math.min(10,aoa.length);i++){
+    const s=scoreMarketingCoinHeaderRow(aoa[i]||[]);
+    if(s>bestScore){ bestScore=s; headerRowIdx=i; }
+  }
+  if(headerRowIdx===-1) return [];
+  const headers=(aoa[headerRowIdx]||[]).map(h=>String(h||'').trim());
   let timeIdx=-1,type1Idx=-1,type2Idx=-1,campaignIdx=-1,amountIdx=-1;
   headers.forEach((h,i)=>{
-    const hl=h.toLowerCase();
-    if(timeIdx===-1 && /ngày|date|thời gian/.test(hl)) timeIdx=i;
-    else if(/^loại/.test(hl) || hl==='type'){ if(type1Idx===-1) type1Idx=i; else if(type2Idx===-1) type2Idx=i; }
-    else if(campaignIdx===-1 && /chương trình|campaign|khuyến mãi/.test(hl)) campaignIdx=i;
-    else if(amountIdx===-1 && /xu|coin/.test(hl)) amountIdx=i;
+    const hl=vnNorm(h);
+    if(timeIdx===-1 && (hl==='ngày'||hl==='date'||hl==='thời gian')) timeIdx=i;
+    else if(hl==='loại'||hl==='type'){ if(type1Idx===-1) type1Idx=i; else if(type2Idx===-1) type2Idx=i; }
+    else if(campaignIdx===-1 && /chương trình|khuyến mãi|campaign/.test(hl)) campaignIdx=i;
+    else if(amountIdx===-1 && /^xu\b|coin/.test(hl)) amountIdx=i;
   });
   const out=[];
-  for(let r=1;r<aoa.length;r++){
+  for(let r=headerRowIdx+1;r<aoa.length;r++){
     const row=aoa[r]||[];
     if(!row.some(c=>c!=='' && c!=null)) continue;
     if(amountIdx<0) continue;
-    const amount=parseMoneyVN(row[amountIdx]);
+    // Chỉ lấy dòng "Chi" (bỏ "Nhận"/nạp xu) — theo yêu cầu, không tính Xu nạp/nhận vào chi phí.
+    const txType=type1Idx>=0 ? String(row[type1Idx]||'').trim() : '';
+    if(txType!=='Chi') continue;
+    // Cột Xu đang có dấu trừ phía trước — bỏ dấu trừ, tính như số dương bình thường.
+    const amount=Math.abs(parseMoneyVN(row[amountIdx]));
     out.push({
       tx_time_iso: timeIdx>=0 ? parseVNDateTime(row[timeIdx]) : null,
-      tx_type: type1Idx>=0 ? String(row[type1Idx]||'').trim() : '',
-      category: type2Idx>=0 ? String(row[type2Idx]||'').trim() : (type1Idx>=0 ? String(row[type1Idx]||'').trim() : ''),
+      tx_type: txType,
+      category: type2Idx>=0 ? String(row[type2Idx]||'').trim() : '',
       campaign_name: campaignIdx>=0 ? String(row[campaignIdx]||'').trim() : '',
       coin_amount: amount,
     });
@@ -811,7 +840,7 @@ async function uploadMarketingCoinFile(){
 }
 async function loadMarketingCoinSummary(){
   const shop=$('shop').value||'all';
-  if(shop==='all'){ $('mktCoinSummary').innerHTML='⚠️ Chọn 1 shop cụ thể để xem Xu Marketing (không có tổng hợp "tất cả shop").'; $('mktCoinRows').innerHTML='<tr><td colspan="4" class="empty">Chọn 1 shop.</td></tr>'; return; }
+  if(shop==='all'){ $('mktCoinSummary').innerHTML='⚠️ Chọn 1 shop cụ thể để xem Xu Marketing (không có tổng hợp "tất cả shop").'; $('mktCoinRows').innerHTML='<tr><td colspan="4" class="empty">Chọn 1 shop.</td></tr>'; $('mktCoinCategoryRows').innerHTML='<tr><td colspan="3" class="empty">Chọn 1 shop.</td></tr>'; return; }
   const data=await api('/api/marketing/coin-summary?'+new URLSearchParams({shop_id:shop}).toString());
   $('mktCoinTotalSpend').textContent=num(data.total_spend||0)+' Xu';
   const byCat=data.by_category||[];
@@ -822,9 +851,10 @@ async function loadMarketingCoinSummary(){
   if(!data.rows_count){
     $('mktCoinSummary').innerHTML='ℹ️ Chưa có dữ liệu Xu Marketing cho shop này — tải file Excel/CSV xuất từ Shopee lên.';
   } else {
-    $('mktCoinSummary').innerHTML='✅ Đang xem '+num(data.rows_count)+' dòng đã lưu (lần tải gần nhất). Muốn cập nhật thêm thì xuất file mới từ Shopee rồi tải lên.';
+    $('mktCoinSummary').innerHTML='✅ Đang xem '+num(data.rows_count)+' dòng "Chi" đã lưu (lần tải gần nhất). Muốn cập nhật thêm thì xuất file mới từ Shopee rồi tải lên.';
   }
-  $('mktCoinRows').innerHTML=(data.rows||[]).map(r=>`<tr><td>${r.tx_time?new Date(r.tx_time).toLocaleString('vi-VN'):'-'}</td><td>${fmtDetailVal(r.tx_type)} · ${fmtDetailVal(r.category)}</td><td>${fmtDetailVal(r.campaign_name)}</td><td class="right">${num(r.coin_amount)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có dữ liệu.</td></tr>';
+  $('mktCoinCategoryRows').innerHTML=byCat.map(c=>`<tr><td>${fmtDetailVal(c.category)}</td><td class="right">${num(c.count)}</td><td class="right"><b>${num(c.spend)}</b></td></tr>`).join('') || '<tr><td colspan="3" class="empty">Chưa có dữ liệu.</td></tr>';
+  $('mktCoinRows').innerHTML=(data.rows||[]).map(r=>`<tr><td>${r.tx_time?new Date(r.tx_time).toLocaleString('vi-VN'):'-'}</td><td>${fmtDetailVal(r.category)}</td><td>${fmtDetailVal(r.campaign_name)}</td><td class="right">${num(r.coin_amount)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có dữ liệu.</td></tr>';
 }
 
 // ===== V66: tab Kho hàng (SSC) — tồn kho + số bán thật (kể cả quy đổi combo) =====
