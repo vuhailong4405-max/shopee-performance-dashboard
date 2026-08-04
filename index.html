@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard V66.10</title>
+  <title>Gooby BI Dashboard · Modular Workspace</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -131,23 +131,156 @@
 
     @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.perf-grid,.sync-plan,.sys-grid{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
     @media(max-width:760px){.app{padding:12px}.perf-grid,.sync-plan,.sys-grid{grid-template-columns:1fr}.hero{padding:18px;border-radius:18px}.hero h1{font-size:19px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:22px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:320px}}
+
+    /* ---- Modular Workspace · concept 09 ---- */
+    :root{
+      --bg:#f7f8fb;--surface:#fff;--text:#101828;--muted:#667085;--muted2:#98a2b3;--line:#e4e7ec;--ink:#1d2939;
+      --brand:#ff6b35;--brand2:#ff8a4c;--navy:#071a35;--navy2:#0d284d;
+      --shadow:0 1px 2px rgba(16,24,40,.03),0 10px 28px rgba(16,24,40,.045);--shadow2:0 1px 3px rgba(16,24,40,.04);
+      --radius:15px;--radius-sm:10px;
+    }
+    html{background:var(--bg)}
+    body{min-width:320px;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 70% -20%,rgba(99,102,241,.045),transparent 34%);z-index:-1}
+    .app{max-width:none;margin:0 0 0 228px;padding:0 26px 52px;min-height:100vh}
+
+    .tabs{position:fixed;inset:0 auto 0 0;width:228px;height:100vh;z-index:30;margin:0;padding:18px 13px 16px;display:flex;flex-direction:column;flex-wrap:nowrap;gap:5px;background:linear-gradient(180deg,var(--navy) 0%,#06172e 100%);border:0;box-shadow:12px 0 36px rgba(7,26,53,.08);backdrop-filter:none;overflow-y:auto}
+    .side-brand{display:flex;align-items:center;gap:11px;padding:2px 6px 23px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.09)}
+    .side-logo{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,#ff7a3d,#ff5b21);color:#fff;font-size:18px;font-weight:950;box-shadow:0 10px 24px rgba(255,107,53,.26)}
+    .side-brand strong{color:#fff;font-size:17px;letter-spacing:.01em}.side-brand span{color:#ff8757}
+    .tabbtn{width:100%;height:46px;flex:none;justify-content:flex-start;padding:0 13px;border:1px solid transparent;border-radius:11px;background:transparent;color:#cbd5e1;box-shadow:none;font-size:13.5px;font-weight:700;transition:.18s ease}
+    .tabbtn:hover{color:#fff;background:rgba(255,255,255,.07)}
+    .tabbtn .ic{width:22px;display:inline-grid;place-items:center;font-size:16px;filter:grayscale(1) brightness(1.8)}
+    .tabbtn.active{color:#fff;border-color:rgba(255,255,255,.12);background:linear-gradient(135deg,var(--brand),#ff812f);box-shadow:0 10px 22px rgba(255,107,53,.23)}
+    .tabbtn.active .ic{filter:none}
+    .role-switcher{margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.09)}
+    .role-switcher>span{display:block;padding:0 8px 9px;color:#7890ad;font-size:9.5px;line-height:1.35;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .rolebtn{width:100%;height:38px;margin:0 0 6px;justify-content:flex-start;padding:0 11px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.045);color:#cbd5e1;box-shadow:none;font-size:12px;font-weight:750;text-align:left}
+    .rolebtn:hover{background:rgba(255,255,255,.09);color:#fff}.rolebtn.active{border-color:var(--brand);background:rgba(255,107,53,.1);color:#fff}
+    .side-user{display:flex;align-items:center;gap:10px;margin-top:12px;padding:13px 8px 0;border-top:1px solid rgba(255,255,255,.09);color:#fff}
+    .side-avatar{width:33px;height:33px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,#ff8757,#ff6530);font-weight:900}
+    .side-user div{min-width:0}.side-user strong{display:block;font-size:12px}.side-user small{display:block;margin-top:2px;color:#8fa3bd;font-size:10.5px}
+
+    .hero{min-height:88px;margin:0 -26px;padding:19px 26px;display:flex;align-items:center;border-radius:0;background:rgba(255,255,255,.9);color:var(--text);box-shadow:none;border-bottom:1px solid var(--line);overflow:visible;backdrop-filter:blur(16px)}
+    .hero:after{display:none}.hero .brandmark{gap:0}.hero .logo{display:none}
+    .hero h1{font-size:22px;font-weight:850;letter-spacing:-.025em}.hero p{margin-top:5px;color:var(--muted);opacity:1;font-size:12.5px}
+    .hero .heroRight{gap:8px;z-index:2}.pill{background:#ecfdf3;color:#067647;border:1px solid #d1fadf;padding:7px 10px}.pill .dot{background:#12b76a;box-shadow:none}
+    .range-note{height:38px;padding:0 11px;background:#fff;color:var(--muted);border:1px solid var(--line);border-radius:10px;font-size:11.5px;font-weight:700}
+    .header-action{height:38px;padding:0 12px;display:inline-flex;align-items:center;gap:7px;border-radius:10px;background:#fff!important;color:var(--ink)!important;border:1px solid var(--line)!important;box-shadow:none!important;font-size:12.5px}
+    .header-action.primary{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important}
+
+    .topbar{position:relative;margin:18px 0 0;padding:14px 15px;display:flex;align-items:flex-end;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow2)}
+    .filters{gap:10px;align-items:flex-end}.field{gap:5px}.field label{font-size:9.5px;color:#667085;letter-spacing:.07em}
+    input,select,button{height:40px;border-radius:9px;border-color:#d7dce3;font-size:12.5px}
+    select,input[type=date]{min-width:150px}.status{max-width:310px;font-size:11px}
+
+    .tab-panel{margin-top:18px}.tab-title{margin:0 0 12px}.tab-title h2{font-size:18px}.tab-title p{font-size:12px;max-width:900px}
+    .card{position:relative;padding:16px;background:#fff;border:1px solid var(--line);border-top:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow2);transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+    .card:hover{border-color:#d0d5dd;box-shadow:var(--shadow)}
+    .metrics{grid-template-columns:repeat(6,minmax(0,1fr));gap:11px;margin-top:0}
+    .metric{min-height:135px;padding:16px 14px;cursor:grab}.metric:active{cursor:grabbing}.metric:first-child{border-color:rgba(255,107,53,.72);box-shadow:0 0 0 1px rgba(255,107,53,.08)}
+    .metric:before{content:"↗";display:grid;place-items:center;width:34px;height:34px;margin-bottom:14px;border-radius:10px;background:#fff1eb;color:var(--brand);font-size:17px;font-weight:900}
+    .metric:nth-child(2):before{content:"▣";background:#f0edff;color:#7c3aed}.metric:nth-child(3):before{content:"✓";background:#eafbf5;color:#12a676}.metric:nth-child(4):before{content:"×";background:#fff0f0;color:#ef4444}.metric:nth-child(5):before{content:"◇";background:#eef4ff;color:#3b82f6}.metric:nth-child(6):before{content:"%";background:#fff3ed;color:#f97316}
+    .metric:after,.grid2>.card:after{content:"⠿";position:absolute;right:11px;top:10px;width:auto;height:auto;border-radius:0;background:none;color:#98a2b3;font-size:15px;line-height:1;opacity:.75}
+    .metric .label{position:absolute;top:22px;left:58px;right:28px;color:#344054;font-size:11.5px;line-height:1.25;text-transform:none;letter-spacing:0}
+    .metric .value{margin-top:0;font-size:25px;font-weight:850}.metric .subline{margin-top:10px;font-size:10.5px}.delta{font-size:10px;padding:3px 7px}
+    .grid2{grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);gap:12px;margin-top:12px}.grid2>.card{min-width:0;cursor:grab}.grid2>.card:active{cursor:grabbing}
+    #tab-gmv>.tab-title{display:none}
+    .overview-modules{display:grid;grid-template-columns:1fr 1.15fr;gap:12px;margin-top:12px}
+    .overview-module{min-width:0;min-height:250px;padding:16px}
+    .module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}
+    .module-head h3{margin:0;font-size:15px;letter-spacing:-.01em}.module-head p{margin:4px 0 0;color:var(--muted);font-size:10.5px}
+    .module-link{height:auto;min-height:0;padding:4px;background:transparent!important;color:#2563eb!important;border:0!important;box-shadow:none!important;font-size:10.5px;white-space:nowrap}
+    .order-health{display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px;align-items:center}
+    .order-donut{--valid:70%;--cancel:82%;position:relative;width:124px;aspect-ratio:1;border-radius:50%;background:conic-gradient(#12b76a 0 var(--valid),#f79009 var(--valid) var(--cancel),#f04438 var(--cancel) 100%);box-shadow:inset 0 0 0 1px rgba(16,24,40,.04)}
+    .order-donut:after{content:"";position:absolute;inset:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #f2f4f7}
+    .donut-center{position:absolute;inset:0;z-index:1;display:grid;place-content:center;text-align:center}.donut-center strong{font-size:21px;line-height:1}.donut-center span{margin-top:4px;color:var(--muted);font-size:9.5px}
+    .order-legend{display:grid;gap:10px}.order-legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;color:#475467;font-size:11px}.order-legend-row i{width:8px;height:8px;border-radius:50%}.order-legend-row strong{color:var(--text);font-size:11.5px}.order-rate{grid-column:1/-1;margin-top:4px;padding:10px;border-radius:10px;background:#f8fafc;color:#475467;font-size:10.5px}.order-rate b{float:right;color:#067647;font-size:12px}
+    .order-panel .order-health{grid-template-columns:150px minmax(0,1fr);margin-top:46px}.order-panel .order-donut{width:142px}.order-panel .order-legend{gap:14px}
+    .module-loading{min-height:154px;display:grid;place-items:center;color:var(--muted);font-size:11px;text-align:center}
+    .marketing-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.marketing-stat{padding:11px;border:1px solid #eaecf0;border-radius:10px;background:#fcfcfd}.marketing-stat span{display:block;color:var(--muted);font-size:9.5px}.marketing-stat strong{display:block;margin-top:6px;font-size:17px;letter-spacing:-.02em}.marketing-stat small{display:block;margin-top:3px;color:#12a676;font-size:9px}.marketing-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:9px 10px;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:10px}
+    .inventory-list{display:grid;gap:0;border:1px solid #eaecf0;border-radius:10px;overflow:hidden}.inventory-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 10px;border-bottom:1px solid #f0f2f5}.inventory-row:last-child{border-bottom:0}.inventory-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:#fff4ed;color:#f97316;font-size:13px}.inventory-row strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px}.inventory-row small{display:block;margin-top:2px;color:var(--muted);font-size:8.8px}.stock-count{text-align:right}.stock-count b{display:block;font-size:12px}.stock-count small.low{color:#d92d20}.stock-count small.ok{color:#067647}.inventory-summary{display:flex;justify-content:space-between;gap:8px;margin-top:10px;color:var(--muted);font-size:10px}.inventory-summary b{color:var(--text)}
+    .storage-details{margin-top:12px!important;padding:0!important;overflow:hidden}.storage-details>summary{cursor:pointer;padding:14px 16px;color:#475467;font-size:11.5px;font-weight:800;list-style:none}.storage-details>summary:after{content:"⌄";float:right;color:#98a2b3}.storage-details[open]>summary{border-bottom:1px solid var(--line)}.storage-details[open]>summary:after{content:"⌃"}.storage-details>.notice,.storage-details>.table-wrap{margin-left:16px!important;margin-right:16px!important}.storage-details>.table-wrap{margin-bottom:16px!important}
+    .section-title{margin-bottom:12px}.section-title h2{padding-left:0;border-left:0;font-size:15.5px}.section-title p{margin:4px 0 0;color:#667085;font-size:11.5px}.legend{font-size:11px}.sw{border-radius:50%;width:9px;height:9px}
+    .chart-wrap{height:340px;padding:12px 10px 6px;border:0;border-radius:10px;background:#fff}.axis{font-size:10px}.gridline{stroke:#eaecf0}.bar{fill:url(#barGrad)}
+    .table-wrap{border-color:#eaecf0;border-radius:10px}table{font-size:12.5px}th,td{padding:10px 12px}th{font-size:10px;background:#fcfcfd}
+    .perf-grid,.diag-grid,.sys-grid{gap:10px}.perf-card,.diag-card,.sync-plan .item,.detail-section{border-color:var(--line);background:#fff;border-radius:12px}
+    .notice{border-radius:11px;font-size:12px}.tab-panel>.card{margin-top:12px!important}
+    .is-dragging{opacity:.48!important;transform:scale(.985)!important;box-shadow:0 18px 40px rgba(16,24,40,.15)!important}
+
+    .customize-panel{position:fixed;z-index:60;top:70px;right:26px;width:320px;padding:15px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px rgba(16,24,40,.18);transform:translateY(-6px);opacity:0;pointer-events:none;transition:.18s ease}
+    .customize-panel.open{transform:translateY(0);opacity:1;pointer-events:auto}
+    .customize-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}.customize-head strong{font-size:14px}.customize-close{width:30px;height:30px;padding:0;background:#f2f4f7;color:#475467;box-shadow:none}
+    .layout-choices{display:grid;grid-template-columns:1fr 1fr;gap:9px}.layout-choice{height:auto;min-height:104px;padding:10px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;text-align:left}.layout-choice.active{border-color:#2563eb;box-shadow:0 0 0 2px #eff4ff}.layout-preview{width:100%;height:48px;display:grid;grid-template-columns:1fr 2.1fr;gap:4px;padding:5px;border-radius:7px;background:#f2f4f7}.layout-preview i{display:block;border-radius:3px;background:#c9d8f5}.layout-preview i:last-child{background:#e0e7f2}.layout-choice strong{font-size:11.5px}.layout-choice small{color:var(--muted);font-size:9.5px}
+    .customize-note{margin:12px 0 0;padding-top:11px;border-top:1px solid var(--line);color:var(--muted);font-size:10.5px;line-height:1.5}.density-row{display:flex;align-items:center;justify-content:space-between;margin-top:11px;font-size:11.5px;font-weight:700}.density-row input{width:34px;height:18px;min-width:0}
+    body.layout-focus .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}body.layout-focus .grid2{grid-template-columns:1fr}body.layout-focus .grid2>.card:first-child{order:-1}
+    body.density-compact .card{padding:12px}body.density-compact .metric{min-height:112px}body.density-compact .metric:before{margin-bottom:9px}body.density-compact .chart-wrap{height:300px}
+
+    @media(max-width:1260px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.overview-modules{grid-template-columns:1fr 1fr}.order-panel .order-health{margin-top:10px}.app{padding-left:20px;padding-right:20px}.hero{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
+    @media(max-width:920px){
+      .app{margin-left:0;padding:0 14px 40px}.hero{margin:0 -14px;padding:15px 14px;min-height:auto;align-items:flex-start}.hero .heroRight{width:100%;justify-content:flex-start}.hero h1{font-size:19px}
+      .tabs{position:sticky;inset:auto;top:0;width:100%;height:auto;margin:0;padding:8px 14px;display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;background:rgba(7,26,53,.97);box-shadow:0 8px 24px rgba(7,26,53,.12)}
+      .side-brand,.role-switcher,.side-user{display:none}.tabbtn{width:auto;min-width:max-content;height:40px;padding:0 12px}.topbar{align-items:flex-start}.overview-modules{grid-template-columns:1fr}.customize-panel{top:62px;right:14px;width:min(320px,calc(100vw - 28px))}
+    }
+    @media(max-width:680px){.metrics,body.layout-focus .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-grid,.sync-plan,.sys-grid,.diag-grid,.detail-grid{grid-template-columns:1fr}.topbar{padding:12px}.filters{display:grid;grid-template-columns:1fr 1fr;width:100%}.field,select,input{width:100%;min-width:0}.status{justify-content:flex-start}.metric{min-height:125px}.chart-wrap{height:300px;max-width:100%}.section-title{min-width:0;flex-wrap:wrap}.section-title>*{min-width:0}.legend{max-width:100%}.range-note{display:none}.heroRight{display:grid!important;grid-template-columns:1fr 1fr}.heroRight .pill{grid-column:1/-1}.header-action{width:100%;min-width:0;justify-content:center}.tab-title p{display:none}}
+    @media(max-width:420px){.metrics,body.layout-focus .metrics{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.metric{min-height:118px}.order-health,.order-panel .order-health{grid-template-columns:110px minmax(0,1fr)}.order-donut,.order-panel .order-donut{width:105px}}
   </style>
 </head>
 <body>
+  <nav class="tabs" aria-label="Chuyển khu vực dashboard">
+    <div class="side-brand">
+      <div class="side-logo">G</div>
+      <strong>GOOBY <span>BI</span></strong>
+    </div>
+    <button class="tabbtn active" data-tab="gmv"><span class="ic">⌂</span>Tổng quan</button>
+    <button class="tabbtn" data-tab="orders"><span class="ic">▣</span>Đơn hàng</button>
+    <button class="tabbtn" data-tab="performance"><span class="ic">◎</span>Hiệu quả</button>
+    <button class="tabbtn" data-tab="marketing"><span class="ic">↗</span>Marketing</button>
+    <button class="tabbtn" data-tab="warehouse"><span class="ic">◇</span>Kho hàng</button>
+    <button class="tabbtn" data-tab="system"><span class="ic">⚙</span>Hệ thống</button>
+
+    <div class="role-switcher">
+      <span>Chế độ xem theo vai trò</span>
+      <button type="button" class="rolebtn active" data-role="CEO" data-target="gmv">♔&nbsp;&nbsp; CEO</button>
+      <button type="button" class="rolebtn" data-role="Marketing" data-target="marketing">↗&nbsp;&nbsp; Marketing</button>
+      <button type="button" class="rolebtn" data-role="Vận hành" data-target="performance">♙&nbsp;&nbsp; Vận hành</button>
+      <button type="button" class="rolebtn" data-role="Kho" data-target="warehouse">◇&nbsp;&nbsp; Kho</button>
+    </div>
+    <div class="side-user">
+      <div class="side-avatar">L</div>
+      <div><strong>LazyMom</strong><small>Rouya internal report</small></div>
+    </div>
+  </nav>
+
   <div class="app">
     <section class="hero">
       <div class="brandmark">
-        <div class="logo">G</div>
         <div>
-          <h1>Gooby BI Dashboard</h1>
-          <p>Internal BI dashboard · Chỉ đọc dữ liệu từ backend · Worker Cron/Webhook tự cập nhật nền liên tục</p>
+          <h1 id="welcomeTitle">Xin chào, LazyMom! 👋</h1>
+          <p>Dưới đây là bức tranh tổng quan hoạt động kinh doanh của bạn.</p>
         </div>
       </div>
       <div class="heroRight">
-        <div class="pill"><span class="dot"></span><span id="runMode">Gooby / LazyMom / Rouya internal report</span></div>
+        <div class="pill"><span class="dot"></span><span id="runMode">Dữ liệu đã đồng bộ</span></div>
         <div class="range-note" id="heroRange">-</div>
+        <button type="button" class="header-action" id="refreshDashboardBtn">↻ Làm mới</button>
+        <button type="button" class="header-action primary" id="customizeBtn">☷ Tùy chỉnh</button>
       </div>
     </section>
+
+    <aside class="customize-panel" id="customizePanel" aria-hidden="true">
+      <div class="customize-head"><strong>Bố cục của tôi</strong><button type="button" class="customize-close" id="customizeClose" aria-label="Đóng">×</button></div>
+      <div class="layout-choices">
+        <button type="button" class="layout-choice active" data-layout="default">
+          <span class="layout-preview"><i></i><i></i></span><strong>Mặc định</strong><small>Hiện tại · đầy đủ module</small>
+        </button>
+        <button type="button" class="layout-choice" data-layout="focus">
+          <span class="layout-preview"><i></i><i></i></span><strong>Tập trung</strong><small>Ưu tiên biểu đồ phân tích</small>
+        </button>
+      </div>
+      <label class="density-row">Giao diện thu gọn <input type="checkbox" id="compactDensity"></label>
+      <p class="customize-note">Bạn có thể kéo các thẻ KPI, biểu đồ và module nghiệp vụ để sắp xếp. Bố cục được lưu riêng trên trình duyệt này.</p>
+    </aside>
 
     <section class="topbar">
       <div class="filters">
@@ -162,15 +295,6 @@
       </div>
       <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
     </section>
-
-    <nav class="tabs" aria-label="Chuyển tab dashboard">
-      <button class="tabbtn active" data-tab="gmv" style="--accent:#2563eb;--accent2:#3b82f6"><span class="ic">📊</span>GMV tổng quan</button>
-      <button class="tabbtn" data-tab="orders" style="--accent:#7c3aed;--accent2:#9333ea"><span class="ic">🧾</span>Chi tiết đơn hàng</button>
-      <button class="tabbtn" data-tab="performance" style="--accent:#059669;--accent2:#10b981"><span class="ic">📈</span>Hiệu quả hoạt động</button>
-      <button class="tabbtn" data-tab="marketing" style="--accent:#ea580c;--accent2:#f97316"><span class="ic">💰</span>Chi phí Marketing</button>
-      <button class="tabbtn" data-tab="warehouse" style="--accent:#0891b2;--accent2:#06b6d4"><span class="ic">📦</span>Kho hàng</button>
-      <button class="tabbtn" data-tab="system" style="--accent:#475569;--accent2:#64748b"><span class="ic">⚙️</span>Hệ thống</button>
-    </nav>
 
     <section class="tab-panel active" id="tab-gmv">
       <div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V62 giữ luồng sync riêng từng shop và thêm AccountHealth chính thức cho tab hiệu quả hoạt động.</p></div></div>
@@ -192,17 +316,53 @@
         </div>
         <div class="chart-wrap"><svg id="hourlyChart" class="chart" role="img"></svg></div>
       </div>
-      <div class="card">
-        <div class="section-title"><div><h2>Tổng quan lưu trữ</h2><p>Đổi ngày/tuần/tháng chỉ đọc snapshot đã lưu trong Supabase.</p></div></div>
-        <div id="storageBox" class="notice">Đang đọc snapshot từ database...</div>
-        <div class="table-wrap" style="margin-top:14px"><table><tbody id="statusTable"></tbody></table></div>
-      </div>
+      <article class="card overview-module order-panel" data-widget-key="order-health">
+        <div class="module-head">
+          <div><h3>Tổng quan đơn hàng</h3><p>Cơ cấu trạng thái trong kỳ đang xem</p></div>
+          <button type="button" class="module-link" data-jump-tab="orders">Xem chi tiết →</button>
+        </div>
+        <div class="order-health">
+          <div class="order-donut" id="overviewOrderDonut">
+            <div class="donut-center"><strong id="overviewOrderTotal">-</strong><span>Tổng đơn</span></div>
+          </div>
+          <div class="order-legend">
+            <div class="order-legend-row"><i style="background:#12b76a"></i><span>Hợp lệ</span><strong id="overviewOrderValid">-</strong></div>
+            <div class="order-legend-row"><i style="background:#f79009"></i><span>Đang xử lý</span><strong id="overviewOrderOther">-</strong></div>
+            <div class="order-legend-row"><i style="background:#f04438"></i><span>Đã huỷ</span><strong id="overviewOrderCancel">-</strong></div>
+            <div class="order-rate">Tỷ lệ đơn hợp lệ <b id="overviewOrderRate">-</b></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="overview-modules" aria-label="Các module điều hành nhanh">
+      <article class="card overview-module" data-widget-key="marketing-health">
+        <div class="module-head">
+          <div><h3>Hiệu quả Marketing</h3><p>Dữ liệu Shopee Ads đã lưu</p></div>
+          <button type="button" class="module-link" data-jump-tab="marketing">Xem chi tiết →</button>
+        </div>
+        <div id="overviewMarketingBody" class="module-loading">Đang tải dữ liệu Marketing...</div>
+      </article>
+
+      <article class="card overview-module" data-widget-key="inventory-health">
+        <div class="module-head">
+          <div><h3>Tồn kho nổi bật</h3><p>Ưu tiên SKU có lượng tồn thấp</p></div>
+          <button type="button" class="module-link" data-jump-tab="warehouse">Xem chi tiết →</button>
+        </div>
+        <div id="overviewInventoryBody" class="module-loading">Đang tải dữ liệu kho hàng...</div>
+      </article>
     </section>
 
     <section class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo doanh số sản phẩm đã đặt trong khoảng thời gian đang chọn.</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
     </section>
+
+    <details class="card storage-details">
+      <summary>Thông tin dữ liệu và trạng thái lưu trữ</summary>
+      <div id="storageBox" class="notice">Đang đọc snapshot từ database...</div>
+      <div class="table-wrap" style="margin-top:12px"><table><tbody id="statusTable"></tbody></table></div>
+    </details>
 
 
     </section>
@@ -479,7 +639,61 @@ function renderDrillHourly(){
 }
 function renderProducts(rows){ const body=$('topProducts'); const list=(rows||[]).slice(0,30); body.innerHTML=list.map(p=>`<tr><td><div class="product-name">${p.item_name||'-'}</div></td><td>${p.model_name||'-'}</td><td>${p.sku||''}</td><td class="right">${num(p.qty)}</td><td class="right"><b>${money(p.gmv)}</b></td><td class="right">${num(p.orders)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Chưa có dữ liệu sản phẩm cho khoảng thời gian này.</td></tr>'; }
 function renderStatus(payload){ const r={from:payload.date_from,to:payload.date_to}; const cr={from:payload.compare?.date_from,to:payload.compare?.date_to}; const rows=payload.rows||0; const isCurrent = r.to>=todayVN(); $('storageBox').innerHTML = isCurrent ? '🟢 Khoảng thời gian có hôm nay: số liệu hôm nay được Worker cập nhật nền bằng Cron/Webhook, giao diện chỉ đọc database.' : '✅ Đây là dữ liệu lịch sử: dashboard chỉ đọc snapshot đã lưu trong <b>daily_shop_stats</b>, không gọi lại API Shopee.'; $('statusTable').innerHTML=`<tr><td>Kiểu xem</td><td class="right"><b>Theo ${periodName()}</b></td></tr><tr><td>Kỳ đang xem</td><td class="right"><b>${rangeLabel(r)}</b></td></tr><tr><td>Kỳ so sánh</td><td class="right"><b>${rangeLabel(cr)}</b></td></tr><tr><td>Snapshot đã đọc</td><td class="right">${rows} dòng ngày/shop</td></tr><tr><td>Cơ sở tính</td><td class="right">create_time · Đơn hàng đã đặt</td></tr><tr><td>Cập nhật cuối</td><td class="right">${payload.data?.updated_at?new Date(payload.data.updated_at).toLocaleString('vi-VN'):'-'}</td></tr>`; }
-function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
+function escapeOverviewText(value){ return String(value??'').replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char])); }
+function renderOverviewOrders(payload){
+  const s=payload.data?.summary||{};
+  const total=Math.max(0,Number(s.total_orders||0));
+  const valid=Math.max(0,Number(s.valid_orders||0));
+  const cancelled=Math.max(0,Number(s.cancel_orders||0));
+  const other=Math.max(0,total-valid-cancelled);
+  const validPct=total?Math.min(100,valid/total*100):0;
+  const otherPct=total?Math.min(100-validPct,other/total*100):0;
+  $('overviewOrderTotal').textContent=num(total);
+  $('overviewOrderValid').textContent=num(valid)+' · '+percent(validPct);
+  $('overviewOrderOther').textContent=num(other)+' · '+percent(total?other/total*100:0);
+  $('overviewOrderCancel').textContent=num(cancelled)+' · '+percent(total?cancelled/total*100:0);
+  $('overviewOrderRate').textContent=percent(validPct);
+  $('overviewOrderDonut').style.setProperty('--valid',validPct+'%');
+  $('overviewOrderDonut').style.setProperty('--cancel',(validPct+otherPct)+'%');
+}
+let overviewLoadToken=0;
+async function loadOverviewMarketing(token){
+  const body=$('overviewMarketingBody');
+  const r=getRange();const shop=$('shop').value||'all';
+  body.className='module-loading';body.textContent='Đang tải dữ liệu Marketing...';
+  try{
+    const data=await api('/api/marketing/ads/dashboard?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}).toString());
+    if(token!==overviewLoadToken)return;
+    const s=data.summary||{};
+    body.className='';
+    body.innerHTML=`<div class="marketing-grid">
+      <div class="marketing-stat"><span>Chi phí Ads</span><strong>${money(s.expense||0)}</strong><small>${num(data.rows||0)} dòng dữ liệu</small></div>
+      <div class="marketing-stat"><span>Doanh thu từ Ads</span><strong>${money(s.broad_gmv||0)}</strong><small>${num(s.broad_order||0)} đơn từ Ads</small></div>
+      <div class="marketing-stat"><span>ROAS</span><strong>${s.roas?Number(s.roas).toLocaleString('vi-VN',{maximumFractionDigits:2})+'x':'-'}</strong><small>Hiệu suất quảng cáo</small></div>
+      <div class="marketing-stat"><span>Lượt click</span><strong>${num(s.clicks||0)}</strong><small>CTR ${percent(s.ctr||0)}</small></div>
+    </div><div class="marketing-foot"><span>${data.rows?'Dữ liệu Ads đã được lưu':'Chưa có dữ liệu Ads trong kỳ'}</span><b>${rangeLabel(r)}</b></div>`;
+  }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được dữ liệu Marketing.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
+}
+async function loadOverviewInventory(token){
+  const body=$('overviewInventoryBody');
+  const r=getRange();const shop=$('shop').value||'all';const month=r.to.slice(0,7);
+  body.className='module-loading';body.textContent='Đang tải dữ liệu kho hàng...';
+  try{
+    const data=await api('/api/warehouse/dashboard?'+new URLSearchParams({month,shop_id:shop}).toString());
+    if(token!==overviewLoadToken)return;
+    const all=(data.sku_rows||[]).map(row=>({...row,available:Number(row.available||0)}));
+    const low=all.filter(row=>row.available<=50).sort((a,b)=>a.available-b.available);
+    const featured=(low.length?low:all.slice().sort((a,b)=>a.available-b.available)).slice(0,3);
+    body.className='';
+    if(!featured.length){body.innerHTML='<div class="module-loading">Chưa có dữ liệu tồn kho cho tháng '+escapeOverviewText(month)+'.</div>';return;}
+    body.innerHTML=`<div class="inventory-list">${featured.map(row=>`<div class="inventory-row">
+      <div class="inventory-icon">◇</div><div><strong>${escapeOverviewText(row.name||('SKU '+row.sku))}</strong><small>SKU: ${escapeOverviewText(row.sku||'-')}</small></div>
+      <div class="stock-count"><b>${num(row.available)}</b><small class="${row.available<=50?'low':'ok'}">${row.available<=50?'Sắp hết hàng':'Còn hàng'}</small></div>
+    </div>`).join('')}</div><div class="inventory-summary"><span>Tổng SKU <b>${num(all.length)}</b></span><span>Sắp hết hàng <b>${num(low.length)}</b></span></div>`;
+  }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được dữ liệu kho.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
+}
+function loadOverviewModules(){const token=++overviewLoadToken;Promise.allSettled([loadOverviewMarketing(token),loadOverviewInventory(token)]);}
+function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
 function shortMoney(n){ return money(n||0); }
 function issueClass(level){ return level==='error'?'issue error':level==='warn'?'issue warn':'issue ok'; }
@@ -1078,10 +1292,89 @@ async function catchupMissingOrders(){
   $('diagSummary').innerHTML='✅ Đã tự quét bù xong '+list.length+' ngày. Đang tải lại số liệu...';
   await loadDashboard();
 }
+const WORKSPACE_PREFS_KEY='gooby_bi_workspace_v1';
+function readWorkspacePrefs(){
+  try{return JSON.parse(localStorage.getItem(WORKSPACE_PREFS_KEY)||'{}')||{};}catch(e){return {};}
+}
+function writeWorkspacePrefs(next){
+  const prefs={...readWorkspacePrefs(),...next};
+  localStorage.setItem(WORKSPACE_PREFS_KEY,JSON.stringify(prefs));
+  return prefs;
+}
+function applyWorkspaceLayout(layout){
+  const value=layout==='focus'?'focus':'default';
+  document.body.classList.toggle('layout-focus',value==='focus');
+  document.querySelectorAll('.layout-choice').forEach(btn=>btn.classList.toggle('active',btn.dataset.layout===value));
+}
+function updateRoleUI(tab){
+  const map={gmv:'CEO',marketing:'Marketing',performance:'Vận hành',warehouse:'Kho'};
+  const role=map[tab]||'';
+  document.querySelectorAll('.rolebtn').forEach(btn=>btn.classList.toggle('active',btn.dataset.role===role));
+  const title=$('welcomeTitle');
+  if(title) title.textContent=role&&role!=='CEO'?'Góc nhìn '+role+' · LazyMom':'Xin chào, LazyMom! 👋';
+}
+function restoreWidgetOrder(container,key,selector){
+  const order=readWorkspacePrefs()[key];
+  if(!Array.isArray(order)) return;
+  const items=new Map([...container.querySelectorAll(selector)].map(item=>[item.dataset.widgetKey,item]));
+  order.forEach(id=>{const item=items.get(id);if(item)container.appendChild(item);});
+}
+function initWidgetReorder(containerSelector,selector,key){
+  const container=document.querySelector(containerSelector);
+  if(!container) return;
+  const items=[...container.querySelectorAll(selector)];
+  items.forEach((item,index)=>{
+    item.dataset.widgetKey=item.dataset.widgetKey||(item.querySelector('.value')?.id)||(item.querySelector('svg')?.id)||('widget-'+index);
+    item.draggable=true;
+    item.title='Kéo để sắp xếp module';
+  });
+  restoreWidgetOrder(container,key,selector);
+  let dragging=null;
+  container.addEventListener('dragstart',event=>{
+    const item=event.target.closest(selector);if(!item)return;
+    dragging=item;item.classList.add('is-dragging');
+    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',item.dataset.widgetKey);}
+  });
+  container.addEventListener('dragover',event=>{
+    if(!dragging)return;event.preventDefault();
+    if(event.dataTransfer)event.dataTransfer.dropEffect='move';
+  });
+  container.addEventListener('drop',event=>{
+    if(!dragging)return;event.preventDefault();
+    const target=event.target.closest(selector);if(!target||target===dragging||target.parentElement!==container)return;
+    const rect=target.getBoundingClientRect();
+    const before=event.clientY<rect.top+rect.height*.35;
+    container.insertBefore(dragging,before?target:target.nextSibling);
+    writeWorkspacePrefs({[key]:[...container.querySelectorAll(selector)].map(item=>item.dataset.widgetKey)});
+  });
+  container.addEventListener('dragend',()=>{
+    if(!dragging)return;dragging.classList.remove('is-dragging');dragging=null;
+  });
+}
+function initWorkspaceUI(){
+  const prefs=readWorkspacePrefs();
+  applyWorkspaceLayout(prefs.layout||'default');
+  const compact=$('compactDensity');
+  if(compact){compact.checked=!!prefs.compact;document.body.classList.toggle('density-compact',compact.checked);compact.addEventListener('change',()=>{document.body.classList.toggle('density-compact',compact.checked);writeWorkspacePrefs({compact:compact.checked});if(chartState.payload)renderMainChart();});}
+  const panel=$('customizePanel');
+  const togglePanel=open=>{if(!panel)return;panel.classList.toggle('open',open);panel.setAttribute('aria-hidden',String(!open));};
+  $('customizeBtn')?.addEventListener('click',event=>{event.stopPropagation();togglePanel(!panel.classList.contains('open'));});
+  $('customizeClose')?.addEventListener('click',()=>togglePanel(false));
+  panel?.addEventListener('click',event=>event.stopPropagation());
+  document.addEventListener('click',()=>togglePanel(false));
+  document.querySelectorAll('.layout-choice').forEach(btn=>btn.addEventListener('click',()=>{applyWorkspaceLayout(btn.dataset.layout);writeWorkspacePrefs({layout:btn.dataset.layout});if(chartState.payload)setTimeout(renderMainChart,40);}));
+  document.querySelectorAll('.rolebtn').forEach(btn=>btn.addEventListener('click',()=>{setTab(btn.dataset.target);writeWorkspacePrefs({role:btn.dataset.role});}));
+  document.querySelectorAll('[data-jump-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.jumpTab)));
+  $('refreshDashboardBtn')?.addEventListener('click',()=>loadDashboard());
+  initWidgetReorder('.metrics','.metric','metricOrder');
+  initWidgetReorder('.grid2','.card','analysisOrder');
+  initWidgetReorder('.overview-modules','.overview-module','overviewOrder');
+}
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
   document.querySelectorAll('.tabbtn').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab===tab));
   document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden', panel.id !== 'tab-'+tab));
+  updateRoleUI(tab);
   if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; });
   if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; });
   if(tab==='marketing') loadMarketing();
@@ -1092,7 +1385,7 @@ function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ con
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
 init();
 </script>
 </body>
