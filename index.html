@@ -80,6 +80,8 @@
     .empty{padding:30px;text-align:center;color:var(--muted)}
 
     .perf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+    .region-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .traffic-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:12px}
     .perf-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfcfe}
     .perf-card .k{font-size:11.5px;text-transform:uppercase;color:var(--muted);font-weight:900;letter-spacing:.04em}
     .perf-card .v{font-size:22px;font-weight:900;margin-top:8px;letter-spacing:-.02em;color:var(--text)}
@@ -129,8 +131,8 @@
     /* ---- Thẻ tổng quan hệ thống (mở đầu tab Hệ thống) ---- */
     .sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
 
-    @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.perf-grid,.sync-plan,.sys-grid{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
-    @media(max-width:760px){.app{padding:12px}.perf-grid,.sync-plan,.sys-grid{grid-template-columns:1fr}.hero{padding:18px;border-radius:18px}.hero h1{font-size:19px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:22px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:320px}}
+    @media(max-width:1180px){.metrics{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.perf-grid,.traffic-metrics,.sync-plan,.sys-grid{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column}.topbar{align-items:flex-start;flex-direction:column}.status{justify-content:flex-start}}
+    @media(max-width:760px){.app{padding:12px}.perf-grid,.traffic-metrics,.region-macro-grid,.sync-plan,.sys-grid{grid-template-columns:1fr}.hero{padding:18px;border-radius:18px}.hero h1{font-size:19px}.metrics{grid-template-columns:1fr 1fr}.metric .value{font-size:22px}.filters{width:100%}.field,select,input{width:100%}.chart-wrap{height:320px}}
 
     /* ---- Modular Workspace · concept 09 ---- */
     :root{
@@ -401,6 +403,29 @@
 
     <section class="tab-panel hidden" id="tab-marketing">
     <section class="card" style="margin-top:16px">
+      <div class="section-title"><div><h2>Traffic toàn shop · tất cả nguồn</h2><p>Tổng hợp traffic tự nhiên và trả phí từ báo cáo Phân tích bán hàng/Business Insights: Tìm kiếm, Đề xuất, Trang shop, Shopee Live, Quảng cáo, nguồn ngoài… nếu file Shopee có cột nguồn. Phần này độc lập với Ads bên dưới để không đếm nhầm click quảng cáo thành toàn shop.</p></div></div>
+      <div id="shopTrafficSummary" class="notice">Chọn một shop, xuất báo cáo Traffic theo ngày từ Kênh Người Bán rồi tải file Excel/CSV lên. Nếu file có cột “Nguồn truy cập”, dashboard sẽ tự tách từng nguồn.</div>
+      <div class="orders-toolbar">
+        <div class="field"><label>File Traffic Excel/CSV từ Shopee</label><input type="file" id="shopTrafficFile" accept=".xlsx,.xls,.csv"></div>
+        <button class="ghost" id="shopTrafficReadBtn">1. Đọc file (xem trước)</button>
+        <button id="shopTrafficSaveBtn" disabled>2. Lưu Traffic</button>
+        <button class="ghost" id="shopTrafficReloadBtn">Tải lại số đã lưu</button>
+        <button class="ghost" id="shopTrafficDeleteBtn" style="color:#b42318">Xóa Traffic shop này</button>
+      </div>
+      <div class="traffic-metrics">
+        <div class="perf-card"><div class="k">Lượt hiển thị</div><div class="v" id="shopTrafficImpressions">-</div><div class="muted">Toàn shop, tất cả nguồn</div></div>
+        <div class="perf-card"><div class="k">Link click</div><div class="v" id="shopTrafficClicks">-</div><div class="muted">Không chỉ riêng Ads</div></div>
+        <div class="perf-card"><div class="k">CTR</div><div class="v" id="shopTrafficCtr">-</div><div class="muted">Link click / Hiển thị</div></div>
+        <div class="perf-card"><div class="k">Khách truy cập</div><div class="v" id="shopTrafficVisitors">-</div><div class="muted">Nếu báo cáo có cột này</div></div>
+        <div class="perf-card"><div class="k">Lượt xem trang</div><div class="v" id="shopTrafficPageViews">-</div><div class="muted">Nếu báo cáo có cột này</div></div>
+      </div>
+      <div class="section-title" style="margin-top:18px"><div><h2>Traffic theo nguồn</h2><p>Nguồn nào không xuất hiện trong file sẽ không được tự suy đoán.</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Nguồn traffic</th><th class="right">Hiển thị</th><th class="right">Link click</th><th class="right">CTR</th><th class="right">Tỷ trọng</th></tr></thead><tbody id="shopTrafficSourceRows"><tr><td colspan="5" class="empty">Chưa có dữ liệu.</td></tr></tbody></table></div>
+      <div class="section-title" style="margin-top:18px"><div><h2>Traffic theo ngày</h2></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Hiển thị</th><th class="right">Link click</th><th class="right">CTR</th><th class="right">Khách truy cập</th><th class="right">Lượt xem trang</th></tr></thead><tbody id="shopTrafficDailyRows"><tr><td colspan="6" class="empty">Chưa có dữ liệu.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Chi phí quảng cáo (Shopee Ads)</h2><p>Lấy từ Shopee Ads API theo ngày: chi phí, hiển thị, click, doanh số từ ads, ROAS. Đồng bộ tự động mỗi ~20 phút (3 ngày gần nhất); bấm nút để đồng bộ khoảng ngày khác (tối đa 31 ngày/lần).</p></div><div class="mini-actions"><button class="ghost" id="adsBtn">Tải chi phí quảng cáo</button><button id="adsSyncBtn">Đồng bộ Ads</button></div></div>
       <div id="adsSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên rồi bấm "Đồng bộ Ads" để lấy dữ liệu lần đầu.</div>
       <div class="perf-grid">
@@ -476,6 +501,24 @@
 
     <section class="tab-panel hidden" id="tab-orders">
     <section class="card" style="margin-top:16px">
+      <div class="section-title"><div><h2>Đơn hàng theo Tỉnh/Thành phố</h2><p>Chỉ đọc trường khu vực trong <code>recipient_address</code> của Shopee API. Hệ thống không hiển thị địa chỉ chi tiết và không suy đoán dữ liệu đã bị che bằng <code>****</code>.</p></div><button class="ghost" id="orderRegionsReloadBtn">Tải khu vực</button></div>
+      <div id="orderRegionsSummary" class="notice">Đang chờ tải dữ liệu khu vực theo khoảng ngày đã chọn.</div>
+      <div class="perf-grid">
+        <div class="perf-card"><div class="k">Độ phủ khu vực</div><div class="v" id="orderRegionCoverage">-</div><div class="muted">Đơn đọc được tỉnh / tổng đơn</div></div>
+        <div class="perf-card"><div class="k">Đã đọc được</div><div class="v" id="orderRegionLocated">-</div><div class="muted">Có Tỉnh/Thành phố</div></div>
+        <div class="perf-card"><div class="k">Shopee đã che</div><div class="v" id="orderRegionMasked">-</div><div class="muted">API trả về ****</div></div>
+        <div class="perf-card"><div class="k">API không trả</div><div class="v" id="orderRegionMissing">-</div><div class="muted">Không có trường khu vực</div></div>
+      </div>
+      <div class="section-title" style="margin-top:18px"><div><h2>Tỷ lệ đơn theo 3 miền</h2><p>Tỷ lệ tính trên các đơn đã nhận diện được tỉnh/thành và ánh xạ được vùng; đơn bị che hoặc thiếu không được đưa vào mẫu số.</p></div></div>
+      <div class="perf-grid region-macro-grid">
+        <div class="perf-card"><div class="k">Miền Bắc</div><div class="v" id="orderRegionNorth">-</div><div class="muted" id="orderRegionNorthNote">- đơn</div></div>
+        <div class="perf-card"><div class="k">Miền Trung</div><div class="v" id="orderRegionCentral">-</div><div class="muted" id="orderRegionCentralNote">- đơn</div></div>
+        <div class="perf-card"><div class="k">Miền Nam</div><div class="v" id="orderRegionSouth">-</div><div class="muted" id="orderRegionSouthNote">- đơn</div></div>
+      </div>
+      <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Tỉnh/Thành phố</th><th class="right">Số đơn</th><th class="right">Tỷ trọng</th><th class="right">GMV</th></tr></thead><tbody id="orderRegionRows"><tr><td colspan="4" class="empty">Chưa tải.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Chi tiết đơn hàng</h2><p>Xem danh sách đơn theo shop đang chọn ở bộ lọc phía trên; có thể lọc thêm trạng thái, mã đơn, sản phẩm hoặc SKU.</p></div><button class="ghost" id="ordersReloadBtn">Tải đơn</button></div>
       <div class="orders-toolbar">
         <div class="field"><label>Trạng thái</label><select id="orderStatus"><option value="all">Tất cả</option><option value="READY_TO_SHIP">READY_TO_SHIP</option><option value="PROCESSED">PROCESSED</option><option value="SHIPPED">SHIPPED</option><option value="TO_CONFIRM_RECEIVE">TO_CONFIRM_RECEIVE</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option><option value="UNPAID">UNPAID</option></select></div>
@@ -484,7 +527,7 @@
         <button class="ghost" id="ordersPrevBtn">Trước</button><button class="ghost" id="ordersNextBtn">Sau</button>
         <span class="muted" id="ordersPageInfo">-</span>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Shop</th><th>Thời gian tạo</th><th>Trạng thái</th><th class="right">GMV</th><th class="right">Total amount</th><th class="right">Item subtotal</th><th class="right">SL</th><th>Thao tác</th></tr></thead><tbody id="ordersRows"><tr><td colspan="9" class="empty">Chưa tải đơn</td></tr></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Shop</th><th>Tỉnh/Thành phố</th><th>Thời gian tạo</th><th>Trạng thái</th><th class="right">GMV</th><th class="right">Total amount</th><th class="right">Item subtotal</th><th class="right">SL</th><th>Thao tác</th></tr></thead><tbody id="ordersRows"><tr><td colspan="10" class="empty">Chưa tải đơn</td></tr></tbody></table></div>
       <div id="orderDetailBox" class="order-detail hidden"></div>
     </section>
 
@@ -948,10 +991,141 @@ async function syncCoinCost(){
 }
 async function loadMarketing(){
   await Promise.all([
+    loadShopTraffic().catch(e=>{ $('shopTrafficSummary').innerHTML='⚠️ Không tải được Traffic toàn shop: '+e.message; }),
     loadAdsCost().catch(e=>{ $('adsSummary').innerHTML='⚠️ Không tải được chi phí Ads: '+e.message; }),
     loadCoinCost().catch(e=>{ $('coinSummary').innerHTML='⚠️ Không tải được chi phí Xu Shop: '+e.message; }),
     loadMarketingCoinSummary().catch(e=>{ $('mktCoinSummary').innerHTML='⚠️ Không tải được Xu Marketing: '+e.message; }),
   ]);
+}
+
+// ===== V67: Traffic toàn shop, tách theo mọi nguồn có trong file Business Insights =====
+function trafficNorm(s){ return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/\s+/g,' '); }
+function trafficCount(v){
+  if(typeof v==='number') return Math.max(0,Math.round(v));
+  const digits=String(v??'').replace(/[^\d-]/g,'');
+  return Math.max(0,Math.round(Number(digits||0)));
+}
+function trafficPercent(v){
+  if(typeof v==='number') return v<=1?v*100:v;
+  const s=String(v??'').trim(); if(!s) return 0;
+  const n=Number(s.replace(/\s/g,'').replace('%','').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.').replace(/[^\d.-]/g,''));
+  if(!Number.isFinite(n)) return 0;
+  return s.includes('%')?n:(n<=1?n*100:n);
+}
+function trafficDate(v){
+  if(v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+  const s=String(v??'').trim(); let m;
+  if((m=s.match(/^(\d{4})[-\/]([01]?\d)[-\/]([0-3]?\d)/))) return `${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+  if((m=s.match(/^([0-3]?\d)[-\/]([01]?\d)[-\/](\d{4})/))) return `${m[3]}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;
+  return null;
+}
+function trafficHeaderType(header){
+  const h=trafficNorm(header);
+  if(/^(ngay|date|thoi gian|stat date)$/.test(h)) return 'date';
+  if(/nguon truy cap|nguon traffic|traffic source|access source|kenh truy cap|^channel$|^nguon$/.test(h)) return 'source';
+  if(/impression|luot hien thi|^hien thi$/.test(h)) return 'impressions';
+  if(/^ctr$|ty le nhap|click.through rate/.test(h)) return 'ctr';
+  if(/link click|product click|search click|luot nhap|^clicks?$/.test(h)) return 'link_clicks';
+  if(/unique visitor|khach truy cap|nguoi truy cap|luot truy cap|^visitors?$/.test(h)) return 'visitors';
+  if(/page view|product view|luot xem trang|luot xem san pham/.test(h)) return 'page_views';
+  return '';
+}
+function scoreTrafficHeaderRow(row){
+  const types=new Set((row||[]).map(trafficHeaderType).filter(Boolean));
+  return (types.has('date')?4:0)+(types.has('impressions')?3:0)+(types.has('link_clicks')?3:0)+(types.has('ctr')?1:0)+(types.has('source')?1:0)+(types.has('visitors')?1:0)+(types.has('page_views')?1:0);
+}
+function parseShopTrafficSheetRows(aoa){
+  if(!aoa?.length) return [];
+  let headerRowIdx=-1,bestScore=0;
+  for(let i=0;i<Math.min(20,aoa.length);i++){ const score=scoreTrafficHeaderRow(aoa[i]); if(score>bestScore){bestScore=score;headerRowIdx=i;} }
+  if(headerRowIdx<0 || bestScore<5) return [];
+  const indexes={};
+  (aoa[headerRowIdx]||[]).forEach((h,i)=>{ const type=trafficHeaderType(h); if(type && indexes[type]===undefined) indexes[type]=i; });
+  if(indexes.date===undefined) return [];
+  const parsed=[];
+  for(let i=headerRowIdx+1;i<aoa.length;i++){
+    const row=aoa[i]||[]; const statDate=trafficDate(row[indexes.date]); if(!statDate) continue;
+    const impressions=indexes.impressions===undefined?0:trafficCount(row[indexes.impressions]);
+    let linkClicks=indexes.link_clicks===undefined?0:trafficCount(row[indexes.link_clicks]);
+    const ctr=indexes.ctr===undefined?0:trafficPercent(row[indexes.ctr]);
+    if(!linkClicks && impressions && ctr) linkClicks=Math.round(impressions*ctr/100);
+    parsed.push({
+      stat_date:statDate,
+      traffic_source:indexes.source===undefined?'Tất cả nguồn':String(row[indexes.source]||'Tất cả nguồn').trim()||'Tất cả nguồn',
+      impressions,link_clicks:linkClicks,ctr,
+      visitors:indexes.visitors===undefined?0:trafficCount(row[indexes.visitors]),
+      page_views:indexes.page_views===undefined?0:trafficCount(row[indexes.page_views]),
+    });
+  }
+  // Nếu cùng một ngày có cả dòng Tổng và các nguồn chi tiết, bỏ dòng Tổng để tránh cộng hai lần.
+  const detailDates=new Set(parsed.filter(r=>!/^(tat ca( nguon)?|tong|total|all sources?)$/i.test(trafficNorm(r.traffic_source))).map(r=>r.stat_date));
+  const filtered=parsed.filter(r=>!(detailDates.has(r.stat_date) && /^(tat ca( nguon)?|tong|total|all sources?)$/i.test(trafficNorm(r.traffic_source))));
+  const grouped=new Map();
+  for(const r of filtered){
+    const key=r.stat_date+'\u0000'+r.traffic_source; const cur=grouped.get(key)||{...r,impressions:0,link_clicks:0,visitors:0,page_views:0};
+    cur.impressions+=r.impressions;cur.link_clicks+=r.link_clicks;cur.visitors+=r.visitors;cur.page_views+=r.page_views;grouped.set(key,cur);
+  }
+  return [...grouped.values()].map(r=>({...r,ctr:r.impressions?r.link_clicks/r.impressions*100:0}));
+}
+let shopTrafficPendingRows=null,shopTrafficPendingFileName='';
+function renderShopTraffic(data){
+  const s=data.summary||{};
+  $('shopTrafficImpressions').textContent=num(s.impressions||0);
+  $('shopTrafficClicks').textContent=num(s.link_clicks||0);
+  $('shopTrafficCtr').textContent=percent(s.ctr||0);
+  $('shopTrafficVisitors').textContent=num(s.visitors||0);
+  $('shopTrafficPageViews').textContent=num(s.page_views||0);
+  $('shopTrafficSourceRows').innerHTML=(data.source_breakdown||[]).map(r=>`<tr><td><b>${fmtDetailVal(r.traffic_source)}</b></td><td class="right">${num(r.impressions)}</td><td class="right">${num(r.link_clicks)}</td><td class="right">${percent(r.ctr)}</td><td class="right">${percent(r.share_percent)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Chưa có dữ liệu theo nguồn.</td></tr>';
+  $('shopTrafficDailyRows').innerHTML=(data.daily||[]).map(r=>`<tr><td>${vnDateLabel(r.date)}</td><td class="right">${num(r.impressions)}</td><td class="right">${num(r.link_clicks)}</td><td class="right">${percent(r.ctr)}</td><td class="right">${num(r.visitors)}</td><td class="right">${num(r.page_views)}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Chưa có dữ liệu.</td></tr>';
+}
+function previewShopTraffic(rows){
+  const bySource=new Map(),byDate=new Map();
+  const summary={impressions:0,link_clicks:0,visitors:0,page_views:0,ctr:0};
+  for(const r of rows){
+    const s=bySource.get(r.traffic_source)||{traffic_source:r.traffic_source,impressions:0,link_clicks:0,visitors:0,page_views:0};
+    const d=byDate.get(r.stat_date)||{date:r.stat_date,impressions:0,link_clicks:0,visitors:0,page_views:0};
+    for(const k of ['impressions','link_clicks','visitors','page_views']){s[k]+=r[k]||0;d[k]+=r[k]||0;summary[k]+=r[k]||0;}
+    bySource.set(r.traffic_source,s);byDate.set(r.stat_date,d);
+  }
+  summary.ctr=summary.impressions?summary.link_clicks/summary.impressions*100:0;
+  const decorate=r=>({...r,ctr:r.impressions?r.link_clicks/r.impressions*100:0});
+  const sources=[...bySource.values()].sort((a,b)=>b.impressions-a.impressions).map(r=>({...decorate(r),share_percent:summary.impressions?r.impressions/summary.impressions*100:0}));
+  renderShopTraffic({summary,source_breakdown:sources,daily:[...byDate.values()].sort((a,b)=>a.date.localeCompare(b.date)).map(decorate)});
+}
+async function readShopTrafficFile(){
+  const file=$('shopTrafficFile').files?.[0];
+  if(!file){$('shopTrafficSummary').innerHTML='⚠️ Chưa chọn file Traffic.';return;}
+  if(typeof XLSX==='undefined'){$('shopTrafficSummary').innerHTML='⚠️ Chưa tải được thư viện đọc Excel.';return;}
+  $('shopTrafficSummary').innerHTML='⏳ Đang đọc và nhận diện cột Traffic...';$('shopTrafficSaveBtn').disabled=true;shopTrafficPendingRows=null;
+  try{
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});let rows=[];
+    for(const name of wb.SheetNames){ const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:false,defval:''}); const candidate=parseShopTrafficSheetRows(aoa); if(candidate.length>rows.length) rows=candidate; }
+    if(!rows.length) throw new Error('Không nhận diện được cột Ngày cùng ít nhất một cột Hiển thị/Link click.');
+    shopTrafficPendingRows=rows;shopTrafficPendingFileName=file.name;previewShopTraffic(rows);$('shopTrafficSaveBtn').disabled=false;
+    const sourceCount=new Set(rows.map(r=>r.traffic_source)).size;
+    $('shopTrafficSummary').innerHTML=`👀 <b>Xem trước, chưa lưu:</b> ${num(rows.length)} dòng theo ngày · ${num(sourceCount)} nguồn từ file “${fmtDetailVal(file.name)}”. Kiểm tra số bên dưới rồi bấm <b>2. Lưu Traffic</b>.`;
+  }catch(e){$('shopTrafficSummary').innerHTML='⚠️ Không đọc được file: '+e.message+' Hãy dùng file xuất theo ngày từ Phân tích bán hàng/Business Insights.';}
+}
+async function saveShopTraffic(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'){$('shopTrafficSummary').innerHTML='⚠️ Chọn một shop cụ thể trước khi lưu Traffic.';return;}
+  if(!shopTrafficPendingRows?.length){$('shopTrafficSummary').innerHTML='⚠️ Bấm “1. Đọc file” trước khi lưu.';return;}
+  $('shopTrafficSummary').innerHTML='⏳ Đang lưu Traffic toàn shop theo từng ngày và nguồn...';
+  try{
+    const res=await fetch(getWorker()+'/api/traffic/shop-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:shopTrafficPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:shopTrafficPendingRows})});
+    const data=await res.json().catch(()=>null);if(!res.ok||!data?.ok)throw new Error(data?.error||('HTTP '+res.status));
+    shopTrafficPendingRows=null;$('shopTrafficSaveBtn').disabled=true;$('shopTrafficFile').value='';await loadShopTraffic();
+    $('shopTrafficSummary').innerHTML=`✅ Đã lưu ${num(data.rows_saved)} dòng Traffic theo ngày/nguồn từ file “${fmtDetailVal(shopTrafficPendingFileName)}”.`;
+  }catch(e){$('shopTrafficSummary').innerHTML='⚠️ Lỗi khi lưu Traffic: '+e.message;}
+}
+async function loadShopTraffic(){
+  const r=getRange(),shop=$('shop').value||'all';const data=await api('/api/traffic/shop-dashboard?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}));renderShopTraffic(data);
+  $('shopTrafficSummary').innerHTML=data.rows_count?`✅ Traffic toàn shop từ <b>tất cả nguồn có trong báo cáo</b> · ${num(data.rows_count)} dòng ngày/nguồn · ${rangeLabel(r)}. Không trộn với số Ads bên dưới.`:'ℹ️ Chưa có Traffic toàn shop trong khoảng này. Xuất báo cáo theo ngày từ Kênh Người Bán rồi tải lên.';
+}
+async function deleteShopTraffic(){
+  const shop=$('shop').value||'all';if(shop==='all'){$('shopTrafficSummary').innerHTML='⚠️ Chọn một shop cụ thể trước khi xóa.';return;}
+  if(!confirm('Xóa toàn bộ Traffic đã tải lên của shop '+shop+'?'))return;
+  try{const res=await fetch(getWorker()+'/api/traffic/shop-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop)})});const data=await res.json().catch(()=>null);if(!res.ok||!data?.ok)throw new Error(data?.error||('HTTP '+res.status));await loadShopTraffic();}catch(e){$('shopTrafficSummary').innerHTML='⚠️ Không xóa được Traffic: '+e.message;}
 }
 // ===== V66.8: Xu Marketing (Xu Của Shop) — đọc file Excel/CSV Shopee ngay trên trình duyệt (không có API) =====
 function parseMoneyVN(v){
@@ -1195,13 +1369,37 @@ async function syncWarehouseCombo(){
 }
 function renderOrdersTable(data){
   const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.total?data.offset+1:0)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`+(data.search_note?' · '+data.search_note:'');
-  $('ordersRows').innerHTML=rows.map(o=>`<tr><td><b>${o.order_sn}</b></td><td>${o.shop_id}</td><td>${o.create_time_iso?new Date(o.create_time_iso).toLocaleString('vi-VN'):'-'}</td><td>${statusBadge(o.order_status)}</td><td class="right"><b>${money(o.gmv_amount)}</b></td><td class="right">${money(o.total_amount)}</td><td class="right">${money(o.item_subtotal)}</td><td class="right">${num(o.quantity_total||0)}</td><td><button class="linkbtn" data-order-sn="${o.order_sn}">Chi tiết</button></td></tr>`).join('') || '<tr><td colspan="9" class="empty">Không có đơn trong bộ lọc này.</td></tr>';
+  $('ordersRows').innerHTML=rows.map(o=>`<tr><td><b>${o.order_sn}</b></td><td>${o.shop_id}</td><td>${o.province?fmtDetailVal(o.province):(o.region_status==='masked'?'<span class="muted" title="Shopee đã che dữ liệu">****</span>':'<span class="muted">-</span>')}</td><td>${o.create_time_iso?new Date(o.create_time_iso).toLocaleString('vi-VN'):'-'}</td><td>${statusBadge(o.order_status)}</td><td class="right"><b>${money(o.gmv_amount)}</b></td><td class="right">${money(o.total_amount)}</td><td class="right">${money(o.item_subtotal)}</td><td class="right">${num(o.quantity_total||0)}</td><td><button class="linkbtn" data-order-sn="${o.order_sn}">Chi tiết</button></td></tr>`).join('') || '<tr><td colspan="10" class="empty">Không có đơn trong bộ lọc này.</td></tr>';
   document.querySelectorAll('[data-order-sn]').forEach(btn=>btn.addEventListener('click',()=>loadOrderDetail(btn.dataset.orderSn)));
+}
+async function loadOrderRegions(){
+  const r=getRange(),shop=$('shop').value||'all';
+  const data=await api('/api/orders/regions?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}));
+  $('orderRegionCoverage').textContent=percent(data.coverage_percent||0);
+  $('orderRegionLocated').textContent=num(data.located_orders||0);
+  $('orderRegionMasked').textContent=num(data.masked_orders||0);
+  $('orderRegionMissing').textContent=num(data.missing_orders||0);
+  const macro=Object.fromEntries((data.macro_regions||[]).map(x=>[x.region,x]));
+  const setMacro=(region,valueId,noteId)=>{const x=macro[region]||{};$(valueId).textContent=percent(x.share_percent||0);$(noteId).textContent=num(x.orders||0)+' đơn · GMV '+money(x.gmv||0);};
+  setMacro('Miền Bắc','orderRegionNorth','orderRegionNorthNote');
+  setMacro('Miền Trung','orderRegionCentral','orderRegionCentralNote');
+  setMacro('Miền Nam','orderRegionSouth','orderRegionSouthNote');
+  $('orderRegionRows').innerHTML=(data.regions||[]).map(x=>`<tr><td><b>${fmtDetailVal(x.province)}</b></td><td class="right">${num(x.orders)}</td><td class="right">${percent(x.share_percent)}</td><td class="right">${money(x.gmv)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">API chưa trả được tỉnh/thành phố trong khoảng này.</td></tr>';
+  const mappingNote=data.unmapped_region_orders?` Có <b>${num(data.unmapped_region_orders)}</b> đơn có tên tỉnh lạ/chưa ánh xạ nên chưa đưa vào tỷ lệ 3 miền.`:'';
+  if(data.masked_orders){
+    $('orderRegionsSummary').innerHTML=`⚠️ Đọc được tỉnh/thành của <b>${num(data.located_orders)} / ${num(data.total_orders)}</b> đơn (${percent(data.coverage_percent)}). Shopee đã che <b>${num(data.masked_orders)}</b> đơn bằng ****; hệ thống không thể và không cố khôi phục dữ liệu này.${mappingNote}`;
+  }else if(data.located_orders){
+    $('orderRegionsSummary').innerHTML=`✅ Đọc được Tỉnh/Thành phố của <b>${num(data.located_orders)} / ${num(data.total_orders)}</b> đơn (${percent(data.coverage_percent)}) trực tiếp từ recipient_address.${mappingNote}`;
+  }else{
+    $('orderRegionsSummary').innerHTML='ℹ️ Chưa có đơn nào được API trả Tỉnh/Thành phố trong khoảng đã chọn.';
+  }
+  return data;
 }
 async function loadOrders(reset=false){
   if(reset) orderOffset=0; const r=getRange(); const shop=$('shop').value||'all'; const limit=Number($('orderLimit').value||50); const status=$('orderStatus').value||'all'; const q=$('orderSearch').value||'';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,status,q,limit:String(limit),offset:String(orderOffset)});
-  const data=await api('/api/orders?'+qs.toString()); renderOrdersTable(data);
+  const regionTask=reset?loadOrderRegions().catch(e=>{$('orderRegionsSummary').innerHTML='⚠️ Không tải được khu vực đơn hàng: '+e.message;}):Promise.resolve();
+  const data=await api('/api/orders?'+qs.toString()); renderOrdersTable(data); await regionTask;
 }
 function fmtDetailVal(v){
   if(v===undefined || v===null || v==='') return '<span class="muted">-</span>';
@@ -1375,17 +1573,22 @@ function setTab(tab){
   document.querySelectorAll('.tabbtn').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab===tab));
   document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden', panel.id !== 'tab-'+tab));
   updateRoleUI(tab);
-  if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; });
+  if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; });
   if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; });
   if(tab==='marketing') loadMarketing();
   if(tab==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; });
 }
-async function loadDashboard(opts){ opts=opts||{}; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
+async function loadDashboard(opts){ opts=opts||{}; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
 async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
+$('shopTrafficReadBtn').addEventListener('click',readShopTrafficFile);
+$('shopTrafficSaveBtn').addEventListener('click',saveShopTraffic);
+$('shopTrafficReloadBtn').addEventListener('click',()=>loadShopTraffic().catch(e=>{$('shopTrafficSummary').innerHTML='⚠️ '+e.message;}));
+$('shopTrafficDeleteBtn').addEventListener('click',deleteShopTraffic);
+$('orderRegionsReloadBtn').addEventListener('click',()=>loadOrderRegions().catch(e=>{$('orderRegionsSummary').innerHTML='⚠️ '+e.message;}));
 init();
 </script>
 </body>
