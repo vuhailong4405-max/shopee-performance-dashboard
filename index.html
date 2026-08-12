@@ -426,15 +426,23 @@
     </section>
 
     <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Chi phí quảng cáo (Shopee Ads)</h2><p>Lấy từ Shopee Ads API theo ngày: chi phí, hiển thị, click, doanh số từ ads, ROAS. Đồng bộ tự động mỗi ~20 phút (3 ngày gần nhất); bấm nút để đồng bộ khoảng ngày khác (tối đa 31 ngày/lần).</p></div><div class="mini-actions"><button class="ghost" id="adsBtn">Tải chi phí quảng cáo</button><button id="adsSyncBtn">Đồng bộ Ads</button></div></div>
-      <div id="adsSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên rồi bấm "Đồng bộ Ads" để lấy dữ liệu lần đầu.</div>
+      <div class="section-title"><div><h2>Chi phí quảng cáo Shopee</h2><p>Product/CPC Ads được đồng bộ tự động từ OpenAPI. Chi phí Dịch vụ hiển thị Livestream được tách riêng vì OpenAPI hiện không trả khoản chi này; hãy xuất báo cáo Livestream Ads từ Kênh Người Bán và tải file lên bên dưới. Dashboard sẽ cộng hai phần thành Tổng chi phí quảng cáo mà không ghi đè lẫn nhau.</p></div><div class="mini-actions"><button class="ghost" id="adsBtn">Tải chi phí quảng cáo</button><button id="adsSyncBtn">Đồng bộ Product Ads</button></div></div>
+      <div id="adsSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên rồi bấm "Đồng bộ Product Ads" để lấy dữ liệu lần đầu.</div>
       <div class="perf-grid">
-        <div class="perf-card"><div class="k">Chi phí quảng cáo</div><div class="v" id="adsExpense">-</div><div class="muted">Ad Expenditure (expense)</div></div>
-        <div class="perf-card"><div class="k">Doanh số từ Ads</div><div class="v" id="adsGmv">-</div><div class="muted">Broad GMV</div></div>
-        <div class="perf-card"><div class="k">ROAS</div><div class="v" id="adsRoas">-</div><div class="muted">Doanh số / Chi phí</div></div>
-        <div class="perf-card"><div class="k">Lượt click</div><div class="v" id="adsClicks">-</div><div class="muted" id="adsCtr">CTR -</div></div>
+        <div class="perf-card"><div class="k">Tổng chi phí quảng cáo</div><div class="v" id="adsTotalExpense">-</div><div class="muted">Product Ads + Livestream Ads</div></div>
+        <div class="perf-card"><div class="k">Product/CPC Ads</div><div class="v" id="adsExpense">-</div><div class="muted">Đồng bộ tự động qua API</div></div>
+        <div class="perf-card"><div class="k">Livestream Ads</div><div class="v" id="adsLiveExpense">-</div><div class="muted" id="adsLiveMeta">Nhập từ báo cáo Shopee</div></div>
+        <div class="perf-card"><div class="k">GMV từ Product Ads</div><div class="v" id="adsGmv">-</div><div class="muted">Broad GMV</div></div>
+        <div class="perf-card"><div class="k">ROAS Product Ads</div><div class="v" id="adsRoas">-</div><div class="muted">GMV Product / Chi phí Product</div></div>
+        <div class="perf-card"><div class="k">Click Product Ads</div><div class="v" id="adsClicks">-</div><div class="muted" id="adsCtr">CTR -</div></div>
       </div>
-      <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Ngày</th><th class="right">Hiển thị</th><th class="right">Click</th><th class="right">Chi phí</th><th class="right">GMV từ Ads</th></tr></thead><tbody id="adsRows"><tr><td colspan="5" class="empty">Chưa tải</td></tr></tbody></table></div>
+      <div class="orders-toolbar" style="margin-top:14px">
+        <div class="field"><label>Báo cáo Livestream Ads Excel/CSV</label><input type="file" id="liveAdsFile" accept=".xlsx,.xls,.csv"></div>
+        <button class="ghost" id="liveAdsReadBtn">1. Đọc file (xem trước)</button>
+        <button id="liveAdsSaveBtn" disabled>2. Lưu chi phí Live</button>
+      </div>
+      <div id="liveAdsImportSummary" class="notice">File cần có tối thiểu cột Ngày và Chi phí/Đã chi. Nếu có thêm Tên chiến dịch, Hiển thị, Lượt xem, Đơn hàng, GMV hoặc ROAS, web cũng sẽ lưu và tổng hợp.</div>
+      <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Ngày</th><th class="right">Hiển thị Product</th><th class="right">Click Product</th><th class="right">Product Ads</th><th class="right">Livestream Ads</th><th class="right">Tổng chi phí</th><th class="right">GMV Product Ads</th></tr></thead><tbody id="adsRows"><tr><td colspan="7" class="empty">Chưa tải</td></tr></tbody></table></div>
       <details class="settings" style="margin-top:14px"><summary>Raw dữ liệu Ads</summary><pre id="adsRaw" class="diag-raw">Chưa tải</pre></details>
     </section>
 
@@ -909,7 +917,7 @@ async function loadAdsCost(){
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
   let data=await api('/api/marketing/ads/dashboard?'+qs.toString());
   const autoKey=shop+'_'+r.from+'_'+r.to;
-  if(!data.rows && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !adsAutoSynced.has(autoKey)){
+  if(!data.cpc_rows && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !adsAutoSynced.has(autoKey)){
     adsAutoSynced.add(autoKey);
     $('adsSummary').innerHTML='⏳ Chưa có dữ liệu Ads cho shop/khoảng này — đang tự động gọi Shopee Ads API...';
     try{
@@ -918,7 +926,12 @@ async function loadAdsCost(){
     }catch(e){ $('adsSummary').innerHTML='⚠️ Tự động đồng bộ Ads lỗi: '+e.message+' — bấm "Đồng bộ Ads" để thử lại.'; }
   }
   const s=data.summary||{};
+  $('adsTotalExpense').textContent=money(s.total_ads_expense??((s.expense||0)+(s.livestream_expense||0)));
   $('adsExpense').textContent=money(s.expense||0);
+  $('adsLiveExpense').textContent=money(s.livestream_expense||0);
+  $('adsLiveMeta').textContent=data.livestream_rows
+    ? `${num(data.livestream_rows)} dòng ngày/shop · ROAS ${s.livestream_roas?Number(s.livestream_roas).toLocaleString('vi-VN',{maximumFractionDigits:2})+'x':'-'}`
+    : 'Chưa nhập báo cáo Livestream Ads';
   $('adsGmv').textContent=money(s.broad_gmv||0);
   $('adsRoas').textContent=s.roas?s.roas.toLocaleString('vi-VN',{maximumFractionDigits:2})+'x':'-';
   $('adsClicks').textContent=num(s.clicks||0);
@@ -928,9 +941,9 @@ async function loadAdsCost(){
       ? 'ℹ️ Chưa có dữ liệu Ads đã lưu cho khoảng này. Chọn 1 shop cụ thể để web tự đồng bộ, hoặc bấm "Đồng bộ Ads".'
       : '⚠️ Không lấy được dữ liệu Ads cho khoảng đang chọn (có thể shop chưa chạy quảng cáo, hoặc Shopee chưa cấp quyền Ads). Bấm "Đồng bộ Ads" để thử lại.';
   } else {
-    $('adsSummary').innerHTML = `✅ Đang xem chi phí quảng cáo <b>${rangeLabel(r)}</b>${shop!=='all'?'':' (tổng hợp tất cả shop có dữ liệu)'} — ${data.rows} dòng ngày/shop đã lưu.`;
+    $('adsSummary').innerHTML = `✅ Đang xem chi phí quảng cáo <b>${rangeLabel(r)}</b>${shop!=='all'?'':' (tổng hợp tất cả shop có dữ liệu)'} — Product Ads: ${num(data.cpc_rows||0)} dòng ngày/shop; Livestream Ads: ${num(data.livestream_rows||0)} dòng ngày/shop.`;
   }
-  $('adsRows').innerHTML=(data.daily||[]).map(d=>`<tr><td>${vnDateLabel(d.date)}</td><td class="right">${num(d.impression)}</td><td class="right">${num(d.clicks)}</td><td class="right"><b>${money(d.expense)}</b></td><td class="right">${money(d.broad_gmv)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Chưa có dữ liệu.</td></tr>';
+  $('adsRows').innerHTML=(data.daily||[]).map(d=>`<tr><td>${vnDateLabel(d.date)}</td><td class="right">${num(d.impression)}</td><td class="right">${num(d.clicks)}</td><td class="right">${money(d.expense)}</td><td class="right">${money(d.livestream_expense||0)}</td><td class="right"><b>${money(d.total_ads_expense??((d.expense||0)+(d.livestream_expense||0)))}</b></td><td class="right">${money(d.broad_gmv)}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Chưa có dữ liệu.</td></tr>';
   $('adsRaw').textContent=JSON.stringify(data,null,2);
 }
 async function syncAdsCost(){
@@ -944,6 +957,98 @@ async function syncAdsCost(){
     await api('/api/marketing/ads/sync?'+qs.toString());
     await loadAdsCost();
   }catch(e){ $('adsSummary').innerHTML='⚠️ Đồng bộ Ads lỗi: '+e.message; }
+}
+let liveAdsPendingRows=null, liveAdsPendingFileName='';
+function liveAdsHeaderType(header){
+  const h=trafficNorm(header).replace(/[()]/g,' ').replace(/\s+/g,' ').trim();
+  if(/^(ngay|date|stat date|period)|^thoi gian/.test(h)) return 'date';
+  if(/ten chien dich|campaign name|^campaign$|^chien dich$/.test(h)) return 'campaign_name';
+  if(/^(chi phi|da chi|spend|expense|cost|tong chi phi|chi phi quang cao|so tien da chi)$/.test(h)) return 'expense';
+  if(/impression|luot hien thi|^hien thi$/.test(h)) return 'impressions';
+  if(/live view|livestream view|luot xem live|^luot xem$|^views?$/.test(h)) return 'views';
+  if(/product click|luot nhap san pham|luot click|^clicks?$/.test(h)) return 'clicks';
+  if(/don hang|orders?|checkout/.test(h)) return 'orders';
+  if(/gmv|doanh thu|doanh so|sales|revenue/.test(h)) return 'gmv';
+  if(/^roas$|return on ad spend/.test(h)) return 'roas';
+  return '';
+}
+function scoreLiveAdsHeaderRow(row){
+  const types=new Set((row||[]).map(liveAdsHeaderType).filter(Boolean));
+  return (types.has('date')?6:0)+(types.has('expense')?7:0)+(types.has('campaign_name')?2:0)+(types.has('impressions')?1:0)+(types.has('views')?1:0)+(types.has('orders')?1:0)+(types.has('gmv')?2:0)+(types.has('roas')?1:0);
+}
+function liveAdsDecimal(v){
+  if(typeof v==='number') return Math.max(0,v);
+  const raw=String(v??'').trim(); if(!raw) return 0;
+  let s=raw.replace(/\s/g,'').replace(/%/g,'');
+  if(s.includes(',') && s.includes('.')) s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');
+  else if(s.includes(',')) s=s.replace(',','.');
+  const n=Number(s.replace(/[^\d.-]/g,''));
+  if(!Number.isFinite(n)) return 0;
+  return Math.max(0,raw.includes('%')?n/100:n);
+}
+function parseLivestreamAdsSheetRows(aoa){
+  if(!aoa?.length) return [];
+  let headerRowIdx=-1,bestScore=0;
+  for(let i=0;i<Math.min(25,aoa.length);i++){ const score=scoreLiveAdsHeaderRow(aoa[i]); if(score>bestScore){bestScore=score;headerRowIdx=i;} }
+  if(headerRowIdx<0 || bestScore<13) return [];
+  const indexes={};
+  (aoa[headerRowIdx]||[]).forEach((h,i)=>{ const type=liveAdsHeaderType(h); if(type && indexes[type]===undefined) indexes[type]=i; });
+  if(indexes.date===undefined || indexes.expense===undefined) return [];
+  const out=[]; let lastDate=null;
+  for(let i=headerRowIdx+1;i<aoa.length;i++){
+    const row=aoa[i]||[];
+    const parsedDate=trafficDate(row[indexes.date]); if(parsedDate) lastDate=parsedDate;
+    const statDate=parsedDate||lastDate; if(!statDate) continue;
+    const expense=Math.abs(parseMoneyVN(row[indexes.expense]));
+    const campaignName=indexes.campaign_name===undefined?'':String(row[indexes.campaign_name]||'').trim();
+    const impressions=indexes.impressions===undefined?0:Math.abs(parseMoneyVN(row[indexes.impressions]));
+    const views=indexes.views===undefined?0:Math.abs(parseMoneyVN(row[indexes.views]));
+    const clicks=indexes.clicks===undefined?0:Math.abs(parseMoneyVN(row[indexes.clicks]));
+    const orders=indexes.orders===undefined?0:Math.abs(parseMoneyVN(row[indexes.orders]));
+    const gmv=indexes.gmv===undefined?0:Math.abs(parseMoneyVN(row[indexes.gmv]));
+    const roas=indexes.roas===undefined?0:liveAdsDecimal(row[indexes.roas]);
+    if(!expense && !impressions && !views && !clicks && !orders && !gmv && !campaignName) continue;
+    out.push({stat_date:statDate,campaign_name:campaignName,expense,impressions,views,clicks,orders,gmv,roas});
+  }
+  return out;
+}
+async function readLivestreamAdsFile(){
+  const file=$('liveAdsFile').files && $('liveAdsFile').files[0];
+  if(!file){ $('liveAdsImportSummary').innerHTML='⚠️ Chưa chọn file báo cáo Livestream Ads.'; return; }
+  if(typeof XLSX==='undefined'){ $('liveAdsImportSummary').innerHTML='⚠️ Chưa tải được thư viện đọc Excel. Kiểm tra mạng rồi thử lại.'; return; }
+  $('liveAdsImportSummary').innerHTML='⏳ Đang đọc và nhận diện cột trong file...';
+  $('liveAdsSaveBtn').disabled=true; liveAdsPendingRows=null;
+  try{
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+    let rows=[];
+    for(const name of wb.SheetNames){
+      const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:false,defval:''});
+      const parsed=parseLivestreamAdsSheetRows(aoa); if(parsed.length>rows.length) rows=parsed;
+    }
+    if(!rows.length){ $('liveAdsImportSummary').innerHTML='⚠️ Chưa nhận diện được dữ liệu. File cần có cột <b>Ngày</b> và <b>Chi phí/Đã chi</b>. Nếu tên cột Shopee của bạn khác, hãy gửi file mẫu để tôi bổ sung chính xác.'; return; }
+    liveAdsPendingRows=rows; liveAdsPendingFileName=file.name;
+    const expense=rows.reduce((sum,row)=>sum+row.expense,0);
+    const dates=[...new Set(rows.map(row=>row.stat_date))].sort();
+    $('adsLiveExpense').textContent=money(expense);
+    $('adsLiveMeta').textContent='Đang xem trước · chưa lưu';
+    $('liveAdsImportSummary').innerHTML=`👀 <b>Xem trước:</b> ${num(rows.length)} dòng, ${num(dates.length)} ngày (${vnDateLabel(dates[0])} → ${vnDateLabel(dates[dates.length-1])}), chi phí Live <b>${money(expense)}</b>. Thấy đúng thì bấm “2. Lưu chi phí Live”.`;
+    $('liveAdsSaveBtn').disabled=false;
+  }catch(e){ $('liveAdsImportSummary').innerHTML='⚠️ Lỗi đọc file: '+e.message; }
+}
+async function saveLivestreamAdsRows(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'){ $('liveAdsImportSummary').innerHTML='⚠️ Hãy chọn đúng 1 shop ở bộ lọc phía trên trước khi lưu.'; return; }
+  if(!liveAdsPendingRows?.length){ $('liveAdsImportSummary').innerHTML='⚠️ Hãy đọc file trước khi lưu.'; return; }
+  $('liveAdsSaveBtn').disabled=true;
+  $('liveAdsImportSummary').innerHTML='⏳ Đang lưu chi phí Livestream Ads theo ngày...';
+  try{
+    const res=await fetch(getWorker()+'/api/marketing/ads/livestream-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:liveAdsPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:liveAdsPendingRows})});
+    const data=await res.json().catch(()=>null);
+    if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
+    liveAdsPendingRows=null; $('liveAdsFile').value='';
+    await loadAdsCost();
+    $('liveAdsImportSummary').innerHTML=`✅ Đã lưu chi phí Livestream Ads của ${num(data.rows_saved)} ngày, từ ${vnDateLabel(data.date_from)} đến ${vnDateLabel(data.date_to)} — tổng <b>${money(data.expense)}</b>.`;
+  }catch(e){ $('liveAdsSaveBtn').disabled=false; $('liveAdsImportSummary').innerHTML='⚠️ Lỗi khi lưu: '+e.message; }
 }
 // V65.2: tự động đồng bộ Xu Shop 1 lần khi đổi shop/ngày mà chưa có dữ liệu (giới hạn max_orders=150/lần để không quá tải).
 const coinAutoSynced = new Set();
@@ -1583,7 +1688,7 @@ function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ con
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile); $('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
 $('shopTrafficReadBtn').addEventListener('click',readShopTrafficFile);
 $('shopTrafficSaveBtn').addEventListener('click',saveShopTraffic);
 $('shopTrafficReloadBtn').addEventListener('click',()=>loadShopTraffic().catch(e=>{$('shopTrafficSummary').innerHTML='⚠️ '+e.message;}));
