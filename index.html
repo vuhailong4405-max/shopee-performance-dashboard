@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · Modular Workspace</title>
+  <title>Gooby BI Dashboard · V70 Integrity</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -612,7 +612,19 @@ function rangeLabel(r){ return r.from===r.to ? vnDateLabel(r.from) : vnDateLabel
 function periodName(){ return $('period').value==='week'?'tuần':$('period').value==='month'?'tháng':$('period').value==='custom'?'khoảng tùy chọn':'ngày'; }
 function compareLabel(){ return 'kỳ trước'; }
 function updateUrls(){ const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'; }
-async function api(path){ const res=await fetch(getWorker()+path,{cache:'no-store'}); const data=await res.json().catch(()=>null); if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status)); return data; }
+const apiMemoryCache=new Map();
+async function api(path,opts){
+  opts=opts||{};
+  const ttlMs=Math.max(0,Number(opts.ttlMs||0));
+  const key=getWorker()+path;
+  const cached=apiMemoryCache.get(key);
+  if(ttlMs && cached && cached.expiresAt>Date.now()) return cached.data;
+  const res=await fetch(key,{cache:ttlMs?'default':'no-store',signal:opts.signal});
+  const data=await res.json().catch(()=>null);
+  if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
+  if(ttlMs) apiMemoryCache.set(key,{data,expiresAt:Date.now()+ttlMs});
+  return data;
+}
 async function loadShops(){ const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){ const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op); } if([...sel.options].some(o=>o.value===cur)) sel.value=cur; }
 function updatePeriodFields(){ const p=$('period').value; document.querySelectorAll('[data-period-field]').forEach(el=>el.classList.toggle('hidden', el.dataset.periodField!==p)); const r=getRangeSafe(); $('heroRange').textContent=r?rangeLabel(r):'-'; }
 function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
@@ -713,7 +725,7 @@ async function loadOverviewMarketing(token){
   const r=getRange();const shop=$('shop').value||'all';
   body.className='module-loading';body.textContent='Đang tải dữ liệu Marketing...';
   try{
-    const data=await api('/api/marketing/ads/dashboard?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}).toString());
+    const data=await api('/api/marketing/ads/dashboard?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}).toString(),{ttlMs:120000});
     if(token!==overviewLoadToken)return;
     const s=data.summary||{};
     body.className='';
@@ -730,17 +742,19 @@ async function loadOverviewInventory(token){
   const r=getRange();const shop=$('shop').value||'all';const month=r.to.slice(0,7);
   body.className='module-loading';body.textContent='Đang tải dữ liệu kho hàng...';
   try{
-    const data=await api('/api/warehouse/dashboard?'+new URLSearchParams({month,shop_id:shop}).toString());
+    const data=await api('/api/warehouse/dashboard?'+new URLSearchParams({month,shop_id:shop,overview:'1',limit:'3'}).toString(),{ttlMs:900000});
     if(token!==overviewLoadToken)return;
     const all=(data.sku_rows||[]).map(row=>({...row,available:Number(row.available||0)}));
     const low=all.filter(row=>row.available<=50).sort((a,b)=>a.available-b.available);
-    const featured=(low.length?low:all.slice().sort((a,b)=>a.available-b.available)).slice(0,3);
+    const featured=all.slice(0,3);
+    const totalSku=Number(data.summary?.total_skus??all.length);
+    const lowCount=Number(data.summary?.low_stock_skus??low.length);
     body.className='';
     if(!featured.length){body.innerHTML='<div class="module-loading">Chưa có dữ liệu tồn kho cho tháng '+escapeOverviewText(month)+'.</div>';return;}
     body.innerHTML=`<div class="inventory-list">${featured.map(row=>`<div class="inventory-row">
       <div class="inventory-icon">◇</div><div><strong>${escapeOverviewText(row.name||('SKU '+row.sku))}</strong><small>SKU: ${escapeOverviewText(row.sku||'-')}</small></div>
       <div class="stock-count"><b>${num(row.available)}</b><small class="${row.available<=50?'low':'ok'}">${row.available<=50?'Sắp hết hàng':'Còn hàng'}</small></div>
-    </div>`).join('')}</div><div class="inventory-summary"><span>Tổng SKU <b>${num(all.length)}</b></span><span>Sắp hết hàng <b>${num(low.length)}</b></span></div>`;
+    </div>`).join('')}</div><div class="inventory-summary"><span>Tổng SKU <b>${num(totalSku)}</b></span><span>Sắp hết hàng <b>${num(lowCount)}</b></span></div>`;
   }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được dữ liệu kho.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
 }
 function loadOverviewModules(){const token=++overviewLoadToken;Promise.allSettled([loadOverviewMarketing(token),loadOverviewInventory(token)]);}
@@ -950,12 +964,14 @@ async function syncAdsCost(){
   const shop=$('shop').value||'all';
   if(shop==='all'){ $('adsSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể rồi mới đồng bộ Ads.'; return; }
   const r=getRange();
-  if(daysInclusive(r.from,r.to)>31){ alert('Shopee chỉ cho phép tối đa 31 ngày/lần gọi Ads API. Hãy chọn khoảng ngắn hơn.'); return; }
-  $('adsSummary').innerHTML='⏳ Đang gọi Shopee Ads API...';
+  const totalDays=daysInclusive(r.from,r.to);
+  if(totalDays>366){ alert('Hãy chọn tối đa 366 ngày cho mỗi lần đồng bộ Ads.'); return; }
+  $('adsSummary').innerHTML=`⏳ Đang đồng bộ ${num(totalDays)} ngày từ Shopee Ads API${totalDays>28?' — hệ thống sẽ tự chia thành nhiều đợt để không vượt giới hạn Shopee':''}...`;
   try{
     const qs=new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to});
-    await api('/api/marketing/ads/sync?'+qs.toString());
+    const result=await api('/api/marketing/ads/sync?'+qs.toString());
     await loadAdsCost();
+    if(result.chunks_count>1) $('adsSummary').innerHTML+=` Đã tự chia ${num(result.chunks_count)} đợt đồng bộ an toàn.`;
   }catch(e){ $('adsSummary').innerHTML='⚠️ Đồng bộ Ads lỗi: '+e.message; }
 }
 let liveAdsPendingRows=null, liveAdsPendingFileName='';
@@ -1683,7 +1699,9 @@ function setTab(tab){
   if(tab==='marketing') loadMarketing();
   if(tab==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; });
 }
-async function loadDashboard(opts){ opts=opts||{}; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const data=await api('/api/dashboard/compare?'+qs.toString()); render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; }); }catch(e){ $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
+let dashboardLoadToken=0;
+let dashboardAbortController=null;
+async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
