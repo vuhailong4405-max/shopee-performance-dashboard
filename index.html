@@ -565,7 +565,7 @@
       <div class="mini-actions">
         <button class="ghost" id="catchupBtn">Quét bù đơn thiếu</button>
         <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
-        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù: chọn 1 shop; block tự tăng 10→20→30→60 phút khi tải nhẹ, tự hạ khi tải nặng và 10→5→2→1 khi Cloudflare quá tải; cursor luôn được lưu để bấm lại tiếp tục. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
+        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù: chọn 1 shop; block tự tăng 10→20→30→60 khi tải nhẹ, tự hạ khi tải nặng/Cloudflare quá tải. Hết một batch hệ thống tự nghỉ rồi tiếp tục, không dừng giữa chừng; cursor luôn được lưu. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
       </div>
       <details style="margin-top:14px">
         <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
@@ -1726,90 +1726,123 @@ async function catchupAdaptiveStep(shop,day,preferredMinutes=10){
   throw new Error(lastError||'Không tìm được kích thước block quét phù hợp');
 }
 
-// Một lần bấm có giới hạn thời gian/lượt gọi để tránh treo tab.
-// Với shop nhẹ, block sẽ nhanh chóng lên 60 phút nên thường chỉ cần ~25-35 request/ngày.
+// V70.5: mỗi batch vẫn có giới hạn để an toàn,
+// nhưng hết batch sẽ tự nghỉ rồi nối batch tiếp theo cho tới khi hoàn tất ngày.
 async function catchupOneDay(shop,day,labelPrefix){
-  const started=Date.now();
-  const maxRuntimeMs=100000;
-  const maxRequests=90;
+  const batchMaxRuntimeMs=85000;
+  const batchMaxRequests=75;
+  const maxTotalRuntimeMs=30*60*1000; // tối đa 30 phút cho một ngày trong một lần bấm
+  const overallStarted=Date.now();
 
-  let requestCount=0;
-  let prev=-1;
+  let totalRequestCount=0;
+  let batchNo=0;
+  let prevGlobal=-1;
   let preferredMinutes=10;
   let lightStreak=0;
   let heavyStreak=0;
+  let noProgressBatches=0;
 
-  while(requestCount<maxRequests && (Date.now()-started)<maxRuntimeMs){
-    const requestedBlock=preferredMinutes;
-    const step=await catchupAdaptiveStep(shop,day,requestedBlock);
+  while((Date.now()-overallStarted)<maxTotalRuntimeMs){
+    batchNo++;
+    const batchStarted=Date.now();
+    let batchRequestCount=0;
+    let batchProgress=false;
 
-    requestCount+=step.attempts;
+    while(
+      batchRequestCount<batchMaxRequests &&
+      (Date.now()-batchStarted)<batchMaxRuntimeMs &&
+      (Date.now()-overallStarted)<maxTotalRuntimeMs
+    ){
+      const step=await catchupAdaptiveStep(shop,day,preferredMinutes);
 
-    const res=step.res||{};
-    const m=step.metrics||catchupResultMetrics(res,0);
-    const next=Number(res.next_minute??0);
-    const allowed=Number(res.latest_allowed_minute??1439);
-    const total=Math.max(1,allowed+1);
-    const pct=Math.min(100,Math.round(Math.min(next,total)/total*100));
-    const load=catchupLoadClass(m);
+      batchRequestCount+=step.attempts;
+      totalRequestCount+=step.attempts;
 
-    // Nếu catchupAdaptiveStep đã buộc hạ block vì Too many subrequests,
-    // dùng luôn block thực tế làm mức cơ sở mới.
-    if(step.minutes<preferredMinutes){
-      preferredMinutes=step.minutes;
-      lightStreak=0;
-      heavyStreak=0;
-    }
+      const res=step.res||{};
+      const m=step.metrics||catchupResultMetrics(res,0);
+      const next=Number(res.next_minute??0);
+      const allowed=Number(res.latest_allowed_minute??1439);
+      const total=Math.max(1,allowed+1);
+      const pct=Math.min(100,Math.round(Math.min(next,total)/total*100));
+      const load=catchupLoadClass(m);
 
-    if(load==='light'){
-      lightStreak++;
-      heavyStreak=0;
-
-      // 3 lượt nhẹ liên tiếp -> tăng một cấp.
-      if(lightStreak>=3){
-        preferredMinutes=catchupIncreaseBlock(preferredMinutes);
+      if(step.minutes<preferredMinutes){
+        preferredMinutes=step.minutes;
         lightStreak=0;
+        heavyStreak=0;
       }
-    }else if(load==='heavy'){
-      heavyStreak++;
-      lightStreak=0;
 
-      // Request đã nặng thì hạ ngay một cấp ở vùng 20/30/60.
-      preferredMinutes=catchupReduceForLoad(preferredMinutes);
-    }else{
-      // Normal: không tăng ngay, nhưng không xóa hết "đà" của shop nhẹ.
-      heavyStreak=0;
-      lightStreak=Math.max(0,lightStreak-1);
+      if(load==='light'){
+        lightStreak++;
+        heavyStreak=0;
+        if(lightStreak>=3){
+          preferredMinutes=catchupIncreaseBlock(preferredMinutes);
+          lightStreak=0;
+        }
+      }else if(load==='heavy'){
+        heavyStreak++;
+        lightStreak=0;
+        preferredMinutes=catchupReduceForLoad(preferredMinutes);
+      }else{
+        heavyStreak=0;
+        lightStreak=Math.max(0,lightStreak-1);
+      }
+
+      const seconds=(m.durationMs/1000).toFixed(1);
+      const loadText=load==='light'?'nhẹ':load==='heavy'?'nặng':'vừa';
+
+      $('diagSummary').innerHTML=
+        `${labelPrefix} <b>${vnDateLabel(day)}</b>: `+
+        `phút ${Math.min(next,1440)}/${total} (${pct}%) · `+
+        `block ${step.minutes}→${preferredMinutes} phút · `+
+        `${m.orderCount} order_sn · ${seconds}s · tải ${loadText} · `+
+        `batch ${batchNo} · tổng ${totalRequestCount} lượt gọi.`;
+
+      if(res.mode==='create_time_window_waiting' || next>allowed){
+        return {done:true,next,allowed,requestCount:totalRequestCount,batches:batchNo};
+      }
+
+      if(next>prevGlobal){
+        batchProgress=true;
+        prevGlobal=next;
+      }else if(next===prevGlobal){
+        break;
+      }
+
+      await catchupSleep(load==='heavy'?240:100);
     }
 
-    const seconds=(m.durationMs/1000).toFixed(1);
-    const loadText=load==='light'?'nhẹ':load==='heavy'?'nặng':'vừa';
-    const nextBlock=preferredMinutes;
+    if(batchProgress) noProgressBatches=0;
+    else noProgressBatches++;
+
+    if(noProgressBatches>=3){
+      return {
+        done:false,
+        next:prevGlobal,
+        requestCount:totalRequestCount,
+        batches:batchNo,
+        reason:'cursor_no_progress_after_3_batches'
+      };
+    }
 
     $('diagSummary').innerHTML=
-      `${labelPrefix} <b>${vnDateLabel(day)}</b>: `+
-      `phút ${Math.min(next,1440)}/${total} (${pct}%) · `+
-      `block vừa chạy <b>${step.minutes} phút</b> → block tiếp <b>${nextBlock} phút</b> · `+
-      `${m.orderCount} order_sn · ${seconds}s · tải ${loadText} · ${requestCount} lượt gọi.`;
+      `⏸️ ${labelPrefix} <b>${vnDateLabel(day)}</b>: `+
+      `batch ${batchNo} đã xong, cursor ở phút ${Math.max(0,prevGlobal)}. `+
+      `Đang nghỉ 1,2 giây rồi tự tiếp tục...`;
 
-    if(res.mode==='create_time_window_waiting' || next>allowed){
-      return {done:true,next,allowed,requestCount};
-    }
-
-    if(next===prev){
-      return {done:false,next,allowed,requestCount,reason:'cursor_no_progress'};
-    }
-    prev=next;
-
-    // Khoảng nghỉ rất ngắn giữa các Worker invocation.
-    // Shop nhẹ vẫn nhanh, nhưng tránh dồn request quá sát.
-    await catchupSleep(load==='heavy'?220:90);
+    await catchupSleep(batchProgress?1200:2500);
   }
 
-  return {done:false,next:prev,requestCount,reason:'click_budget_reached'};
+  return {
+    done:false,
+    next:prevGlobal,
+    requestCount:totalRequestCount,
+    batches:batchNo,
+    reason:'max_total_runtime_reached'
+  };
 }
 
-// V70.4: tự dò ngày chưa đủ + toàn bộ khoảng đang chọn (tối đa 62 ngày).
+// V70.5: tự dò ngày chưa đủ + toàn bộ khoảng đang chọn (tối đa 62 ngày).
 // Quét an toàn theo từng shop. Một lần bấm có ngân sách thời gian để tránh treo trình duyệt;
 // nếu chưa đủ chỉ cần bấm lại, hệ thống tiếp tục từ cursor hiện tại.
 async function catchupMissingOrders(){
@@ -1856,10 +1889,12 @@ async function catchupMissingOrders(){
     try{
       const result=await catchupOneDay(shop,day,`⏳ [${idx+1}/${list.length}] Quét bù`);
       if(!result.done){
+        const reason=result.reason==='max_total_runtime_reached'
+          ? 'đã đạt giới hạn 30 phút cho một ngày'
+          : 'cursor không tiến sau 3 batch';
         $('diagSummary').innerHTML=
-          `⏸️ Đã quét an toàn đến phút ${Math.max(0,result.next||0)} của <b>${vnDateLabel(day)}</b>. `+
-          `Đã dùng ${result.requestCount||0} lượt gọi trong lần bấm này. `+
-          `Bấm <b>Quét bù đơn thiếu</b> lần nữa để tiếp tục đúng chỗ đang dở.`;
+          `⚠️ Tạm dừng ${vnDateLabel(day)} vì ${reason}. `+
+          `Cursor đã lưu ở phút ${Math.max(0,result.next||0)}; bấm Quét bù lần nữa sẽ tiếp tục đúng chỗ này.`;
         await loadDiagnostics().catch(()=>{});
         return;
       }
