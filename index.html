@@ -565,7 +565,7 @@
       <div class="mini-actions">
         <button class="ghost" id="catchupBtn">Quét bù đơn thiếu</button>
         <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
-        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù: chọn 1 shop, hệ thống tự giảm block 10→5→2→1 phút khi Cloudflare quá tải và lưu cursor để bấm lại tiếp tục. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
+        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù: chọn 1 shop; block tự tăng 10→20→30→60 phút khi tải nhẹ, tự hạ khi tải nặng và 10→5→2→1 khi Cloudflare quá tải; cursor luôn được lưu để bấm lại tiếp tục. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
       </div>
       <details style="margin-top:14px">
         <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
@@ -1587,93 +1587,229 @@ async function recomputeFromLedger(){
   await loadDashboard();
 }
 
-// V70.3: quét bù an toàn theo từng Worker invocation nhỏ.
-// Ngày có nhiều đơn (sale/flash sale) sẽ tự giảm block 10 → 5 → 2 → 1 phút
-// nếu Cloudflare báo "Too many subrequests". Cursor chỉ tiến khi Worker trả thành công.
+// V70.4: Adaptive Catchup.
+// Mục tiêu:
+// - Bắt đầu 10 phút.
+// - 3 lượt nhẹ liên tiếp -> 20 -> 30 -> 60 phút.
+// - Khi request chậm/nhiều đơn: 60 -> 30 -> 20 -> 10.
+// - Khi Cloudflare Too many subrequests: >10 -> 10 -> 5 -> 2 -> 1.
+// - Sau vài lượt nhẹ lại tự tăng block.
+// Mỗi lần gọi /catchup-date vẫn chỉ chạy runs=1 và 1 shop để giữ ngân sách subrequest an toàn.
 function catchupSleep(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
 
-async function catchupAdaptiveStep(shop, day, preferredMinutes=10){
-  const candidates=[preferredMinutes,5,2,1]
-    .map(Number)
-    .filter((v,i,a)=>v>=1 && v<=10 && a.indexOf(v)===i)
-    .sort((a,b)=>b-a);
+const CATCHUP_BLOCK_LEVELS=[1,2,5,10,20,30,60];
 
-  let lastError='';
-  let attempts=0;
-  for(const minutes of candidates){
-    attempts++;
-    const data=await api('/api/sync/catchup-date?'+new URLSearchParams({
-      date:day,
-      shop_id:shop,
-      minutes:String(minutes),
-      runs:'1'
-    }).toString());
-
-    const res=data.results?.[data.results.length-1]?.result||{};
-    if(res.ok!==false){
-      return {data,res,minutes,attempts};
-    }
-
-    lastError=String(res.error||res.message||'Quét bù thất bại');
-    if(/too many subrequests/i.test(lastError) && minutes>1){
-      continue;
-    }
-    throw new Error(lastError);
+function catchupBlockIndex(minutes){
+  const n=Number(minutes)||10;
+  const idx=CATCHUP_BLOCK_LEVELS.indexOf(n);
+  if(idx>=0) return idx;
+  let best=0;
+  for(let i=0;i<CATCHUP_BLOCK_LEVELS.length;i++){
+    if(CATCHUP_BLOCK_LEVELS[i]<=n) best=i;
   }
-  throw new Error(lastError||'Không tìm được kích thước cửa sổ quét phù hợp');
+  return best;
 }
 
-// Mỗi lần bấm chạy tối đa ~90 giây / 80 Worker invocations.
-// Nếu chưa xong, nút sẽ báo "bấm lại để tiếp tục"; cursor đã lưu nên không quét lại phần hoàn tất.
-async function catchupOneDay(shop, day, labelPrefix){
+function catchupIncreaseBlock(minutes){
+  const idx=catchupBlockIndex(minutes);
+  return CATCHUP_BLOCK_LEVELS[Math.min(CATCHUP_BLOCK_LEVELS.length-1,idx+1)];
+}
+
+function catchupReduceForLoad(minutes){
+  const n=Number(minutes)||10;
+  // Theo yêu cầu: tải bắt đầu nặng thì 60 -> 30 -> 20 -> 10.
+  if(n>=60) return 30;
+  if(n>=30) return 20;
+  if(n>=20) return 10;
+  return n; // dưới/equal 10 chỉ hạ khi Cloudflare thực sự báo Too many subrequests.
+}
+
+function catchupReduceForSubrequests(minutes){
+  const n=Number(minutes)||10;
+  // Nếu block lớn mà Cloudflare đã báo Too many thì hạ thẳng về vùng an toàn 10 phút.
+  if(n>10) return 10;
+  if(n===10) return 5;
+  if(n===5) return 2;
+  if(n===2) return 1;
+  return 1;
+}
+
+function catchupResultMetrics(res,durationMs){
+  const totals=res?.totals||{};
+  const stats=res?.stats||{};
+  const orderCount=Number(
+    totals.order_sns ??
+    res.order_sns ??
+    stats.order_sns ??
+    totals.details ??
+    res.details ??
+    0
+  )||0;
+  const details=Number(totals.details ?? res.details ?? stats.details ?? orderCount)||0;
+  const retryCount=Number(
+    res.retry_count ??
+    res.retries ??
+    res.retry_queue_count ??
+    totals.retry_count ??
+    0
+  )||0;
+  return {durationMs:Number(durationMs)||0,orderCount,details,retryCount};
+}
+
+function catchupLoadClass(metrics){
+  const {durationMs,orderCount,retryCount}=metrics;
+
+  // Nặng: nhiều đơn / request chậm / có retry.
+  if(retryCount>0 || durationMs>=7000 || orderCount>=70) return 'heavy';
+
+  // Nhẹ: đủ nhanh và ít đơn. Dùng ngưỡng rộng vừa phải để shop nhỏ tăng tốc sớm.
+  if(durationMs<=2500 && orderCount<=12 && retryCount===0) return 'light';
+
+  return 'normal';
+}
+
+async function catchupAdaptiveStep(shop,day,preferredMinutes=10){
+  let minutes=Math.max(1,Math.min(60,Number(preferredMinutes)||10));
+  let attempts=0;
+  let lastError='';
+
+  // Một step có thể tự retry bằng block nhỏ hơn nếu Cloudflare từ chối.
+  for(let guard=0;guard<7;guard++){
+    attempts++;
+    const requestStarted=performance.now();
+
+    try{
+      const data=await api('/api/sync/catchup-date?'+new URLSearchParams({
+        date:day,
+        shop_id:shop,
+        minutes:String(minutes),
+        runs:'1'
+      }).toString());
+
+      const durationMs=Math.max(0,performance.now()-requestStarted);
+      const res=data.results?.[data.results.length-1]?.result||{};
+
+      if(res.ok!==false){
+        return {
+          data,
+          res,
+          minutes,
+          attempts,
+          metrics:catchupResultMetrics(res,durationMs)
+        };
+      }
+
+      lastError=String(res.error||res.message||'Quét bù thất bại');
+      if(/too many subrequests/i.test(lastError)){
+        const smaller=catchupReduceForSubrequests(minutes);
+        if(smaller===minutes && minutes===1) throw new Error(lastError);
+        minutes=smaller;
+        await catchupSleep(180);
+        continue;
+      }
+
+      throw new Error(lastError);
+    }catch(e){
+      const msg=String(e?.message||e||'');
+      lastError=msg;
+      if(/too many subrequests/i.test(msg)){
+        const smaller=catchupReduceForSubrequests(minutes);
+        if(smaller===minutes && minutes===1) throw e;
+        minutes=smaller;
+        await catchupSleep(180);
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  throw new Error(lastError||'Không tìm được kích thước block quét phù hợp');
+}
+
+// Một lần bấm có giới hạn thời gian/lượt gọi để tránh treo tab.
+// Với shop nhẹ, block sẽ nhanh chóng lên 60 phút nên thường chỉ cần ~25-35 request/ngày.
+async function catchupOneDay(shop,day,labelPrefix){
   const started=Date.now();
-  const maxRuntimeMs=90000;
-  const maxRequests=80;
+  const maxRuntimeMs=100000;
+  const maxRequests=90;
+
   let requestCount=0;
   let prev=-1;
   let preferredMinutes=10;
-  let consecutiveSuccess=0;
+  let lightStreak=0;
+  let heavyStreak=0;
 
   while(requestCount<maxRequests && (Date.now()-started)<maxRuntimeMs){
-    const step=await catchupAdaptiveStep(shop,day,preferredMinutes);
+    const requestedBlock=preferredMinutes;
+    const step=await catchupAdaptiveStep(shop,day,requestedBlock);
+
     requestCount+=step.attempts;
+
     const res=step.res||{};
+    const m=step.metrics||catchupResultMetrics(res,0);
     const next=Number(res.next_minute??0);
     const allowed=Number(res.latest_allowed_minute??1439);
     const total=Math.max(1,allowed+1);
     const pct=Math.min(100,Math.round(Math.min(next,total)/total*100));
+    const load=catchupLoadClass(m);
+
+    // Nếu catchupAdaptiveStep đã buộc hạ block vì Too many subrequests,
+    // dùng luôn block thực tế làm mức cơ sở mới.
+    if(step.minutes<preferredMinutes){
+      preferredMinutes=step.minutes;
+      lightStreak=0;
+      heavyStreak=0;
+    }
+
+    if(load==='light'){
+      lightStreak++;
+      heavyStreak=0;
+
+      // 3 lượt nhẹ liên tiếp -> tăng một cấp.
+      if(lightStreak>=3){
+        preferredMinutes=catchupIncreaseBlock(preferredMinutes);
+        lightStreak=0;
+      }
+    }else if(load==='heavy'){
+      heavyStreak++;
+      lightStreak=0;
+
+      // Request đã nặng thì hạ ngay một cấp ở vùng 20/30/60.
+      preferredMinutes=catchupReduceForLoad(preferredMinutes);
+    }else{
+      // Normal: không tăng ngay, nhưng không xóa hết "đà" của shop nhẹ.
+      heavyStreak=0;
+      lightStreak=Math.max(0,lightStreak-1);
+    }
+
+    const seconds=(m.durationMs/1000).toFixed(1);
+    const loadText=load==='light'?'nhẹ':load==='heavy'?'nặng':'vừa';
+    const nextBlock=preferredMinutes;
 
     $('diagSummary').innerHTML=
-      `${labelPrefix} <b>${vnDateLabel(day)}</b>: phút ${Math.min(next,1440)}/${total} (${pct}%) · block ${step.minutes} phút · ${requestCount} lượt gọi.`;
+      `${labelPrefix} <b>${vnDateLabel(day)}</b>: `+
+      `phút ${Math.min(next,1440)}/${total} (${pct}%) · `+
+      `block vừa chạy <b>${step.minutes} phút</b> → block tiếp <b>${nextBlock} phút</b> · `+
+      `${m.orderCount} order_sn · ${seconds}s · tải ${loadText} · ${requestCount} lượt gọi.`;
 
     if(res.mode==='create_time_window_waiting' || next>allowed){
       return {done:true,next,allowed,requestCount};
     }
+
     if(next===prev){
       return {done:false,next,allowed,requestCount,reason:'cursor_no_progress'};
     }
     prev=next;
 
-    // Giữ block nhỏ sau khi vừa phải hạ xuống để không liên tục tạo request lỗi.
-    if(step.minutes<preferredMinutes){
-      preferredMinutes=step.minutes;
-      consecutiveSuccess=0;
-    }else{
-      consecutiveSuccess++;
-      // Sau nhiều lượt thành công mới thử tăng nhẹ trở lại.
-      if(consecutiveSuccess>=12 && preferredMinutes<10){
-        preferredMinutes=preferredMinutes===1?2:preferredMinutes===2?5:10;
-        consecutiveSuccess=0;
-      }
-    }
-
-    await catchupSleep(120);
+    // Khoảng nghỉ rất ngắn giữa các Worker invocation.
+    // Shop nhẹ vẫn nhanh, nhưng tránh dồn request quá sát.
+    await catchupSleep(load==='heavy'?220:90);
   }
 
   return {done:false,next:prev,requestCount,reason:'click_budget_reached'};
 }
 
-// V70.3: tự dò ngày chưa đủ + toàn bộ khoảng đang chọn (tối đa 62 ngày).
+// V70.4: tự dò ngày chưa đủ + toàn bộ khoảng đang chọn (tối đa 62 ngày).
 // Quét an toàn theo từng shop. Một lần bấm có ngân sách thời gian để tránh treo trình duyệt;
 // nếu chưa đủ chỉ cần bấm lại, hệ thống tiếp tục từ cursor hiện tại.
 async function catchupMissingOrders(){
