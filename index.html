@@ -565,7 +565,7 @@
       <div class="mini-actions">
         <button class="ghost" id="catchupBtn">Quét bù đơn thiếu</button>
         <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
-        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu các lỗi đã xử lý là đã xem; log kỹ thuật vẫn được giữ trong database để audit. Quét bù: tự dò mọi ngày thiếu (14 ngày gần nhất + khoảng đang chọn) và quét từng ngày đến khi đủ. Tính lại snapshot: chỉ tính lại từ ledger, không gọi Shopee.</span>
+        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù: chọn 1 shop, hệ thống tự giảm block 10→5→2→1 phút khi Cloudflare quá tải và lưu cursor để bấm lại tiếp tục. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
       </div>
       <details style="margin-top:14px">
         <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
@@ -1587,38 +1587,156 @@ async function recomputeFromLedger(){
   await loadDashboard();
 }
 
-// V63.4: quét bù 1 ngày đến khi đủ (120 phút dữ liệu × 2 vòng mỗi lượt gọi, tối đa 20 lượt).
-async function catchupOneDay(shop, day, labelPrefix){
-  let prev=-1;
-  for(let i=0;i<20;i++){
-    const data=await api('/api/sync/catchup-date?'+new URLSearchParams({date:day,shop_id:shop,minutes:'120',runs:'2'}).toString());
+// V70.3: quét bù an toàn theo từng Worker invocation nhỏ.
+// Ngày có nhiều đơn (sale/flash sale) sẽ tự giảm block 10 → 5 → 2 → 1 phút
+// nếu Cloudflare báo "Too many subrequests". Cursor chỉ tiến khi Worker trả thành công.
+function catchupSleep(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
+
+async function catchupAdaptiveStep(shop, day, preferredMinutes=10){
+  const candidates=[preferredMinutes,5,2,1]
+    .map(Number)
+    .filter((v,i,a)=>v>=1 && v<=10 && a.indexOf(v)===i)
+    .sort((a,b)=>b-a);
+
+  let lastError='';
+  let attempts=0;
+  for(const minutes of candidates){
+    attempts++;
+    const data=await api('/api/sync/catchup-date?'+new URLSearchParams({
+      date:day,
+      shop_id:shop,
+      minutes:String(minutes),
+      runs:'1'
+    }).toString());
+
     const res=data.results?.[data.results.length-1]?.result||{};
-    const next=Number(res.next_minute??0), allowed=Number(res.latest_allowed_minute??1439);
-    $('diagSummary').innerHTML=`${labelPrefix} <b>${vnDateLabel(day)}</b>: phút ${Math.min(next,1440)}/${allowed+1} (${Math.min(100,Math.round(next/(allowed+1)*100))}%)...`;
-    if(res.mode==='create_time_window_waiting' || res.ok===false || next>allowed || next===prev) break;
-    prev=next;
+    if(res.ok!==false){
+      return {data,res,minutes,attempts};
+    }
+
+    lastError=String(res.error||res.message||'Quét bù thất bại');
+    if(/too many subrequests/i.test(lastError) && minutes>1){
+      continue;
+    }
+    throw new Error(lastError);
   }
+  throw new Error(lastError||'Không tìm được kích thước cửa sổ quét phù hợp');
 }
-// V63.4: nút quét bù giờ TỰ DÒ mọi ngày còn thiếu (14 ngày gần nhất + khoảng đang chọn) và quét từng ngày đến khi bù đủ hết.
+
+// Mỗi lần bấm chạy tối đa ~90 giây / 80 Worker invocations.
+// Nếu chưa xong, nút sẽ báo "bấm lại để tiếp tục"; cursor đã lưu nên không quét lại phần hoàn tất.
+async function catchupOneDay(shop, day, labelPrefix){
+  const started=Date.now();
+  const maxRuntimeMs=90000;
+  const maxRequests=80;
+  let requestCount=0;
+  let prev=-1;
+  let preferredMinutes=10;
+  let consecutiveSuccess=0;
+
+  while(requestCount<maxRequests && (Date.now()-started)<maxRuntimeMs){
+    const step=await catchupAdaptiveStep(shop,day,preferredMinutes);
+    requestCount+=step.attempts;
+    const res=step.res||{};
+    const next=Number(res.next_minute??0);
+    const allowed=Number(res.latest_allowed_minute??1439);
+    const total=Math.max(1,allowed+1);
+    const pct=Math.min(100,Math.round(Math.min(next,total)/total*100));
+
+    $('diagSummary').innerHTML=
+      `${labelPrefix} <b>${vnDateLabel(day)}</b>: phút ${Math.min(next,1440)}/${total} (${pct}%) · block ${step.minutes} phút · ${requestCount} lượt gọi.`;
+
+    if(res.mode==='create_time_window_waiting' || next>allowed){
+      return {done:true,next,allowed,requestCount};
+    }
+    if(next===prev){
+      return {done:false,next,allowed,requestCount,reason:'cursor_no_progress'};
+    }
+    prev=next;
+
+    // Giữ block nhỏ sau khi vừa phải hạ xuống để không liên tục tạo request lỗi.
+    if(step.minutes<preferredMinutes){
+      preferredMinutes=step.minutes;
+      consecutiveSuccess=0;
+    }else{
+      consecutiveSuccess++;
+      // Sau nhiều lượt thành công mới thử tăng nhẹ trở lại.
+      if(consecutiveSuccess>=12 && preferredMinutes<10){
+        preferredMinutes=preferredMinutes===1?2:preferredMinutes===2?5:10;
+        consecutiveSuccess=0;
+      }
+    }
+
+    await catchupSleep(120);
+  }
+
+  return {done:false,next:prev,requestCount,reason:'click_budget_reached'};
+}
+
+// V70.3: tự dò ngày chưa đủ + toàn bộ khoảng đang chọn (tối đa 62 ngày).
+// Quét an toàn theo từng shop. Một lần bấm có ngân sách thời gian để tránh treo trình duyệt;
+// nếu chưa đủ chỉ cần bấm lại, hệ thống tiếp tục từ cursor hiện tại.
 async function catchupMissingOrders(){
   const r=getRange();
   const shop=$('shop').value||'all';
-  if(shop==='all'){ alert('Hãy chọn một shop cụ thể trước khi quét bù để tránh quá tải Worker.'); return; }
-  $('diagSummary').innerHTML='🔍 Đang dò các ngày còn thiếu dữ liệu (14 ngày gần nhất + khoảng đang chọn)...';
+  if(shop==='all'){
+    alert('Hãy chọn một shop cụ thể trước khi quét bù. Quét từng shop giúp tránh vượt giới hạn Cloudflare.');
+    return;
+  }
+
+  const span=daysInclusive(r.from,r.to);
+  if(span>62){
+    alert('Mỗi lần quét bù hỗ trợ tối đa 62 ngày trong khoảng đang chọn.');
+    return;
+  }
+
+  $('diagSummary').innerHTML='🔍 Đang dò ngày còn thiếu và chuẩn bị quét theo block an toàn...';
   const days=new Set();
+
   try{
     const to=todayVN(), from=addDaysISO(to,-13);
-    const diag=await api('/api/diagnostics?'+new URLSearchParams({date_from:from,date_to:to,shop_id:shop}).toString());
+    const diag=await api('/api/diagnostics?'+new URLSearchParams({
+      date_from:from,date_to:to,shop_id:shop
+    }).toString());
     for(const c of diag.cursors||[]) if(!c.completed) days.add(c.date);
-  }catch(e){ /* nếu dò lỗi vẫn quét theo khoảng đang chọn */ }
-  if(daysInclusive(r.from,r.to)<=7){ let d=r.from; for(let i=0;i<daysInclusive(r.from,r.to);i++){ days.add(d); d=addDaysISO(d,1); } }
-  const list=[...days].sort();
-  if(!list.length){ $('diagSummary').innerHTML='✅ Không phát hiện ngày nào thiếu dữ liệu trong 14 ngày gần nhất — không cần quét bù.'; return; }
-  for(let i=0;i<list.length;i++){
-    try{ await catchupOneDay(shop, list[i], `⏳ [${i+1}/${list.length}] Quét bù`); }
-    catch(e){ $('diagSummary').innerHTML='⚠️ Quét bù '+vnDateLabel(list[i])+' bị lỗi: '+e.message+' — bấm lại nút để tiếp tục từ chỗ đang dở (tiến độ đã lưu).'; return; }
+  }catch(e){
+    // Diagnostics lỗi không chặn quét theo khoảng đang chọn.
   }
-  $('diagSummary').innerHTML='✅ Đã tự quét bù xong '+list.length+' ngày. Đang tải lại số liệu...';
+
+  let d=r.from;
+  for(let n=0;n<span;n++){
+    days.add(d);
+    d=addDaysISO(d,1);
+  }
+
+  const list=[...days].sort();
+  if(!list.length){
+    $('diagSummary').innerHTML='✅ Không phát hiện ngày nào cần quét bù.';
+    return;
+  }
+
+  for(let idx=0;idx<list.length;idx++){
+    const day=list[idx];
+    try{
+      const result=await catchupOneDay(shop,day,`⏳ [${idx+1}/${list.length}] Quét bù`);
+      if(!result.done){
+        $('diagSummary').innerHTML=
+          `⏸️ Đã quét an toàn đến phút ${Math.max(0,result.next||0)} của <b>${vnDateLabel(day)}</b>. `+
+          `Đã dùng ${result.requestCount||0} lượt gọi trong lần bấm này. `+
+          `Bấm <b>Quét bù đơn thiếu</b> lần nữa để tiếp tục đúng chỗ đang dở.`;
+        await loadDiagnostics().catch(()=>{});
+        return;
+      }
+    }catch(e){
+      $('diagSummary').innerHTML=
+        `⚠️ Quét bù ${vnDateLabel(day)} bị lỗi: ${e.message}. `+
+        `Cursor đã lưu phần thành công; bấm lại để tiếp tục.`;
+      await loadDiagnostics().catch(()=>{});
+      return;
+    }
+  }
+
+  $('diagSummary').innerHTML='✅ Các ngày trong phạm vi quét đã bắt kịp cursor. Đang tải lại số liệu...';
   await loadDashboard();
 }
 const WORKSPACE_PREFS_KEY='gooby_bi_workspace_v1';
