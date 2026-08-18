@@ -548,6 +548,30 @@
 
     <section class="card" style="margin-top:16px">
       <div class="section-title">
+        <div>
+          <h2>Quét tự động 24/7</h2>
+          <p>Chạy bằng Cloudflare Cron ở backend, không cần mở dashboard. Realtime hôm nay + update trạng thái vẫn chạy như cũ; phần này tự quét tiếp các cursor lịch sử còn thiếu.</p>
+        </div>
+        <div class="mini-actions" style="margin-top:0">
+          <button class="ghost" id="auto24ReloadBtn">Làm mới trạng thái</button>
+          <button class="ghost" id="auto24ToggleBtn">Đang tải...</button>
+        </div>
+      </div>
+      <div id="auto24Summary" class="notice">Đang đọc trạng thái quét nền 24/7...</div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table class="log-table">
+          <thead><tr><th>Shop</th><th>Ngày đang quét</th><th>Tiến độ</th><th>Block</th><th>Tải gần nhất</th><th>Lần chạy gần nhất</th></tr></thead>
+          <tbody id="auto24Rows"><tr><td colspan="6" class="empty">Đang tải...</td></tr></tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:10px">
+        Block backend tự co giãn: 10→20→30→60 phút khi tải nhẹ; tự hạ khi tải nặng, và 10→5→2→1 khi Cloudflare báo quá nhiều subrequest.
+        Nút <b>Quét bù đơn thiếu</b> bên dưới vẫn được giữ để bạn chủ động lấy lại một ngày/khoảng ngày khi cần.
+      </p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <div class="section-title">
         <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, số đơn ledger thiếu, công thức GMV hoặc nguồn tiền total_amount/item_subtotal.</p></div>
         <div class="mini-actions" style="margin-top:0">
           <button class="ghost" id="diagBtn">Kiểm tra lỗi</button>
@@ -565,7 +589,7 @@
       <div class="mini-actions">
         <button class="ghost" id="catchupBtn">Quét bù đơn thiếu</button>
         <button class="ghost" id="recomputeBtn">Tính lại snapshot từ ledger</button>
-        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù: chọn 1 shop; block tự tăng 10→20→30→60 khi tải nhẹ, tự hạ khi tải nặng/Cloudflare quá tải. Hết một batch hệ thống tự nghỉ rồi tiếp tục, không dừng giữa chừng; cursor luôn được lưu. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
+        <span class="muted">“Ẩn lỗi cũ” chỉ đánh dấu lỗi đã xử lý là đã xem; log kỹ thuật vẫn giữ để audit. Quét bù thủ công vẫn giữ nguyên để lấy lại dữ liệu khi cần; thao tác này dùng cùng DB lock với Cron 24/7 nên không chạy chồng lên nhau. Block vẫn tự co giãn 10→20→30→60 và hạ 10→5→2→1 khi quá tải. Tính lại snapshot: chỉ tính từ ledger, không gọi Shopee.</span>
       </div>
       <details style="margin-top:14px">
         <summary class="muted" style="cursor:pointer;font-weight:800">Xem chi tiết kỹ thuật</summary>
@@ -1564,6 +1588,60 @@ async function loadOrderDetail(orderSn,refresh=false){
     <details style="margin-top:12px"><summary class="muted" style="cursor:pointer;font-weight:800">Raw order từ Shopee</summary><pre>${JSON.stringify(data.raw_order||{},null,2).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</pre></details>`;
 }
 
+
+let auto24LastStatus=null;
+function fmtAuto24Time(v){
+  if(!v) return '-';
+  try{return new Date(v).toLocaleString('vi-VN');}catch{return String(v);}
+}
+async function loadAuto24Status(){
+  try{
+    const data=await api('/api/sync/auto24/status');
+    auto24LastStatus=data;
+    const enabled=!!data.enabled;
+    const hb=data.cron_heartbeat||{};
+    const hbAge=hb.finished_at||hb.started_at ? Math.max(0,Math.round((Date.now()-Date.parse(hb.finished_at||hb.started_at))/1000)) : null;
+    $('auto24ToggleBtn').textContent=enabled?'Tạm dừng 24/7':'Bật quét 24/7';
+    $('auto24Summary').innerHTML=enabled
+      ? `🟢 Quét nền 24/7 đang bật · phạm vi ${data.lookback_days||60} ngày · Cron ${hbAge===null?'chưa có heartbeat':`heartbeat cách ${hbAge}s`}. Bạn có thể đóng web, Worker vẫn tiếp tục theo Cron.`
+      : `⏸️ Quét nền 24/7 đang tạm dừng. Realtime Cron khác vẫn tùy cấu hình Worker, nhưng historical sweep sẽ không chạy.`;
+
+    const rows=(data.shops||[]).map(s=>{
+      const c=s.cursor||{};
+      const next=Number(c.next_minute||0);
+      const total=s.date?1440:0;
+      const pct=s.date?Math.min(100,Math.round(next/1440*100)):100;
+      const progress=s.date?`${Math.min(next,1440)}/1440 (${pct}%)`:'Đã bắt kịp phạm vi';
+      const load=s.last_load||'-';
+      const err=s.last_error?`<div style="color:#b91c1c">${String(s.last_error).slice(0,100)}</div>`:'';
+      return `<tr>
+        <td><b>${s.shop_name||s.shop_id}</b><div class="muted">${s.shop_id}</div></td>
+        <td>${s.date||'—'}</td>
+        <td>${progress}</td>
+        <td>${num(s.block_minutes||10)} phút</td>
+        <td>${load}${s.last_order_count!=null?` · ${num(s.last_order_count)} đơn`:''}${err}</td>
+        <td>${fmtAuto24Time(s.last_run_at)}</td>
+      </tr>`;
+    }).join('');
+    $('auto24Rows').innerHTML=rows||'<tr><td colspan="6" class="empty">Chưa có shop connected.</td></tr>';
+  }catch(e){
+    $('auto24Summary').innerHTML='⚠️ Không đọc được trạng thái quét 24/7: '+e.message;
+    $('auto24Rows').innerHTML='<tr><td colspan="6" class="empty">Không tải được trạng thái.</td></tr>';
+  }
+}
+async function toggleAuto24(){
+  const current=!!auto24LastStatus?.enabled;
+  const next=!current;
+  if(!confirm(next?'Bật quét lịch sử tự động 24/7? Worker sẽ tiếp tục chạy theo Cloudflare Cron dù đóng web.':'Tạm dừng phần quét lịch sử tự động 24/7?')) return;
+  $('auto24ToggleBtn').disabled=true;
+  try{
+    await api('/api/sync/auto24/set?enabled='+(next?'1':'0'));
+    await loadAuto24Status();
+  }finally{
+    $('auto24ToggleBtn').disabled=false;
+  }
+}
+
 async function loadDiagnostics(){
   const r=getRange(); const shop=$('shop').value||'all';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
@@ -1688,6 +1766,13 @@ async function catchupAdaptiveStep(shop,day,preferredMinutes=10){
 
       const durationMs=Math.max(0,performance.now()-requestStarted);
       const res=data.results?.[data.results.length-1]?.result||{};
+
+      if(res.mode==='manual_catchup_lock_busy'){
+        // Cron 24/7 đang giữ lock của shop: chờ một chút rồi thử request mới,
+        // không reset cursor và không coi đây là lỗi.
+        await catchupSleep(1600);
+        continue;
+      }
 
       if(res.ok!==false){
         return {
@@ -2005,7 +2090,7 @@ function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ con
 async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('diagBtn').addEventListener('click',loadDiagnostics); $('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile); $('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await loadDashboard(); schedule(); }
+async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('auto24ReloadBtn').addEventListener('click',loadAuto24Status); $('auto24ToggleBtn').addEventListener('click',toggleAuto24); $('diagBtn').addEventListener('click',loadDiagnostics); $('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile); $('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await Promise.all([loadDashboard(), loadAuto24Status()]); schedule(); }
 $('shopTrafficReadBtn').addEventListener('click',readShopTrafficFile);
 $('shopTrafficSaveBtn').addEventListener('click',saveShopTraffic);
 $('shopTrafficReloadBtn').addEventListener('click',()=>loadShopTraffic().catch(e=>{$('shopTrafficSummary').innerHTML='⚠️ '+e.message;}));
