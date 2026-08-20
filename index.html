@@ -550,7 +550,7 @@
       <div class="section-title">
         <div>
           <h2>Quét tự động 24/7</h2>
-          <p>Chạy bằng Cloudflare Cron ở backend, không cần mở dashboard. V70.7 dùng 2 làn độc lập: Realtime luôn quét vài phút gần hiện tại trước để lấy đơn/status mới; Coverage chạy cursor tuần tự phía sau để lấp khoảng thiếu. Ngày sale nhiều đơn không còn chặn đơn mới hiện tại.</p>
+          <p>Chạy bằng Cloudflare Cron ở backend, không cần mở dashboard. V70.8 dùng 2 làn Realtime + Coverage như V70.7, và thêm lớp Cooperative Repair: Auto24 quét đủ theo thời gian, còn T1/T2/T3 chỉ kiểm tra nhanh các ngày đã full time; nếu Shopee trả chậm làm thiếu order_sn thì hệ thống mới fetch detail để vá.</p>
         </div>
         <div class="mini-actions" style="margin-top:0">
           <button class="ghost" id="auto24ReloadBtn">Làm mới trạng thái</button>
@@ -565,7 +565,7 @@
         </table>
       </div>
       <p class="muted" style="margin-top:10px">
-        Realtime và Coverage được hiển thị riêng. Coverage vẫn tự co giãn 10→20→30→60 và hạ 10→5→2→1 khi quá tải. Snapshot hôm nay được gom tính lại theo nhịp để không làm chậm luồng lấy đơn.
+        Realtime và Coverage được hiển thị riêng. Coverage vẫn tự co giãn 10→20→30→60 và hạ 10→5→2→1 khi quá tải. T-1/T-2/T-3 được cooperative repair nhiều lượt: clean thì lướt nhanh, thiếu thì tự vá và kiểm lại cho tới khi ngày đó sạch hẳn.
         Nút <b>Quét bù đơn thiếu</b> bên dưới vẫn được giữ để bạn chủ động lấy lại một ngày/khoảng ngày khi cần.
       </p>
     </section>
