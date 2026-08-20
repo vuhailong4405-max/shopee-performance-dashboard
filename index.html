@@ -550,7 +550,7 @@
       <div class="section-title">
         <div>
           <h2>Quét tự động 24/7</h2>
-          <p>Chạy bằng Cloudflare Cron ở backend, không cần mở dashboard. Auto24 ưu tiên bù cursor HÔM NAY nếu tụt quá 10 phút; khi hôm nay đã gần realtime mới tiếp tục quét các cursor lịch sử còn thiếu.</p>
+          <p>Chạy bằng Cloudflare Cron ở backend, không cần mở dashboard. V70.7 dùng 2 làn độc lập: Realtime luôn quét vài phút gần hiện tại trước để lấy đơn/status mới; Coverage chạy cursor tuần tự phía sau để lấp khoảng thiếu. Ngày sale nhiều đơn không còn chặn đơn mới hiện tại.</p>
         </div>
         <div class="mini-actions" style="margin-top:0">
           <button class="ghost" id="auto24ReloadBtn">Làm mới trạng thái</button>
@@ -565,7 +565,7 @@
         </table>
       </div>
       <p class="muted" style="margin-top:10px">
-        Block backend tự co giãn: 10→20→30→60 phút khi tải nhẹ; tự hạ khi tải nặng, và 10→5→2→1 khi Cloudflare báo quá nhiều subrequest. Trạng thái “Đã bắt kịp” chỉ xuất hiện khi cursor hôm nay không còn thiếu và không còn ngày lịch sử chưa hoàn tất.
+        Realtime và Coverage được hiển thị riêng. Coverage vẫn tự co giãn 10→20→30→60 và hạ 10→5→2→1 khi quá tải. Snapshot hôm nay được gom tính lại theo nhịp để không làm chậm luồng lấy đơn.
         Nút <b>Quét bù đơn thiếu</b> bên dưới vẫn được giữ để bạn chủ động lấy lại một ngày/khoảng ngày khi cần.
       </p>
     </section>
@@ -1602,12 +1602,14 @@ async function loadAuto24Status(){
     const hb=data.cron_heartbeat||{};
     const hbAge=hb.finished_at||hb.started_at ? Math.max(0,Math.round((Date.now()-Date.parse(hb.finished_at||hb.started_at))/1000)) : null;
     const behind=(data.shops||[]).filter(s=>s.status==='catching_up_today');
+    const fastLane=(data.shops||[]).filter(s=>s.fast_lane);
     const never=(data.shops||[]).filter(s=>s.status==='never_run');
 
     $('auto24ToggleBtn').textContent=enabled?'Tạm dừng 24/7':'Bật quét 24/7';
     if(enabled){
       let extra='';
-      if(behind.length) extra=` · ⚠️ ${behind.length} shop đang bù dữ liệu hôm nay`;
+      if(fastLane.length) extra=` · ⚡ ${fastLane.length} shop đang Fast Lane vì tụt >${data.fast_lane_trigger_minutes||30} phút`;
+      else if(behind.length) extra=` · ⚠️ ${behind.length} shop đang bù dữ liệu hôm nay`;
       else if(never.length) extra=` · ${never.length} shop chưa có lượt Auto24 đầu tiên`;
       else extra=' · các shop đang ở trạng thái bắt kịp/đang quét lịch sử';
       $('auto24Summary').innerHTML=
@@ -1625,25 +1627,33 @@ async function loadAuto24Status(){
         phaseText='Chưa chạy';
         progress=`Hôm nay ${num(today.next_minute||0)}/${num(today.latest_allowed_minute||0)}`;
       }else if(s.status==='catching_up_today'){
-        phaseText='Bù hôm nay';
+        phaseText=s.fast_lane?'⚡ Fast Lane · Bù hôm nay':'Bù hôm nay';
         date=today.date||s.date||'—';
         const next=Number(today.next_minute||0);
         const latest=Math.max(1,Number(today.latest_allowed_minute||1));
         const pct=Math.min(100,Math.round(next/latest*100));
-        progress=`${num(next)}/${num(latest)} (${pct}%) · thiếu ${num(today.pending_minutes||0)} phút`;
+        const rt=s.realtime||{};
+        const rtPending=rt.pending_minutes;
+        const rtText=rtPending==null?'Realtime: chưa có lượt':rtPending<=2?'Realtime: sát hiện tại':`Realtime: chậm ${num(rtPending)} phút`;
+        progress=`${rtText}<br><span class="muted">Coverage: ${num(next)}/${num(latest)} (${pct}%) · còn ${num(today.pending_minutes||0)} phút</span>`;
       }else if(s.status==='historical_backfill'){
         phaseText='Quét lịch sử';
         date=s.date||s.historical_next_date||'—';
         const next=Number(s.cursor?.next_minute||0);
         const pct=Math.min(100,Math.round(next/1440*100));
-        progress=`${num(next)}/1440 (${pct}%)`;
+        const rt=s.realtime||{};
+        const rtPending=rt.pending_minutes;
+        const rtText=rtPending==null?'Realtime: chưa có lượt':rtPending<=2?'Realtime: sát hiện tại':`Realtime: chậm ${num(rtPending)} phút`;
+        progress=`${rtText}<br><span class="muted">Coverage lịch sử: ${num(next)}/1440 (${pct}%)</span>`;
       }else if(s.status==='near_realtime'){
         phaseText='Gần realtime';
         date=today.date||'—';
         progress=`còn ${num(today.pending_minutes||0)} phút`;
       }else{
         phaseText='Đã bắt kịp';
-        progress='Hôm nay + lịch sử đã đủ';
+        const rt=s.realtime||{};
+        const rtPending=rt.pending_minutes;
+        progress=rtPending==null?'Coverage đủ · Realtime chưa có lượt':rtPending<=2?'✅ Realtime sát hiện tại · Coverage đủ':`Coverage đủ · Realtime chậm ${num(rtPending)} phút`;
       }
 
       const load=s.last_load||'-';
