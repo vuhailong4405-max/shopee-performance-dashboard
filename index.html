@@ -218,6 +218,20 @@
     body.layout-focus .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}body.layout-focus .grid2{grid-template-columns:1fr}body.layout-focus .grid2>.card:first-child{order:-1}
     body.density-compact .card{padding:12px}body.density-compact .metric{min-height:112px}body.density-compact .metric:before{margin-bottom:9px}body.density-compact .chart-wrap{height:300px}
 
+
+    /* ---- V70: đăng nhập và quản lý tài khoản ---- */
+    body.auth-pending>.tabs,body.auth-pending>.app{display:none!important}
+    body.auth-ready>.auth-screen{display:none!important}
+    .auth-screen{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 75% 0,rgba(255,107,53,.2),transparent 34%),linear-gradient(145deg,#06172e,#0d284d);overflow:auto}
+    .auth-card{width:min(460px,100%);padding:28px;border:1px solid rgba(255,255,255,.16);border-radius:20px;background:rgba(255,255,255,.98);box-shadow:0 30px 80px rgba(0,0,0,.3)}
+    .auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.auth-brand .side-logo{flex:none}.auth-card h1{margin:0;font-size:22px}.auth-card>p{margin:7px 0 20px;color:var(--muted);font-size:13px;line-height:1.55}
+    .auth-form{display:grid;gap:13px}.auth-form .field input{width:100%;min-width:0}.auth-form button{width:100%}.auth-message{min-height:20px;margin:2px 0 0;color:#b42318;font-size:12px;line-height:1.5}.auth-message.ok{color:#067647}
+    .bootstrap-box{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.bootstrap-box h2{margin:0 0 5px;font-size:16px}.bootstrap-box>p{margin:0 0 13px;color:var(--muted);font-size:12px;line-height:1.5}
+    .side-user{position:relative}.side-user-meta{min-width:0;flex:1}.side-logout{width:29px;height:29px;padding:0;flex:none;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.07);box-shadow:none;color:#cbd5e1;font-size:14px}.side-logout:hover{background:rgba(255,255,255,.14)}
+    .account-form{display:grid;gap:14px}.account-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.account-fields input,.account-fields select{width:100%;min-width:0}.permission-block{padding:13px;border:1px solid var(--line);border-radius:12px;background:#fbfcfe}.permission-block strong{display:block;margin-bottom:10px;font-size:12px}.permission-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.permission-choice{display:flex;align-items:center;gap:8px;padding:8px 9px;border:1px solid #eaecf0;border-radius:9px;background:#fff;font-size:11.5px;font-weight:700}.permission-choice input{width:16px;height:16px;min-width:16px;margin:0}.account-actions{display:flex;gap:9px;flex-wrap:wrap}.account-actions button{min-width:125px}.account-table td:first-child{min-width:190px}.account-table .mini-actions{margin:0;flex-wrap:nowrap}.account-table .mini-actions button{height:31px;padding:0 9px;font-size:10.5px;white-space:nowrap}.status-chip{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10.5px;font-weight:850}.status-chip.active{background:#ecfdf3;color:#067647}.status-chip.locked{background:#fef3f2;color:#b42318}
+    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}}
+
     @media(max-width:1260px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.overview-modules{grid-template-columns:1fr 1fr}.order-panel .order-health{margin-top:10px}.app{padding-left:20px;padding-right:20px}.hero{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
     @media(max-width:920px){
       .app{margin-left:0;padding:0 14px 40px}.hero{margin:0 -14px;padding:15px 14px;min-height:auto;align-items:flex-start}.hero .heroRight{width:100%;justify-content:flex-start}.hero h1{font-size:19px}
@@ -228,7 +242,32 @@
     @media(max-width:420px){.metrics,body.layout-focus .metrics{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.metric{min-height:118px}.order-health,.order-panel .order-health{grid-template-columns:110px minmax(0,1fr)}.order-donut,.order-panel .order-donut{width:105px}}
   </style>
 </head>
-<body>
+<body class="auth-pending">
+
+  <section class="auth-screen" id="authScreen" aria-label="Đăng nhập Gooby BI">
+    <div class="auth-card">
+      <div class="auth-brand"><div class="side-logo">G</div><div><h1>Đăng nhập Gooby BI</h1><div class="muted">Dữ liệu nội bộ được bảo vệ theo tài khoản và shop.</div></div></div>
+      <form class="auth-form" id="loginForm">
+        <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" required placeholder="ten@congty.vn"></div>
+        <div class="field"><label>Mật khẩu</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+        <button type="submit" id="loginBtn">Đăng nhập</button>
+        <div class="auth-message" id="loginMessage"></div>
+      </form>
+      <div class="bootstrap-box hidden" id="bootstrapBox">
+        <h2>Thiết lập Admin đầu tiên</h2>
+        <p>Chỉ xuất hiện khi database self-host chưa có tài khoản. Mã khởi tạo phải trùng secret <b>ADMIN_BOOTSTRAP_TOKEN</b> của Worker.</p>
+        <form class="auth-form" id="bootstrapForm">
+          <div class="field"><label>Tên Admin</label><input id="bootstrapName" required placeholder="Quản trị viên"></div>
+          <div class="field"><label>Email Admin</label><input id="bootstrapEmail" type="email" autocomplete="username" required></div>
+          <div class="field"><label>Mật khẩu ban đầu</label><input id="bootstrapPassword" type="password" minlength="10" autocomplete="new-password" required placeholder="Tối thiểu 10 ký tự"></div>
+          <div class="field"><label>Mã khởi tạo</label><input id="bootstrapToken" type="password" autocomplete="off" required></div>
+          <button type="submit" id="bootstrapBtn">Tạo Admin đầu tiên</button>
+          <div class="auth-message" id="bootstrapMessage"></div>
+        </form>
+      </div>
+      <div class="auth-message" id="authSetupMessage"></div>
+    </div>
+  </section>
   <nav class="tabs" aria-label="Chuyển khu vực dashboard">
     <div class="side-brand">
       <div class="side-logo">G</div>
@@ -249,8 +288,9 @@
       <button type="button" class="rolebtn" data-role="Kho" data-target="warehouse">◇&nbsp;&nbsp; Kho</button>
     </div>
     <div class="side-user">
-      <div class="side-avatar">L</div>
-      <div><strong>LazyMom</strong><small>Rouya internal report</small></div>
+      <div class="side-avatar" id="sideAvatar">U</div>
+      <div class="side-user-meta"><strong id="sideUserName">Người dùng</strong><small id="sideUserRole">Tài khoản nội bộ</small></div>
+      <button type="button" class="side-logout" id="logoutBtn" title="Đăng xuất" aria-label="Đăng xuất">↪</button>
     </div>
   </nav>
 
@@ -267,6 +307,7 @@
         <div class="range-note" id="heroRange">-</div>
         <button type="button" class="header-action" id="refreshDashboardBtn">↻ Làm mới</button>
         <button type="button" class="header-action primary" id="customizeBtn">☷ Tùy chỉnh</button>
+        <button type="button" class="header-action" id="headerLogoutBtn">↪ Đăng xuất</button>
       </div>
     </section>
 
@@ -546,7 +587,43 @@
     <div class="tab-title"><div><h2>Hệ thống</h2><p>Chẩn đoán đồng bộ dữ liệu, kiểm tra sai lệch số liệu, và cấu hình kết nối Worker/shop. Các mục này áp dụng chung cho toàn bộ dashboard, không riêng theo tab nào.</p></div></div>
     <div class="notice warn-note">🔒 Trang nội bộ cho các shop Gooby / LazyMom / Rouya đã được ủy quyền. Trang này không thu thập tài khoản, mật khẩu hoặc thông tin thanh toán. Việc ủy quyền shop đi qua Open Platform OAuth.</div>
 
-    <section class="card" style="margin-top:16px">
+
+    <section class="card hidden" id="adminAccountsPanel" style="margin-top:16px">
+      <div class="section-title">
+        <div><h2>Tài khoản & phân quyền</h2><p>Admin tạo tài khoản, chọn shop được xem và bật đúng nhóm tính năng cần sử dụng. Quyền được kiểm tra lại ở Worker trước khi dữ liệu được trả về.</p></div>
+        <button type="button" class="ghost" id="adminReloadBtn">Tải lại</button>
+      </div>
+      <form class="account-form" id="accountForm">
+        <input type="hidden" id="accountUserId">
+        <div class="account-fields">
+          <div class="field"><label>Tên hiển thị</label><input id="accountDisplayName" required placeholder="Tên nhân viên"></div>
+          <div class="field"><label>Email đăng nhập</label><input id="accountEmail" type="email" required placeholder="ten@congty.vn"></div>
+          <div class="field" id="accountPasswordField"><label>Mật khẩu ban đầu</label><input id="accountPassword" type="password" minlength="10" required placeholder="Tối thiểu 10 ký tự"></div>
+          <div class="field"><label>Vai trò</label><select id="accountRole"><option value="user">Tài khoản thường</option><option value="admin">Admin toàn quyền</option></select></div>
+        </div>
+        <div id="accountGrantFields">
+          <div class="permission-block">
+            <strong>Shop được phép truy cập</strong>
+            <div class="permission-grid" id="accountShopChoices"><span class="muted">Đang tải danh sách shop...</span></div>
+          </div>
+          <div class="permission-block" style="margin-top:10px">
+            <strong>Nhóm tính năng được phép truy cập</strong>
+            <div class="permission-grid" id="accountFeatureChoices">
+              <label class="permission-choice"><input type="checkbox" value="overview">Tổng quan</label>
+              <label class="permission-choice"><input type="checkbox" value="orders">Đơn hàng</label>
+              <label class="permission-choice"><input type="checkbox" value="performance">Hiệu quả</label>
+              <label class="permission-choice"><input type="checkbox" value="marketing">Marketing</label>
+              <label class="permission-choice"><input type="checkbox" value="warehouse">Kho hàng</label>
+              <label class="permission-choice"><input type="checkbox" value="system">Hệ thống kỹ thuật</label>
+            </div>
+          </div>
+        </div>
+        <div class="account-actions"><button type="submit" id="accountSaveBtn">Tạo tài khoản</button><button type="button" class="ghost hidden" id="accountCancelBtn">Hủy chỉnh sửa</button><span class="auth-message" id="accountMessage"></span></div>
+      </form>
+      <div class="table-wrap" style="margin-top:16px"><table class="account-table"><thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Trạng thái</th><th>Shop</th><th>Tính năng</th><th>Thao tác</th></tr></thead><tbody id="accountRows"><tr><td colspan="6" class="empty">Chưa tải danh sách tài khoản.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="card" id="auto24AdminPanel" style="margin-top:16px">
       <div class="section-title">
         <div>
           <h2>Quét tự động 24/7</h2>
@@ -570,7 +647,7 @@
       </p>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section class="card" id="systemGlobalSettings" style="margin-top:16px">
       <div class="section-title">
         <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, số đơn ledger thiếu, công thức GMV hoặc nguồn tiền total_amount/item_subtotal.</p></div>
         <div class="mini-actions" style="margin-top:0">
@@ -622,6 +699,15 @@ const DEFAULT_WORKER = 'https://shopee-ledger-sync.vuhailong4405.workers.dev';
 const $ = id => document.getElementById(id);
 let timer = null;
 let orderOffset = 0;
+const AUTH_SESSION_KEY='gooby_bi_auth_session_v70';
+const TAB_FEATURE={gmv:'overview',orders:'orders',performance:'performance',marketing:'marketing',warehouse:'warehouse',system:'system'};
+const FEATURE_LABEL={overview:'Tổng quan',orders:'Đơn hàng',performance:'Hiệu quả',marketing:'Marketing',warehouse:'Kho hàng',system:'Hệ thống'};
+let authSession=null;
+let currentUser=null;
+let refreshAuthPromise=null;
+let availableShops=[];
+let managedUsers=[];
+let authenticatedAppInitialized=false;
 function isoDate(d){ return d.toISOString().slice(0,10); }
 function todayVN(){ return new Date(Date.now()+7*3600*1000).toISOString().slice(0,10); }
 function addDaysISO(date, delta){ return isoDate(new Date(Date.parse(date+'T00:00:00Z') + delta*86400000)); }
@@ -641,19 +727,176 @@ function periodName(){ return $('period').value==='week'?'tuần':$('period').va
 function compareLabel(){ return 'kỳ trước'; }
 function updateUrls(){ const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'; }
 const apiMemoryCache=new Map();
+function readStoredSession(){try{return JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY)||'null');}catch{return null;}}
+function storeSession(session){authSession=session||null;if(session)sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(session));else sessionStorage.removeItem(AUTH_SESSION_KEY);}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));}
+async function refreshSession(){
+  if(!authSession?.refresh_token)throw new Error('Phiên đăng nhập đã hết hạn');
+  if(refreshAuthPromise)return refreshAuthPromise;
+  refreshAuthPromise=(async()=>{
+    const res=await fetch(getWorker()+'/api/auth/refresh',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({refresh_token:authSession.refresh_token}),cache:'no-store'});
+    const data=await res.json().catch(()=>null);
+    if(!res.ok||!data?.ok||!data.session)throw new Error(data?.error||'Không thể làm mới phiên đăng nhập');
+    storeSession(data.session);return data.session;
+  })().finally(()=>{refreshAuthPromise=null;});
+  return refreshAuthPromise;
+}
 async function api(path,opts){
   opts=opts||{};
   const ttlMs=Math.max(0,Number(opts.ttlMs||0));
-  const key=getWorker()+path;
+  const method=String(opts.method||'GET').toUpperCase();
+  const key=(currentUser?.user_id||'public')+'|'+method+'|'+getWorker()+path;
   const cached=apiMemoryCache.get(key);
-  if(ttlMs && cached && cached.expiresAt>Date.now()) return cached.data;
-  const res=await fetch(key,{cache:ttlMs?'default':'no-store',signal:opts.signal});
+  if(method==='GET'&&ttlMs&&cached&&cached.expiresAt>Date.now()) return cached.data;
+  const headers={...(opts.headers||{})};
+  if(!opts.noAuth&&authSession?.access_token)headers.authorization='Bearer '+authSession.access_token;
+  let body=opts.body;
+  if(body!==undefined&&body!==null&&typeof body!=='string'){
+    headers['content-type']=headers['content-type']||'application/json';body=JSON.stringify(body);
+  }
+  let res=await fetch(getWorker()+path,{method,headers,body,cache:ttlMs?'default':'no-store',signal:opts.signal});
+  if(res.status===401&&!opts.noAuth&&!opts.noRetry&&authSession?.refresh_token){
+    try{await refreshSession();return api(path,{...opts,noRetry:true});}
+    catch{showLoggedOut('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');}
+  }
   const data=await res.json().catch(()=>null);
-  if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
-  if(ttlMs) apiMemoryCache.set(key,{data,expiresAt:Date.now()+ttlMs});
+  if(!res.ok || !data?.ok){const error=new Error(data?.error||('HTTP '+res.status));error.status=res.status;throw error;}
+  if(method==='GET'&&ttlMs) apiMemoryCache.set(key,{data,expiresAt:Date.now()+ttlMs});
+  if(method!=='GET') apiMemoryCache.clear();
   return data;
 }
-async function loadShops(){ const data=await api('/api/shops'); const sel=$('shop'); const cur=sel.value; sel.innerHTML='<option value="all">Tất cả shop</option>'; for(const s of data.shops||[]){ const op=document.createElement('option'); op.value=s.shop_id; op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id; sel.appendChild(op); } if([...sel.options].some(o=>o.value===cur)) sel.value=cur; }
+function hasFeature(feature){return !!currentUser&&(currentUser.is_admin||(currentUser.features||[]).includes(feature));}
+function canOpenTab(tab){return hasFeature(TAB_FEATURE[tab]);}
+function firstAllowedTab(){return Object.keys(TAB_FEATURE).find(canOpenTab)||'';}
+function applyCurrentUserUi(){
+  if(!currentUser)return;
+  document.body.classList.remove('auth-pending');document.body.classList.add('auth-ready');
+  const name=currentUser.display_name||currentUser.email||'Người dùng';
+  $('sideUserName').textContent=name;$('sideUserRole').textContent=currentUser.is_admin?'Admin · Toàn bộ shop':'Tài khoản được phân quyền';$('sideAvatar').textContent=name.trim().charAt(0).toUpperCase()||'U';
+  document.querySelectorAll('.tabbtn').forEach(btn=>btn.classList.toggle('hidden',!canOpenTab(btn.dataset.tab)));
+  document.querySelectorAll('.rolebtn').forEach(btn=>btn.classList.toggle('hidden',!canOpenTab(btn.dataset.target)));
+  document.querySelectorAll('[data-jump-tab]').forEach(btn=>btn.classList.toggle('hidden',!canOpenTab(btn.dataset.jumpTab)));
+  const marketingModule=document.querySelector('[data-widget-key="marketing-health"]');if(marketingModule)marketingModule.classList.toggle('hidden',!hasFeature('marketing'));
+  const inventoryModule=document.querySelector('[data-widget-key="inventory-health"]');if(inventoryModule)inventoryModule.classList.toggle('hidden',!hasFeature('warehouse'));
+  $('adminAccountsPanel').classList.toggle('hidden',!currentUser.is_admin);
+  $('systemGlobalSettings').classList.toggle('hidden',!currentUser.is_admin);
+  $('auto24AdminPanel').classList.toggle('hidden',!currentUser.is_admin);
+  $('diagClearOldBtn').classList.toggle('hidden',!currentUser.is_admin);
+  $('warehouseSyncGoodsBtn').classList.toggle('hidden',!currentUser.is_admin);
+  $('warehouseSyncComboBtn').classList.toggle('hidden',!currentUser.is_admin);
+  updateRoleUI(currentTab());
+}
+function showLoggedOut(message){
+  if(timer)clearInterval(timer);timer=null;authSession=null;currentUser=null;storeSession(null);apiMemoryCache.clear();
+  document.body.classList.remove('auth-ready');document.body.classList.add('auth-pending');
+  if(message)$('loginMessage').textContent=message;
+}
+async function loadShops(){
+  const data=await api('/api/shops');availableShops=data.shops||[];const sel=$('shop');const cur=sel.value;sel.innerHTML='';
+  if(data.can_all_shops){const all=document.createElement('option');all.value='all';all.textContent='Tất cả shop';sel.appendChild(all);}
+  for(const s of availableShops){const op=document.createElement('option');op.value=s.shop_id;op.textContent=(s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id;sel.appendChild(op);}
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;else if(sel.options.length)sel.selectedIndex=0;
+  renderAdminShopChoices();
+  if(!sel.options.length)throw new Error('Tài khoản chưa được cấp shop nào. Vui lòng liên hệ Admin.');
+}
+async function loadBootstrapStatus(){
+  try{
+    const data=await api('/api/auth/bootstrap-status',{noAuth:true});
+    $('bootstrapBox').classList.toggle('hidden',!data.schema_ready||!data.bootstrap_required);
+    $('authSetupMessage').textContent=data.schema_ready?'':(data.message||'Chưa cài đặt dữ liệu đăng nhập trên backend.');
+  }catch(e){$('authSetupMessage').textContent='Không kết nối được Worker: '+e.message;}
+}
+async function startAuthenticatedApp(user){
+  currentUser=user;apiMemoryCache.clear();
+  // Nếu vừa đổi tài khoản trong cùng tab, nạp lại trang để không giữ DOM/dữ liệu của người trước.
+  if(authenticatedAppInitialized){window.location.reload();return;}
+  applyCurrentUserUi();
+  try{await initAuthenticatedApp();}
+  catch(e){$('snapshotText').textContent='Không thể mở dữ liệu';$('loginMessage').textContent=e.message;console.error(e);}
+}
+async function handleLoginSubmit(event){
+  event.preventDefault();const btn=$('loginBtn');btn.disabled=true;$('loginMessage').textContent='Đang kiểm tra tài khoản...';
+  try{
+    const data=await api('/api/auth/login',{method:'POST',noAuth:true,body:{email:$('loginEmail').value,password:$('loginPassword').value}});
+    storeSession(data.session);$('loginPassword').value='';$('loginMessage').textContent='';await startAuthenticatedApp(data.user);
+  }catch(e){$('loginMessage').textContent=e.message;}
+  finally{btn.disabled=false;}
+}
+async function handleBootstrapSubmit(event){
+  event.preventDefault();const btn=$('bootstrapBtn');btn.disabled=true;$('bootstrapMessage').textContent='Đang tạo Admin đầu tiên...';
+  const credentials={display_name:$('bootstrapName').value,email:$('bootstrapEmail').value,password:$('bootstrapPassword').value};
+  try{
+    await api('/api/auth/bootstrap',{method:'POST',noAuth:true,headers:{'x-bootstrap-token':$('bootstrapToken').value},body:credentials});
+    $('loginEmail').value=credentials.email;$('loginPassword').value=credentials.password;$('bootstrapMessage').classList.add('ok');$('bootstrapMessage').textContent='Đã tạo Admin. Đang đăng nhập...';
+    const data=await api('/api/auth/login',{method:'POST',noAuth:true,body:{email:credentials.email,password:credentials.password}});
+    storeSession(data.session);await startAuthenticatedApp(data.user);
+  }catch(e){$('bootstrapMessage').classList.remove('ok');$('bootstrapMessage').textContent=e.message;}
+  finally{btn.disabled=false;}
+}
+async function bootAuth(){
+  authSession=readStoredSession();
+  if(authSession?.access_token){
+    try{const data=await api('/api/auth/me');await startAuthenticatedApp(data.user);return;}
+    catch(e){showLoggedOut(e.message);}
+  }
+  await loadBootstrapStatus();
+}
+function renderAdminShopChoices(selected){
+  const box=$('accountShopChoices');if(!box)return;const wanted=new Set((selected||[]).map(Number));
+  box.innerHTML=availableShops.map(s=>`<label class="permission-choice"><input type="checkbox" value="${Number(s.shop_id)}" ${wanted.has(Number(s.shop_id))?'checked':''}>${escapeHtml(s.channel_name||s.shop_name||s.shop_id)} · ${Number(s.shop_id)}</label>`).join('')||'<span class="muted">Chưa có shop đã kết nối.</span>';
+}
+function selectedAccountFeatures(){return [...document.querySelectorAll('#accountFeatureChoices input:checked')].map(x=>x.value);}
+function selectedAccountShops(){return [...document.querySelectorAll('#accountShopChoices input:checked')].map(x=>Number(x.value));}
+function updateAccountRoleUi(){const admin=$('accountRole').value==='admin';$('accountGrantFields').classList.toggle('hidden',admin);}
+function resetAccountForm(){
+  $('accountForm').reset();$('accountUserId').value='';$('accountEmail').disabled=false;$('accountPasswordField').classList.remove('hidden');$('accountPassword').required=true;$('accountSaveBtn').textContent='Tạo tài khoản';$('accountCancelBtn').classList.add('hidden');$('accountMessage').textContent='';renderAdminShopChoices();updateAccountRoleUi();
+}
+function featureListLabel(features){return (features||[]).map(x=>FEATURE_LABEL[x]||x).join(', ')||'—';}
+function shopListLabel(shopIds){const names=new Map(availableShops.map(s=>[Number(s.shop_id),s.channel_name||s.shop_name||s.shop_id]));return (shopIds||[]).map(id=>(names.get(Number(id))||id)).join(', ')||'—';}
+function renderAdminUsers(){
+  const rows=$('accountRows');
+  rows.innerHTML=managedUsers.map(u=>`<tr>
+    <td><b>${escapeHtml(u.display_name||u.email)}</b><br><small class="muted">${escapeHtml(u.email)}</small></td>
+    <td>${u.role==='admin'?'<b>Admin toàn quyền</b>':'Tài khoản thường'}</td>
+    <td><span class="status-chip ${u.is_active?'active':'locked'}">${u.is_active?'Đang hoạt động':'Đã khóa'}</span></td>
+    <td>${u.role==='admin'?'Tất cả shop':escapeHtml(shopListLabel(u.shop_ids))}</td>
+    <td>${u.role==='admin'?'Toàn bộ tính năng':escapeHtml(featureListLabel(u.features))}</td>
+    <td><div class="mini-actions"><button type="button" class="ghost" data-account-edit="${u.user_id}">Sửa quyền</button><button type="button" class="ghost" data-account-password="${u.user_id}">Đổi mật khẩu</button><button type="button" class="ghost" data-account-toggle="${u.user_id}">${u.is_active?'Khóa':'Mở khóa'}</button></div></td>
+  </tr>`).join('')||'<tr><td colspan="6" class="empty">Chưa có tài khoản.</td></tr>';
+  rows.querySelectorAll('[data-account-edit]').forEach(btn=>btn.addEventListener('click',()=>editManagedUser(btn.dataset.accountEdit)));
+  rows.querySelectorAll('[data-account-password]').forEach(btn=>btn.addEventListener('click',()=>changeManagedPassword(btn.dataset.accountPassword)));
+  rows.querySelectorAll('[data-account-toggle]').forEach(btn=>btn.addEventListener('click',()=>toggleManagedUser(btn.dataset.accountToggle)));
+}
+async function loadAdminUsers(){
+  if(!currentUser?.is_admin)return;$('accountRows').innerHTML='<tr><td colspan="6" class="empty">Đang tải tài khoản...</td></tr>';
+  try{const data=await api('/api/admin/users');managedUsers=data.users||[];renderAdminUsers();}
+  catch(e){$('accountRows').innerHTML='<tr><td colspan="6" class="empty">Không tải được tài khoản: '+escapeHtml(e.message)+'</td></tr>';}
+}
+function editManagedUser(userId){
+  const user=managedUsers.find(x=>x.user_id===userId);if(!user)return;
+  $('accountUserId').value=user.user_id;$('accountDisplayName').value=user.display_name||'';$('accountEmail').value=user.email||'';$('accountEmail').disabled=true;$('accountPasswordField').classList.add('hidden');$('accountPassword').required=false;$('accountRole').value=user.role||'user';
+  document.querySelectorAll('#accountFeatureChoices input').forEach(x=>x.checked=(user.features||[]).includes(x.value));renderAdminShopChoices(user.shop_ids||[]);updateAccountRoleUi();$('accountSaveBtn').textContent='Lưu thay đổi';$('accountCancelBtn').classList.remove('hidden');$('accountMessage').textContent='Đang chỉnh sửa '+(user.display_name||user.email);$('accountForm').scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function handleAccountSubmit(event){
+  event.preventDefault();const userId=$('accountUserId').value;const role=$('accountRole').value;const btn=$('accountSaveBtn');btn.disabled=true;$('accountMessage').textContent='Đang lưu...';
+  const body={user_id:userId||undefined,display_name:$('accountDisplayName').value,email:$('accountEmail').value,role,features:role==='admin'?[]:selectedAccountFeatures(),shop_ids:role==='admin'?[]:selectedAccountShops()};
+  if(!userId)body.password=$('accountPassword').value;
+  try{await api(userId?'/api/admin/users/update':'/api/admin/users/create',{method:'POST',body});apiMemoryCache.clear();$('accountMessage').classList.add('ok');$('accountMessage').textContent=userId?'Đã cập nhật quyền.':'Đã tạo tài khoản.';await loadAdminUsers();setTimeout(resetAccountForm,900);}
+  catch(e){$('accountMessage').classList.remove('ok');$('accountMessage').textContent=e.message;}
+  finally{btn.disabled=false;}
+}
+async function toggleManagedUser(userId){
+  const user=managedUsers.find(x=>x.user_id===userId);if(!user)return;
+  const action=user.is_active?'khóa':'mở khóa';if(!confirm(`Bạn có chắc muốn ${action} tài khoản ${user.email}?`))return;
+  try{await api('/api/admin/users/update',{method:'POST',body:{user_id:user.user_id,display_name:user.display_name,role:user.role,is_active:!user.is_active,features:user.features||[],shop_ids:user.shop_ids||[]}});await loadAdminUsers();}
+  catch(e){alert('Không thể '+action+' tài khoản: '+e.message);}
+}
+async function changeManagedPassword(userId){
+  const user=managedUsers.find(x=>x.user_id===userId);if(!user)return;const password=prompt('Nhập mật khẩu mới cho '+user.email+' (ít nhất 10 ký tự):');if(password===null)return;
+  try{await api('/api/admin/users/password',{method:'POST',body:{user_id:user.user_id,password}});alert('Đã đổi mật khẩu cho '+user.email+'.');}
+  catch(e){alert('Không thể đổi mật khẩu: '+e.message);}
+}
+
 function updatePeriodFields(){ const p=$('period').value; document.querySelectorAll('[data-period-field]').forEach(el=>el.classList.toggle('hidden', el.dataset.periodField!==p)); const r=getRangeSafe(); $('heroRange').textContent=r?rangeLabel(r):'-'; }
 function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
 function getRange(){ const p=$('period').value; if(p==='day'){ const d=$('dayDate').value||todayVN(); return {period:p,from:d,to:d}; } if(p==='week'){ return {period:p,...weekToRange($('weekInput').value||isoWeekString(todayVN()))}; } if(p==='month'){ const ym=$('monthInput').value||todayVN().slice(0,7); return {period:p,from:ym+'-01',to:monthLastDay(ym)}; } let from=$('fromDate').value||todayVN(), to=$('toDate').value||from; if(from>to) [from,to]=[to,from]; return {period:p,from,to}; }
@@ -785,7 +1028,7 @@ async function loadOverviewInventory(token){
     </div>`).join('')}</div><div class="inventory-summary"><span>Tổng SKU <b>${num(totalSku)}</b></span><span>Sắp hết hàng <b>${num(lowCount)}</b></span></div>`;
   }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được dữ liệu kho.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
 }
-function loadOverviewModules(){const token=++overviewLoadToken;Promise.allSettled([loadOverviewMarketing(token),loadOverviewInventory(token)]);}
+function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
 function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
 function shortMoney(n){ return money(n||0); }
@@ -802,11 +1045,11 @@ function renderDiagnostics(d){
   const diff=d.diff_snapshot_minus_ledger?.gmv?.diff||0;
   $('diagDiffGmv').textContent = (diff>0?'+':'')+money(diff);
   $('diagErrors').textContent = num((d.recent_error_logs||[]).length);
-  $('issuesList').innerHTML = issues.map(x=>`<div class="${issueClass(x.level)}"><div class="tag">${(x.level||'ok').toUpperCase()}</div><div><div class="area">${x.area||'-'}</div><div>${x.message||''}</div></div></div>`).join('');
+  $('issuesList').innerHTML = issues.map(x=>`<div class="${issueClass(x.level)}"><div class="tag">${escapeHtml((x.level||'ok').toUpperCase())}</div><div><div class="area">${escapeHtml(x.area||'-')}</div><div>${escapeHtml(x.message||'')}</div></div></div>`).join('');
   const rows=[];
-  for(const i of issues) rows.push(`<tr><td>${i.area||'-'}</td><td class="${i.level==='error'?'log-error':''}">${i.message||''}</td></tr>`);
+  for(const i of issues) rows.push(`<tr><td>${escapeHtml(i.area||'-')}</td><td class="${i.level==='error'?'log-error':''}">${escapeHtml(i.message||'')}</td></tr>`);
   if(d.amount_audit){
-    rows.push(`<tr><td>Amount audit</td><td>Nguồn GMV: <b>${d.amount_audit.amount_source}</b> · Đơn raw: <b>${num(d.amount_audit.raw_order_count)}</b> · Đơn đang tính: <b>${num(d.amount_audit.datacenter_order_count||d.amount_audit.raw_order_count)}</b> · Count all: <b>${d.amount_audit.count_all_ledger_orders?'bật':'tắt'}</b> · Trạng thái bị loại khỏi GMV: <b>${(d.amount_audit.excluded_statuses||[]).join(', ')||'không'}</b></td></tr>`);
+    rows.push(`<tr><td>Amount audit</td><td>Nguồn GMV: <b>${escapeHtml(d.amount_audit.amount_source)}</b> · Đơn raw: <b>${num(d.amount_audit.raw_order_count)}</b> · Đơn đang tính: <b>${num(d.amount_audit.datacenter_order_count||d.amount_audit.raw_order_count)}</b> · Count all: <b>${d.amount_audit.count_all_ledger_orders?'bật':'tắt'}</b> · Trạng thái bị loại khỏi GMV: <b>${escapeHtml((d.amount_audit.excluded_statuses||[]).join(', ')||'không')}</b></td></tr>`);
     rows.push(`<tr><td>So sánh nguồn tiền</td><td>total_amount all: <b>${money(d.amount_audit.total_amount_all)}</b> · item_subtotal all: <b>${money(d.amount_audit.item_subtotal_all)}</b> · GMV đang dùng: <b>${money(d.amount_audit.datacenter_gmv)}</b></td></tr>`);
     rows.push(`<tr><td>Đơn lỗi tiền</td><td>Đơn total_amount = 0: <b>${num(d.amount_audit.zero_total_amount_count)}</b> · Đơn item_subtotal = 0: <b>${num(d.amount_audit.zero_item_subtotal_count)}</b></td></tr>`);
   }
@@ -814,13 +1057,13 @@ function renderDiagnostics(d){
     rows.push(`<tr><td>GMV integrity</td><td>Item rows: <b>${num(d.gmv_integrity.actual_item_rows)}</b> · Sau exact-dedup: <b>${num(d.gmv_integrity.dedup_item_rows)}</b> · Duplicate dư: <b>${num(d.gmv_integrity.exact_duplicate_extra_rows)}</b> · GMV dư do duplicate: <b>${money(d.gmv_integrity.duplicate_extra_gmv)}</b> · Đơn bundle lệch: <b>${num(d.gmv_integrity.bundle_mismatch_orders)}</b></td></tr>`);
   }
   const badCursors=(d.cursors||[]).filter(c=>!c.completed).slice(0,8);
-  for(const c of badCursors) rows.push(`<tr><td>Cursor ${c.shop_name||c.shop_id}</td><td>${c.date}: đã quét ${c.next_minute}/${c.latest_allowed_minute+1} phút <div class="progress"><i style="width:${Math.max(0,Math.min(100,c.progress_percent||0))}%"></i></div></td></tr>`);
-  for(const l of (d.recent_error_logs||[]).slice(0,6)) rows.push(`<tr><td>Sync log ${l.shop_id||''}</td><td class="log-error">${l.stat_date||''} · ${l.sync_type||''}: ${l.message||''}</td></tr>`);
+  for(const c of badCursors) rows.push(`<tr><td>Cursor ${escapeHtml(c.shop_name||c.shop_id)}</td><td>${escapeHtml(c.date)}: đã quét ${num(c.next_minute)}/${num(Number(c.latest_allowed_minute||0)+1)} phút <div class="progress"><i style="width:${Math.max(0,Math.min(100,Number(c.progress_percent)||0))}%"></i></div></td></tr>`);
+  for(const l of (d.recent_error_logs||[]).slice(0,6)) rows.push(`<tr><td>Sync log ${escapeHtml(l.shop_id||'')}</td><td class="log-error">${escapeHtml(l.stat_date||'')} · ${escapeHtml(l.sync_type||'')}: ${escapeHtml(l.message||'')}</td></tr>`);
   $('diagLogRows').innerHTML=rows.join('') || '<tr><td colspan="2" class="empty">Không có lỗi/cảnh báo.</td></tr>';
   $('diagRaw').textContent=JSON.stringify(d,null,2);
 }
 
-function statusBadge(st){ st=String(st||'UNKNOWN'); const bad=['CANCELLED','IN_CANCEL'].includes(st); const warn=['UNPAID'].includes(st); return `<span class="badge ${bad?'bad':warn?'warn':'good'}">${st}</span>`; }
+function statusBadge(st){ st=String(st||'UNKNOWN'); const bad=['CANCELLED','IN_CANCEL'].includes(st); const warn=['UNPAID'].includes(st); return `<span class="badge ${bad?'bad':warn?'warn':'good'}">${escapeHtml(st)}</span>`; }
 function shopNameText(){ const sel=$('shop'); return sel.options[sel.selectedIndex]?.textContent || sel.value; }
 function fmtTarget(t){ return t&&t.value!=null ? ` (mục tiêu ${t.comparator||''}${t.value}${t.value<=100?'%':''})` : ''; }
 function hidePerfDetailBoxes(){ $('perfLateOrdersBox').classList.add('hidden'); $('perfListingsBox').classList.add('hidden'); $('perfPunishBox').classList.add('hidden'); }
@@ -835,12 +1078,12 @@ async function loadPerformance(){
   if(!(data.summaries||[]).length && shop!=='all' && !perfAutoSynced.has(autoKey)){
     perfAutoSynced.add(autoKey);
     $('perfSummary').innerHTML='⏳ Chưa có snapshot hôm nay — đang tự động gọi Shopee AccountHealth và lưu lại, chờ vài giây...';
-    data=await api('/api/account-health/dashboard?'+new URLSearchParams({date,shop_id:shop,sync:'1'}).toString());
+    data=await api('/api/account-health/dashboard?'+new URLSearchParams({date,shop_id:shop,sync:'1'}).toString(),{method:'POST'});
   }
   const summaries=data.summaries||[];
   if(shop==='all' && summaries.length){
     const sumNum=(k)=>summaries.reduce((t,s)=>t+Number(s[k]||0),0);
-    $('perfLabel').innerHTML=summaries.map(s=>`<span class="badge ${String(s.health_status).includes('Xuất')||String(s.health_status).toLowerCase().includes('excellent')?'good':'warn'}" title="${s.shop_name}">${fmtDetailVal(s.health_status)}</span>`).join(' ');
+    $('perfLabel').innerHTML=summaries.map(s=>`<span class="badge ${String(s.health_status).includes('Xuất')||String(s.health_status).toLowerCase().includes('excellent')?'good':'warn'}" title="${escapeHtml(s.shop_name)}">${fmtDetailVal(s.health_status)}</span>`).join(' ');
     const ratings=summaries.map(s=>s.shop_rating).filter(x=>x!=null);
     $('perfRating').textContent = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(2)+' ★ (TB)' : '-';
     const respRates=summaries.map(s=>s.response_rate).filter(x=>x!=null);
@@ -948,7 +1191,7 @@ async function syncAccountHealth(){
   const r=getRange(); const date=r.to||r.from;
   $('perfSummary').innerHTML='Đang gọi Shopee AccountHealth API và lưu snapshot...';
   const qs=new URLSearchParams({shop_id:shop,date});
-  const data=await api('/api/account-health/sync?'+qs.toString());
+  const data=await api('/api/account-health/sync?'+qs.toString(),{method:'POST'});
   $('perfRaw').textContent=JSON.stringify(data,null,2);
   await loadPerformance();
 }
@@ -966,9 +1209,9 @@ async function loadAdsCost(){
     adsAutoSynced.add(autoKey);
     $('adsSummary').innerHTML='⏳ Chưa có dữ liệu Ads cho shop/khoảng này — đang tự động gọi Shopee Ads API...';
     try{
-      await api('/api/marketing/ads/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString());
+      await api('/api/marketing/ads/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString(),{method:'POST'});
       data=await api('/api/marketing/ads/dashboard?'+qs.toString());
-    }catch(e){ $('adsSummary').innerHTML='⚠️ Tự động đồng bộ Ads lỗi: '+e.message+' — bấm "Đồng bộ Ads" để thử lại.'; }
+  }catch(e){ $('adsSummary').textContent='⚠️ Tự động đồng bộ Ads lỗi: '+e.message+' — bấm "Đồng bộ Ads" để thử lại.'; }
   }
   const s=data.summary||{};
   $('adsTotalExpense').textContent=money(s.total_ads_expense??((s.expense||0)+(s.livestream_expense||0)));
@@ -1000,10 +1243,10 @@ async function syncAdsCost(){
   $('adsSummary').innerHTML=`⏳ Đang đồng bộ ${num(totalDays)} ngày từ Shopee Ads API${totalDays>28?' — hệ thống sẽ tự chia thành nhiều đợt để không vượt giới hạn Shopee':''}...`;
   try{
     const qs=new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to});
-    const result=await api('/api/marketing/ads/sync?'+qs.toString());
+  const result=await api('/api/marketing/ads/sync?'+qs.toString(),{method:'POST'});
     await loadAdsCost();
     if(result.chunks_count>1) $('adsSummary').innerHTML+=` Đã tự chia ${num(result.chunks_count)} đợt đồng bộ an toàn.`;
-  }catch(e){ $('adsSummary').innerHTML='⚠️ Đồng bộ Ads lỗi: '+e.message; }
+  }catch(e){ $('adsSummary').textContent='⚠️ Đồng bộ Ads lỗi: '+e.message; }
 }
 let liveAdsPendingRows=null, liveAdsPendingFileName='';
 function liveAdsHeaderType(header){
@@ -1080,7 +1323,7 @@ async function readLivestreamAdsFile(){
     $('adsLiveMeta').textContent='Đang xem trước · chưa lưu';
     $('liveAdsImportSummary').innerHTML=`👀 <b>Xem trước:</b> ${num(rows.length)} dòng, ${num(dates.length)} ngày (${vnDateLabel(dates[0])} → ${vnDateLabel(dates[dates.length-1])}), chi phí Live <b>${money(expense)}</b>. Thấy đúng thì bấm “2. Lưu chi phí Live”.`;
     $('liveAdsSaveBtn').disabled=false;
-  }catch(e){ $('liveAdsImportSummary').innerHTML='⚠️ Lỗi đọc file: '+e.message; }
+  }catch(e){ $('liveAdsImportSummary').textContent='⚠️ Lỗi đọc file: '+e.message; }
 }
 async function saveLivestreamAdsRows(){
   const shop=$('shop').value||'all';
@@ -1089,13 +1332,11 @@ async function saveLivestreamAdsRows(){
   $('liveAdsSaveBtn').disabled=true;
   $('liveAdsImportSummary').innerHTML='⏳ Đang lưu chi phí Livestream Ads theo ngày...';
   try{
-    const res=await fetch(getWorker()+'/api/marketing/ads/livestream-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:liveAdsPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:liveAdsPendingRows})});
-    const data=await res.json().catch(()=>null);
-    if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
+    const data=await api('/api/marketing/ads/livestream-upload',{method:'POST',body:{shop_id:Number(shop),file_name:liveAdsPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:liveAdsPendingRows}});
     liveAdsPendingRows=null; $('liveAdsFile').value='';
     await loadAdsCost();
     $('liveAdsImportSummary').innerHTML=`✅ Đã lưu chi phí Livestream Ads của ${num(data.rows_saved)} ngày, từ ${vnDateLabel(data.date_from)} đến ${vnDateLabel(data.date_to)} — tổng <b>${money(data.expense)}</b>.`;
-  }catch(e){ $('liveAdsSaveBtn').disabled=false; $('liveAdsImportSummary').innerHTML='⚠️ Lỗi khi lưu: '+e.message; }
+  }catch(e){ $('liveAdsSaveBtn').disabled=false; $('liveAdsImportSummary').textContent='⚠️ Lỗi khi lưu: '+e.message; }
 }
 // V65.2: tự động đồng bộ Xu Shop 1 lần khi đổi shop/ngày mà chưa có dữ liệu (giới hạn max_orders=150/lần để không quá tải).
 const coinAutoSynced = new Set();
@@ -1108,9 +1349,9 @@ async function loadCoinCost(){
     coinAutoSynced.add(autoKey);
     $('coinSummary').innerHTML='⏳ Chưa có dữ liệu Xu Shop cho shop/khoảng này — đang tự động quét đơn COMPLETED...';
     try{
-      await api('/api/marketing/coin/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to,max_orders:'150'}).toString());
+      await api('/api/marketing/coin/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to,max_orders:'150'}).toString(),{method:'POST'});
       data=await api('/api/marketing/coin/dashboard?'+qs.toString());
-    }catch(e){ $('coinSummary').innerHTML='⚠️ Tự động đồng bộ Xu Shop lỗi: '+e.message+' — bấm "Đồng bộ Xu Shop" để thử lại.'; }
+  }catch(e){ $('coinSummary').textContent='⚠️ Tự động đồng bộ Xu Shop lỗi: '+e.message+' — bấm "Đồng bộ Xu Shop" để thử lại.'; }
   }
   const s=data.summary||{};
   $('coinCost').textContent=money(s.seller_coin_cash_back||0);
@@ -1136,17 +1377,17 @@ async function syncCoinCost(){
   $('coinSummary').innerHTML='⏳ Đang quét đơn COMPLETED và gọi Shopee escrow API (tối đa 150 đơn/lượt)...';
   try{
     const qs=new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to,max_orders:'150'});
-    const data=await api('/api/marketing/coin/sync?'+qs.toString());
+    const data=await api('/api/marketing/coin/sync?'+qs.toString(),{method:'POST'});
     if(data.remaining>0) $('coinSummary').innerHTML=`⏳ Đã đồng bộ thêm ${num(data.newly_synced)} đơn, còn ${num(data.remaining)} đơn chưa quét — bấm lại nút để quét tiếp.`;
     await loadCoinCost();
-  }catch(e){ $('coinSummary').innerHTML='⚠️ Đồng bộ Xu Shop lỗi: '+e.message; }
+  }catch(e){ $('coinSummary').textContent='⚠️ Đồng bộ Xu Shop lỗi: '+e.message; }
 }
 async function loadMarketing(){
   await Promise.all([
-    loadShopTraffic().catch(e=>{ $('shopTrafficSummary').innerHTML='⚠️ Không tải được Traffic toàn shop: '+e.message; }),
-    loadAdsCost().catch(e=>{ $('adsSummary').innerHTML='⚠️ Không tải được chi phí Ads: '+e.message; }),
-    loadCoinCost().catch(e=>{ $('coinSummary').innerHTML='⚠️ Không tải được chi phí Xu Shop: '+e.message; }),
-    loadMarketingCoinSummary().catch(e=>{ $('mktCoinSummary').innerHTML='⚠️ Không tải được Xu Marketing: '+e.message; }),
+    loadShopTraffic().catch(e=>{ $('shopTrafficSummary').textContent='⚠️ Không tải được Traffic toàn shop: '+e.message; }),
+    loadAdsCost().catch(e=>{ $('adsSummary').textContent='⚠️ Không tải được chi phí Ads: '+e.message; }),
+    loadCoinCost().catch(e=>{ $('coinSummary').textContent='⚠️ Không tải được chi phí Xu Shop: '+e.message; }),
+    loadMarketingCoinSummary().catch(e=>{ $('mktCoinSummary').textContent='⚠️ Không tải được Xu Marketing: '+e.message; }),
   ]);
 }
 
@@ -1256,7 +1497,7 @@ async function readShopTrafficFile(){
     shopTrafficPendingRows=rows;shopTrafficPendingFileName=file.name;previewShopTraffic(rows);$('shopTrafficSaveBtn').disabled=false;
     const sourceCount=new Set(rows.map(r=>r.traffic_source)).size;
     $('shopTrafficSummary').innerHTML=`👀 <b>Xem trước, chưa lưu:</b> ${num(rows.length)} dòng theo ngày · ${num(sourceCount)} nguồn từ file “${fmtDetailVal(file.name)}”. Kiểm tra số bên dưới rồi bấm <b>2. Lưu Traffic</b>.`;
-  }catch(e){$('shopTrafficSummary').innerHTML='⚠️ Không đọc được file: '+e.message+' Hãy dùng file xuất theo ngày từ Phân tích bán hàng/Business Insights.';}
+  }catch(e){$('shopTrafficSummary').textContent='⚠️ Không đọc được file: '+e.message+' Hãy dùng file xuất theo ngày từ Phân tích bán hàng/Business Insights.';}
 }
 async function saveShopTraffic(){
   const shop=$('shop').value||'all';
@@ -1264,11 +1505,10 @@ async function saveShopTraffic(){
   if(!shopTrafficPendingRows?.length){$('shopTrafficSummary').innerHTML='⚠️ Bấm “1. Đọc file” trước khi lưu.';return;}
   $('shopTrafficSummary').innerHTML='⏳ Đang lưu Traffic toàn shop theo từng ngày và nguồn...';
   try{
-    const res=await fetch(getWorker()+'/api/traffic/shop-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:shopTrafficPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:shopTrafficPendingRows})});
-    const data=await res.json().catch(()=>null);if(!res.ok||!data?.ok)throw new Error(data?.error||('HTTP '+res.status));
+    const data=await api('/api/traffic/shop-upload',{method:'POST',body:{shop_id:Number(shop),file_name:shopTrafficPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:shopTrafficPendingRows}});
     shopTrafficPendingRows=null;$('shopTrafficSaveBtn').disabled=true;$('shopTrafficFile').value='';await loadShopTraffic();
     $('shopTrafficSummary').innerHTML=`✅ Đã lưu ${num(data.rows_saved)} dòng Traffic theo ngày/nguồn từ file “${fmtDetailVal(shopTrafficPendingFileName)}”.`;
-  }catch(e){$('shopTrafficSummary').innerHTML='⚠️ Lỗi khi lưu Traffic: '+e.message;}
+  }catch(e){$('shopTrafficSummary').textContent='⚠️ Lỗi khi lưu Traffic: '+e.message;}
 }
 async function loadShopTraffic(){
   const r=getRange(),shop=$('shop').value||'all';const data=await api('/api/traffic/shop-dashboard?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}));renderShopTraffic(data);
@@ -1277,7 +1517,7 @@ async function loadShopTraffic(){
 async function deleteShopTraffic(){
   const shop=$('shop').value||'all';if(shop==='all'){$('shopTrafficSummary').innerHTML='⚠️ Chọn một shop cụ thể trước khi xóa.';return;}
   if(!confirm('Xóa toàn bộ Traffic đã tải lên của shop '+shop+'?'))return;
-  try{const res=await fetch(getWorker()+'/api/traffic/shop-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop)})});const data=await res.json().catch(()=>null);if(!res.ok||!data?.ok)throw new Error(data?.error||('HTTP '+res.status));await loadShopTraffic();}catch(e){$('shopTrafficSummary').innerHTML='⚠️ Không xóa được Traffic: '+e.message;}
+  try{await api('/api/traffic/shop-delete',{method:'POST',body:{shop_id:Number(shop)}});await loadShopTraffic();}catch(e){$('shopTrafficSummary').innerHTML='⚠️ Không xóa được Traffic: '+escapeHtml(e.message);}
 }
 // ===== V66.8: Xu Marketing (Xu Của Shop) — đọc file Excel/CSV Shopee ngay trên trình duyệt (không có API) =====
 function parseMoneyVN(v){
@@ -1390,9 +1630,9 @@ async function readMarketingCoinFile(){
     mktCoinPendingRows=rows;
     mktCoinPendingFileName=file.name;
     renderMarketingCoinRows(rows);
-    $('mktCoinSummary').innerHTML='👀 <b>Xem trước</b> (chưa lưu): đọc được '+num(rows.length)+' dòng "Chi" từ file "'+file.name+'". Kiểm tra số liệu bên dưới, thấy đúng thì bấm <b>"2. Lưu dữ liệu"</b>.';
+    $('mktCoinSummary').innerHTML='👀 <b>Xem trước</b> (chưa lưu): đọc được '+num(rows.length)+' dòng "Chi" từ file "'+escapeHtml(file.name)+'". Kiểm tra số liệu bên dưới, thấy đúng thì bấm <b>"2. Lưu dữ liệu"</b>.';
     $('mktCoinSaveBtn').disabled=false;
-  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi đọc file: '+e.message; }
+  }catch(e){ $('mktCoinSummary').textContent='⚠️ Lỗi khi đọc file: '+e.message; }
 }
 async function saveMarketingCoinRows(){
   const shop=$('shop').value||'all';
@@ -1400,15 +1640,13 @@ async function saveMarketingCoinRows(){
   if(!mktCoinPendingRows || !mktCoinPendingRows.length){ $('mktCoinSummary').innerHTML='⚠️ Chưa đọc file nào — bấm "1. Đọc file" trước.'; return; }
   $('mktCoinSummary').innerHTML='⏳ Đang lưu '+num(mktCoinPendingRows.length)+' dòng lên server...';
   try{
-    const res=await fetch(getWorker()+'/api/marketing/coin-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({shop_id:Number(shop),file_name:mktCoinPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:mktCoinPendingRows})});
-    const data=await res.json().catch(()=>null);
-    if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
+    const data=await api('/api/marketing/coin-upload',{method:'POST',body:{shop_id:Number(shop),file_name:mktCoinPendingFileName,upload_batch_id:Date.now()+'_'+Math.random().toString(36).slice(2),rows:mktCoinPendingRows}});
     $('mktCoinSummary').innerHTML='✅ Đã lưu '+num(data.rows_saved)+' dòng từ file "'+mktCoinPendingFileName+'".';
     mktCoinPendingRows=null;
     $('mktCoinSaveBtn').disabled=true;
     $('mktCoinFile').value='';
     await loadMarketingCoinSummary();
-  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi lưu: '+e.message; }
+  }catch(e){ $('mktCoinSummary').textContent='⚠️ Lỗi khi lưu: '+e.message; }
 }
 async function deleteMarketingCoinData(){
   const shop=$('shop').value||'all';
@@ -1416,14 +1654,12 @@ async function deleteMarketingCoinData(){
   if(!confirm('Xoá TOÀN BỘ dữ liệu Xu Marketing đã lưu của shop này? Không thể hoàn tác — nếu cần lại phải tải file lên lại.')) return;
   $('mktCoinSummary').innerHTML='⏳ Đang xoá dữ liệu...';
   try{
-    const res=await fetch(getWorker()+'/api/marketing/coin-delete?'+new URLSearchParams({shop_id:shop}).toString(),{method:'POST'});
-    const data=await res.json().catch(()=>null);
-    if(!res.ok || !data?.ok) throw new Error(data?.error||('HTTP '+res.status));
+    await api('/api/marketing/coin-delete?'+new URLSearchParams({shop_id:shop}).toString(),{method:'POST'});
     $('mktCoinSummary').innerHTML='🗑️ Đã xoá dữ liệu Xu Marketing đã lưu của shop này.';
     mktCoinPendingRows=null;
     $('mktCoinSaveBtn').disabled=true;
     await loadMarketingCoinSummary();
-  }catch(e){ $('mktCoinSummary').innerHTML='⚠️ Lỗi khi xoá: '+e.message; }
+  }catch(e){ $('mktCoinSummary').textContent='⚠️ Lỗi khi xoá: '+e.message; }
 }
 async function loadMarketingCoinSummary(){
   const shop=$('shop').value||'all';
@@ -1497,9 +1733,9 @@ async function syncWarehouseGoods(){
   const month=warehouseMonthValue();
   $('warehouseSummary').innerHTML='⏳ Đang gọi SSC lấy tồn kho + số đã xuất tháng '+month+' (có thể mất chút thời gian vì nhiều trang)...';
   try{
-    await api('/api/warehouse/ssc/sync-goods?month='+encodeURIComponent(month));
+    await api('/api/warehouse/ssc/sync-goods?month='+encodeURIComponent(month),{method:'POST'});
     await loadWarehouse();
-  }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ tồn kho SSC lỗi: '+e.message; }
+  }catch(e){ $('warehouseSummary').textContent='⚠️ Đồng bộ tồn kho SSC lỗi: '+e.message; }
 }
 async function syncWarehouseCombo(){
   // Catalog combo rất lớn (chục nghìn dòng) — Worker chỉ quét 1 đợt nhỏ/lần gọi rồi lưu tiến độ, nên ở đây
@@ -1509,7 +1745,7 @@ async function syncWarehouseCombo(){
   try{
     while(true){
       calls++;
-      const r=await api('/api/warehouse/ssc/sync-combo?month='+encodeURIComponent(month));
+      const r=await api('/api/warehouse/ssc/sync-combo?month='+encodeURIComponent(month),{method:'POST'});
       $('warehouseSummary').innerHTML='⏳ Đang đồng bộ Combo SSC — lượt '+calls+', đã quét '+num(r.rows_scanned||0)+' dòng ('+num(r.active_scanned||0)+' combo active)...';
       if(r.done){
         await loadWarehouse();
@@ -1517,11 +1753,11 @@ async function syncWarehouseCombo(){
         break;
       }
     }
-  }catch(e){ $('warehouseSummary').innerHTML='⚠️ Đồng bộ Combo SSC lỗi ở lượt '+calls+' (dữ liệu đã quét trước đó vẫn được giữ, bấm lại để tiếp tục): '+e.message; }
+  }catch(e){ $('warehouseSummary').textContent='⚠️ Đồng bộ Combo SSC lỗi ở lượt '+calls+' (dữ liệu đã quét trước đó vẫn được giữ, bấm lại để tiếp tục): '+e.message; }
 }
 function renderOrdersTable(data){
   const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.total?data.offset+1:0)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`+(data.search_note?' · '+data.search_note:'');
-  $('ordersRows').innerHTML=rows.map(o=>`<tr><td><b>${o.order_sn}</b></td><td>${o.shop_id}</td><td>${o.province?fmtDetailVal(o.province):(o.region_status==='masked'?'<span class="muted" title="Shopee đã che dữ liệu">****</span>':'<span class="muted">-</span>')}</td><td>${o.create_time_iso?new Date(o.create_time_iso).toLocaleString('vi-VN'):'-'}</td><td>${statusBadge(o.order_status)}</td><td class="right"><b>${money(o.gmv_amount)}</b></td><td class="right">${money(o.total_amount)}</td><td class="right">${money(o.item_subtotal)}</td><td class="right">${num(o.quantity_total||0)}</td><td><button class="linkbtn" data-order-sn="${o.order_sn}">Chi tiết</button></td></tr>`).join('') || '<tr><td colspan="10" class="empty">Không có đơn trong bộ lọc này.</td></tr>';
+  $('ordersRows').innerHTML=rows.map(o=>`<tr><td><b>${escapeHtml(o.order_sn)}</b></td><td>${escapeHtml(o.shop_id)}</td><td>${o.province?fmtDetailVal(o.province):(o.region_status==='masked'?'<span class="muted" title="Shopee đã che dữ liệu">****</span>':'<span class="muted">-</span>')}</td><td>${o.create_time_iso?escapeHtml(new Date(o.create_time_iso).toLocaleString('vi-VN')):'-'}</td><td>${statusBadge(o.order_status)}</td><td class="right"><b>${money(o.gmv_amount)}</b></td><td class="right">${money(o.total_amount)}</td><td class="right">${money(o.item_subtotal)}</td><td class="right">${num(o.quantity_total||0)}</td><td><button class="linkbtn" data-order-sn="${escapeHtml(o.order_sn)}">Chi tiết</button></td></tr>`).join('') || '<tr><td colspan="10" class="empty">Không có đơn trong bộ lọc này.</td></tr>';
   document.querySelectorAll('[data-order-sn]').forEach(btn=>btn.addEventListener('click',()=>loadOrderDetail(btn.dataset.orderSn)));
 }
 async function loadOrderRegions(){
@@ -1550,7 +1786,7 @@ async function loadOrderRegions(){
 async function loadOrders(reset=false){
   if(reset) orderOffset=0; const r=getRange(); const shop=$('shop').value||'all'; const limit=Number($('orderLimit').value||50); const status=$('orderStatus').value||'all'; const q=$('orderSearch').value||'';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,status,q,limit:String(limit),offset:String(orderOffset)});
-  const regionTask=reset?loadOrderRegions().catch(e=>{$('orderRegionsSummary').innerHTML='⚠️ Không tải được khu vực đơn hàng: '+e.message;}):Promise.resolve();
+  const regionTask=reset?loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ Không tải được khu vực đơn hàng: '+e.message;}):Promise.resolve();
   const data=await api('/api/orders?'+qs.toString()); renderOrdersTable(data); await regionTask;
 }
 function fmtDetailVal(v){
@@ -1558,11 +1794,11 @@ function fmtDetailVal(v){
   if(typeof v==='number') return Number(v).toLocaleString('vi-VN');
   const str=String(v);
   if(/^\d{4}-\d{2}-\d{2}T/.test(str)){ try{return new Date(str).toLocaleString('vi-VN')}catch(e){} }
-  return str.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  return escapeHtml(str);
 }
 function kvBlock(title, obj){
   const entries=Object.entries(obj||{});
-  return `<div class="detail-section"><h3>${title}</h3><div class="kv">${entries.map(([k,v])=>`<div>${k}</div><div>${fmtDetailVal(v)}</div>`).join('')}</div></div>`;
+  return `<div class="detail-section"><h3>${escapeHtml(title)}</h3><div class="kv">${entries.map(([k,v])=>`<div>${escapeHtml(k)}</div><div>${fmtDetailVal(v)}</div>`).join('')}</div></div>`;
 }
 function renderExcelItemRows(rows){
   const list=rows||[];
@@ -1572,7 +1808,7 @@ function renderExcelItemRows(rows){
 async function loadOrderDetail(orderSn,refresh=false){
   const box=$('orderDetailBox'); box.classList.remove('hidden');
   if(refresh) box.innerHTML='<div class="empty">Đang cập nhật chi tiết từ Shopee, logistics và thanh toán…</div>';
-  const data=await api('/api/order-detail?order_sn='+encodeURIComponent(orderSn)+(refresh?'&refresh=1':'')); const o=data.order||{}; const items=data.items||[]; const ex=data.excel_detail||{};
+  const data=await api('/api/order-detail?order_sn='+encodeURIComponent(orderSn)+(refresh?'&refresh=1':''),refresh?{method:'POST'}:undefined); const o=data.order||{}; const items=data.items||[]; const ex=data.excel_detail||{};
   $('orderDetailBox').classList.remove('hidden');
   const enrich=data.enrichment||{};
   const sourceNote=data.refresh_error
@@ -1580,8 +1816,8 @@ async function loadOrderDetail(orderSn,refresh=false){
     : `<p class="detail-note">${data.refreshed?'Đã cập nhật trực tiếp từ Shopee.':'Đang hiển thị dữ liệu cache để tải nhanh.'} Logistics: ${enrich.logistics?.ok?'đã lấy':'chưa có hoặc chưa được cấp quyền'} · Thanh toán/phí: ${enrich.escrow?.ok?'đã lấy':'chưa có hoặc chưa được cấp quyền'}.</p>`;
   const itemTable=`<div class="detail-section" style="grid-column:1/-1"><h3>Sản phẩm trong đơn từ ledger</h3><div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">Giá</th><th class="right">GMV item</th></tr></thead><tbody>${items.map(it=>`<tr><td>${fmtDetailVal(it.item_name||'-')}</td><td>${fmtDetailVal(it.model_name||'-')}</td><td>${fmtDetailVal(it.sku||'')}</td><td class="right">${num(it.quantity)}</td><td class="right">${money(it.item_price)}</td><td class="right"><b>${money(it.item_gmv)}</b></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Không có item rows, xem raw order bên dưới.</td></tr>'}</tbody></table></div></div>`;
   $('orderDetailBox').innerHTML=`
-    <div class="section-title"><div><h2>Chi tiết đơn ${o.order_sn}</h2><p>${statusBadge(o.order_status)} · GMV ${money(o.gmv_amount)} · total_amount ${money(o.total_amount)} · item_subtotal ${money(o.item_subtotal)}</p><p class="detail-note">Bảng dưới mô phỏng các cột trong file Excel Shopee. Trường nào Open API chưa trả về sẽ để trống.</p></div><button class="ghost" onclick="document.getElementById('orderDetailBox').classList.add('hidden')">Đóng</button></div>
-    <div class="mini-actions"><button onclick="loadOrderDetail('${String(o.order_sn).replace(/'/g,"\\'")}',true)">Làm mới từ Shopee</button></div>
+    <div class="section-title"><div><h2>Chi tiết đơn ${escapeHtml(o.order_sn)}</h2><p>${statusBadge(o.order_status)} · GMV ${money(o.gmv_amount)} · total_amount ${money(o.total_amount)} · item_subtotal ${money(o.item_subtotal)}</p><p class="detail-note">Bảng dưới mô phỏng các cột trong file Excel Shopee. Trường nào Open API chưa trả về sẽ để trống.</p></div><button class="ghost" id="closeOrderDetailBtn">Đóng</button></div>
+    <div class="mini-actions"><button id="refreshOrderDetailBtn">Làm mới từ Shopee</button></div>
     ${sourceNote}
     <div class="detail-grid">
       ${kvBlock('Thông tin đơn hàng', ex.order||{})}
@@ -1589,7 +1825,9 @@ async function loadOrderDetail(orderSn,refresh=false){
       ${renderExcelItemRows(ex.items||[])}
       ${itemTable}
     </div>
-    <details style="margin-top:12px"><summary class="muted" style="cursor:pointer;font-weight:800">Raw order từ Shopee</summary><pre>${JSON.stringify(data.raw_order||{},null,2).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</pre></details>`;
+    <details style="margin-top:12px"><summary class="muted" style="cursor:pointer;font-weight:800">Raw order từ Shopee</summary><pre>${escapeHtml(JSON.stringify(data.raw_order||{},null,2))}</pre></details>`;
+  $('closeOrderDetailBtn').addEventListener('click',()=>box.classList.add('hidden'));
+  $('refreshOrderDetailBtn').addEventListener('click',()=>loadOrderDetail(String(o.order_sn||orderSn),true));
 }
 
 
@@ -1661,21 +1899,21 @@ async function loadAuto24Status(){
       }
 
       const load=s.last_load||'-';
-      const err=s.last_error?`<div style="color:#b91c1c">${String(s.last_error).slice(0,100)}</div>`:'';
+      const err=s.last_error?`<div style="color:#b91c1c">${escapeHtml(String(s.last_error).slice(0,100))}</div>`:'';
 
       return `<tr>
-        <td><b>${s.shop_name||s.shop_id}</b><div class="muted">${s.shop_id}</div></td>
-        <td>${date}<div class="muted">${phaseText}</div></td>
+        <td><b>${escapeHtml(s.shop_name||s.shop_id)}</b><div class="muted">${escapeHtml(s.shop_id)}</div></td>
+        <td>${escapeHtml(date)}<div class="muted">${escapeHtml(phaseText)}</div></td>
         <td>${progress}</td>
         <td>${num(s.block_minutes||10)} phút</td>
-        <td>${load}${s.last_order_count!=null?` · ${num(s.last_order_count)} đơn`:''}${err}</td>
+        <td>${escapeHtml(load)}${s.last_order_count!=null?` · ${num(s.last_order_count)} đơn`:''}${err}</td>
         <td>${fmtAuto24Time(s.last_run_at)}</td>
       </tr>`;
     }).join('');
 
     $('auto24Rows').innerHTML=rows||'<tr><td colspan="6" class="empty">Chưa có shop connected.</td></tr>';
   }catch(e){
-    $('auto24Summary').innerHTML='⚠️ Không đọc được trạng thái quét 24/7: '+e.message;
+    $('auto24Summary').textContent='⚠️ Không đọc được trạng thái quét 24/7: '+e.message;
     $('auto24Rows').innerHTML='<tr><td colspan="6" class="empty">Không tải được trạng thái.</td></tr>';
   }
 }
@@ -1685,7 +1923,7 @@ async function toggleAuto24(){
   if(!confirm(next?'Bật quét lịch sử tự động 24/7? Worker sẽ tiếp tục chạy theo Cloudflare Cron dù đóng web.':'Tạm dừng phần quét lịch sử tự động 24/7?')) return;
   $('auto24ToggleBtn').disabled=true;
   try{
-    await api('/api/sync/auto24/set?enabled='+(next?'1':'0'));
+    await api('/api/sync/auto24/set?enabled='+(next?'1':'0'),{method:'POST'});
     await loadAuto24Status();
   }finally{
     $('auto24ToggleBtn').disabled=false;
@@ -1701,7 +1939,7 @@ async function loadDiagnostics(){
 async function acknowledgeOldDiagnosticErrors(){
   if(!confirm('Ẩn toàn bộ lỗi đã phát sinh đến thời điểm hiện tại khỏi phần cảnh báo? Log kỹ thuật vẫn được giữ trong database để kiểm tra khi cần.')) return;
   const before=new Date().toISOString();
-  await api('/api/diagnostics/ack-errors?'+new URLSearchParams({before}).toString());
+  await api('/api/diagnostics/ack-errors?'+new URLSearchParams({before}).toString(),{method:'POST'});
   $('diagSummary').innerHTML='✅ Đã ẩn các lỗi cũ đã xử lý. Chỉ lỗi phát sinh sau thời điểm này mới tiếp tục hiện cảnh báo.';
   await loadDiagnostics();
 }
@@ -1713,7 +1951,7 @@ async function repairGmvIntegrity(){
   if(!confirm(`Rà soát GMV ${r.from} cho shop ${shop}? Hệ thống sẽ kiểm tra duplicate/item bundle; chỉ gọi Shopee detail cho các đơn thật sự lỗi.`)) return;
   const btn=$('gmvIntegrityBtn'); const old=btn.textContent; btn.disabled=true; btn.textContent='Đang rà GMV...';
   try{
-    const data=await api('/api/gmv/integrity?'+new URLSearchParams({shop_id:shop,date:r.from,repair:'1'}).toString());
+    const data=await api('/api/gmv/integrity?'+new URLSearchParams({shop_id:shop,date:r.from,repair:'1'}).toString(),{method:'POST'});
     const before=data.before||{}, after=data.after||{};
     alert(
       `GMV integrity ${r.from}\n`+
@@ -1734,7 +1972,7 @@ async function recomputeFromLedger(){
   if(!confirm('Tính lại snapshot từ shopee_orders cho khoảng '+rangeLabel(r)+'? Thao tác này không gọi Shopee API.')) return;
   $('diagSummary').innerHTML='Đang tính lại snapshot từ ledger...';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
-  await api('/api/recompute/range?'+qs.toString());
+  await api('/api/recompute/range?'+qs.toString(),{method:'POST'});
   await loadDashboard();
 }
 
@@ -1835,7 +2073,7 @@ async function catchupAdaptiveStep(shop,day,preferredMinutes=10){
         shop_id:shop,
         minutes:String(minutes),
         runs:'1'
-      }).toString());
+      }).toString(),{method:'POST'});
 
       const durationMs=Math.max(0,performance.now()-requestStarted);
       const res=data.results?.[data.results.length-1]?.result||{};
@@ -2148,27 +2386,56 @@ function initWorkspaceUI(){
 }
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
+  if(!canOpenTab(tab)){tab=firstAllowedTab();if(!tab)return;}
   document.querySelectorAll('.tabbtn').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab===tab));
   document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden', panel.id !== 'tab-'+tab));
   updateRoleUI(tab);
-  if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; });
-  if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; });
+  if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; });
+  if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); });
   if(tab==='marketing') loadMarketing();
-  if(tab==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; });
+  if(tab==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); });
+  if(tab==='system'&&currentUser?.is_admin){loadAdminUsers();loadAuto24Status();}
 }
 let dashboardLoadToken=0;
 let dashboardAbortController=null;
-async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>x.message).join(' | '); } if(!opts.skipDiagnostics){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+err.message+' — mở trực tiếp '+getWorker()+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+err.message; }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+err.message+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+err.message; }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+e.message+'<br><small>Kiểm tra Worker: '+getWorker()+'/api/debug/version</small>'; console.error(e); } }
-function schedule(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
-async function connectShop(){ const channel=encodeURIComponent($('channel').value||'Shopee'); const data=await api('/api/oauth/start?channel='+channel); $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" href="'+data.auth_url+'">'+data.auth_url+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+data.redirect_url_to_add_in_shopee+'</code></p>'; }
-function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); loadShops().then(loadDashboard); }
+async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
+function schedule(){ if(timer) clearInterval(timer); timer=null;if(!hasFeature('overview'))return;timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
+async function connectShop(){
+  const channel=encodeURIComponent($('channel').value||'Shopee');
+  const data=await api('/api/oauth/start?channel='+channel);
+  let authUrl;
+  try{authUrl=new URL(String(data.auth_url||''));if(authUrl.protocol!=='https:')throw new Error('invalid protocol');}
+  catch{throw new Error('Worker trả về đường dẫn OAuth không hợp lệ');}
+  const safeUrl=escapeHtml(authUrl.href);
+  $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" rel="noopener noreferrer" href="'+safeUrl+'">'+safeUrl+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+escapeHtml(data.redirect_url_to_add_in_shopee)+'</code></p>';
+}
+function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); showLoggedOut('Đã đổi Worker. Vui lòng đăng nhập lại trên backend mới.');loadBootstrapStatus(); }
 function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
-async function init(){ setDefaults(); updatePeriodFields(); updateUrls(); initWorkspaceUI(); document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab))); ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',()=>{ updatePeriodFields(); orderOffset=0; loadDashboard(); schedule(); })); $('saveWorkerBtn').addEventListener('click',saveWorker); $('oauthBtn').addEventListener('click',connectShop); $('auto24ReloadBtn').addEventListener('click',loadAuto24Status); $('auto24ToggleBtn').addEventListener('click',toggleAuto24); $('diagBtn').addEventListener('click',loadDiagnostics); $('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors); $('catchupBtn').addEventListener('click',catchupMissingOrders); $('recomputeBtn').addEventListener('click',recomputeFromLedger); $('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity); $('perfBtn').addEventListener('click',loadPerformance); $('perfSyncBtn').addEventListener('click',syncAccountHealth); $('adsBtn').addEventListener('click',loadAdsCost); $('adsSyncBtn').addEventListener('click',syncAdsCost); $('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile); $('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows); $('coinBtn').addEventListener('click',loadCoinCost); $('coinSyncBtn').addEventListener('click',syncCoinCost); $('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile); $('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows); $('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData); $('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+e.message;})); $('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods); $('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo); $('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+e.message;})); $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+err.message;})}); $('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();}); $('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();}); $('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev); $('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext); $('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev); $('warehouseComboNextBtn').addEventListener('click',warehouseComboNext); $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true)); $('orderStatus').addEventListener('change',()=>loadOrders(true)); $('orderLimit').addEventListener('change',()=>loadOrders(true)); $('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)}); $('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)}); $('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)}); window.addEventListener('resize',()=>{ if(currentTab()==='gmv' && chartState.payload) renderMainChart(); }); await loadShops(); await Promise.all([loadDashboard(), loadAuto24Status()]); schedule(); }
+function reloadCurrentView(){updatePeriodFields();orderOffset=0;const tab=currentTab();if(tab==='gmv'&&hasFeature('overview'))loadDashboard();else setTab(tab);schedule();}
+async function initAuthenticatedApp(){
+  applyCurrentUserUi();
+  if(!authenticatedAppInitialized){
+    initWorkspaceUI();
+    document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
+    ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
+    $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));$('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));$('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods);$('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo);$('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));$('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(err.message);})});$('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();});$('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();});$('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev);$('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext);$('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev);$('warehouseComboNextBtn').addEventListener('click',warehouseComboNext);$('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
+    authenticatedAppInitialized=true;
+  }
+  await loadShops();
+  const tab=canOpenTab(currentTab())?currentTab():firstAllowedTab();
+  if(!tab)throw new Error('Tài khoản chưa được cấp nhóm tính năng nào. Vui lòng liên hệ Admin.');
+  setTab(tab);if(tab==='gmv')await loadDashboard();schedule();
+}
+async function init(){
+  setDefaults();updatePeriodFields();updateUrls();
+  const logout=()=>{storeSession(null);window.location.reload();};$('loginForm').addEventListener('submit',handleLoginSubmit);$('bootstrapForm').addEventListener('submit',handleBootstrapSubmit);$('logoutBtn').addEventListener('click',logout);$('headerLogoutBtn').addEventListener('click',logout);$('accountForm').addEventListener('submit',handleAccountSubmit);$('accountCancelBtn').addEventListener('click',resetAccountForm);$('accountRole').addEventListener('change',updateAccountRoleUi);$('adminReloadBtn').addEventListener('click',loadAdminUsers);
+  await bootAuth();
+}
 $('shopTrafficReadBtn').addEventListener('click',readShopTrafficFile);
 $('shopTrafficSaveBtn').addEventListener('click',saveShopTraffic);
-$('shopTrafficReloadBtn').addEventListener('click',()=>loadShopTraffic().catch(e=>{$('shopTrafficSummary').innerHTML='⚠️ '+e.message;}));
+$('shopTrafficReloadBtn').addEventListener('click',()=>loadShopTraffic().catch(e=>{$('shopTrafficSummary').textContent='⚠️ '+e.message;}));
 $('shopTrafficDeleteBtn').addEventListener('click',deleteShopTraffic);
-$('orderRegionsReloadBtn').addEventListener('click',()=>loadOrderRegions().catch(e=>{$('orderRegionsSummary').innerHTML='⚠️ '+e.message;}));
+$('orderRegionsReloadBtn').addEventListener('click',()=>loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ '+e.message;}));
 init();
 </script>
 </body>
