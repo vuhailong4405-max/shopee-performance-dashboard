@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70 Integrity</title>
+  <title>Gooby BI Dashboard · V70.11 Paid Throughput</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -229,8 +229,30 @@
     .bootstrap-box{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.bootstrap-box h2{margin:0 0 5px;font-size:16px}.bootstrap-box>p{margin:0 0 13px;color:var(--muted);font-size:12px;line-height:1.5}
     .side-user{position:relative}.side-user-meta{min-width:0;flex:1}.side-logout{width:29px;height:29px;padding:0;flex:none;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.07);box-shadow:none;color:#cbd5e1;font-size:14px}.side-logout:hover{background:rgba(255,255,255,.14)}
     .account-form{display:grid;gap:14px}.account-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.account-fields input,.account-fields select{width:100%;min-width:0}.permission-block{padding:13px;border:1px solid var(--line);border-radius:12px;background:#fbfcfe}.permission-block strong{display:block;margin-bottom:10px;font-size:12px}.permission-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.permission-choice{display:flex;align-items:center;gap:8px;padding:8px 9px;border:1px solid #eaecf0;border-radius:9px;background:#fff;font-size:11.5px;font-weight:700}.permission-choice input{width:16px;height:16px;min-width:16px;margin:0}.account-actions{display:flex;gap:9px;flex-wrap:wrap}.account-actions button{min-width:125px}.account-table td:first-child{min-width:190px}.account-table .mini-actions{margin:0;flex-wrap:nowrap}.account-table .mini-actions button{height:31px;padding:0 9px;font-size:10.5px;white-space:nowrap}.status-chip{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10.5px;font-weight:850}.status-chip.active{background:#ecfdf3;color:#067647}.status-chip.locked{background:#fef3f2;color:#b42318}
-    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}}
+    /* ---- V70.10: danh mục combo + cấu tạo SKU, không còn tồn kho ---- */
+    .warehouse-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+    .warehouse-kpi{padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:#fbfcfe}
+    .warehouse-kpi span{display:block;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+    .warehouse-kpi b{display:block;margin-top:7px;font-size:20px;letter-spacing:-.02em}
+    .warehouse-kpi small{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+    .category-chip{display:inline-flex;align-items:center;margin:2px 4px 2px 0;padding:4px 8px;border-radius:999px;background:#ecfeff;color:#0e7490;font-size:10.5px;font-weight:850}
+    .category-chip.unclassified{background:#f2f4f7;color:#667085}
+    .combo-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-weight:800;color:#0e7490}
+    .combo-table td:first-child{width:42px;min-width:42px;padding-right:4px}
+    .combo-expand{width:30px;height:30px;padding:0;border-radius:8px;background:#ecfeff;color:#0e7490;box-shadow:none;font-size:15px}
+    .combo-expand[aria-expanded="true"]{background:#0891b2;color:#fff;transform:rotate(90deg)}
+    .combo-detail-row.hidden{display:none}.combo-detail-row td{padding:0!important;background:#f8fafc;white-space:normal}
+    .combo-detail{padding:14px 16px 16px 56px;border-bottom:1px solid var(--line)}
+    .combo-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;color:#475467;font-size:11px}
+    .component-table th,.component-table td{padding:8px 10px;font-size:11px}.component-table td:first-child{width:auto;min-width:0}
+    .component-table td{white-space:normal}.component-name{font-weight:800;color:#344054}
+    .catalog-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0}.catalog-toolbar .field{min-width:145px}.catalog-toolbar .search-field{min-width:260px;flex:1}
+    .sync-progress{line-height:1.55}.sync-progress b{color:#0e7490}
+    .match-ok{color:#067647;font-weight:800}.match-missing{color:#b54708;font-weight:800}
+    .warehouse-pagination{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:10px}.warehouse-pagination button{height:34px;padding:0 11px}
+
+    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}.warehouse-kpis{grid-template-columns:1fr 1fr}}
+    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}.warehouse-kpis{grid-template-columns:1fr}.combo-detail{padding-left:12px}.catalog-toolbar .field,.catalog-toolbar .search-field{width:100%;min-width:0}}
 
     @media(max-width:1260px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.overview-modules{grid-template-columns:1fr 1fr}.order-panel .order-health{margin-top:10px}.app{padding-left:20px;padding-right:20px}.hero{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
     @media(max-width:920px){
@@ -389,10 +411,10 @@
 
       <article class="card overview-module" data-widget-key="inventory-health">
         <div class="module-head">
-          <div><h3>Tồn kho nổi bật</h3><p>Ưu tiên SKU có lượng tồn thấp</p></div>
+          <div><h3>Danh mục combo</h3><p>Mã combo, số thành phần và phân loại SKU</p></div>
           <button type="button" class="module-link" data-jump-tab="warehouse">Xem chi tiết →</button>
         </div>
-        <div id="overviewInventoryBody" class="module-loading">Đang tải dữ liệu kho hàng...</div>
+        <div id="overviewInventoryBody" class="module-loading">Đang tải danh mục combo...</div>
       </article>
     </section>
 
@@ -523,29 +545,40 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-warehouse">
-    <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Tồn kho & hàng đã bán (SKU đơn)</h2><p>Tồn kho + số đã xuất từ hệ thống kho SSC, ghép với số bán thật trên Shopee trong tháng (gồm cả hàng bán qua combo được quy đổi ra SKU đơn theo công thức combo).</p></div><div class="mini-actions"><input type="month" id="warehouseMonth"><button class="ghost" id="warehouseBtn">Tải kho hàng</button><button id="warehouseSyncGoodsBtn">Đồng bộ tồn kho SSC</button><button class="ghost" id="warehouseSyncComboBtn">Đồng bộ Combo SSC</button></div></div>
-      <div id="warehouseSummary" class="notice">Chọn tháng rồi bấm "Đồng bộ tồn kho SSC" và "Đồng bộ Combo SSC" lần đầu để lấy dữ liệu.</div>
-      <div class="orders-toolbar">
-        <div class="field"><label>Tìm SKU / tên sản phẩm</label><input id="warehouseSearch" placeholder="Nhập SKU hoặc tên sản phẩm"></div>
-        <div class="field"><label>Số dòng/trang</label><select id="warehouseLimit"><option selected>20</option><option>50</option><option>100</option></select></div>
-        <button class="ghost" id="warehouseSkuPrevBtn">Trước</button><button class="ghost" id="warehouseSkuNextBtn">Sau</button>
-        <span class="muted" id="warehousePageInfo">-</span>
-      </div>
-      <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>SKU</th><th class="right">Tồn kho SSC</th><th class="right">Đã xuất SSC (kỳ đồng bộ)</th><th class="right">Đã bán trên Shopee (tháng)</th></tr></thead><tbody id="warehouseRows"><tr><td colspan="5" class="empty">Chưa tải</td></tr></tbody></table></div>
-      <details class="settings" style="margin-top:14px"><summary>Cảnh báo SKU không khớp combo</summary><div id="warehouseUnmatched" class="muted" style="padding:10px 0">Không có.</div></details>
-    </section>
+      <section class="card" style="margin-top:16px">
+        <div class="section-title">
+          <div><h2>Danh mục combo & cấu tạo SKU</h2><p>Đồng bộ từ combo-list-api và product-list-api. Trang này chỉ quản lý mã combo, thành phần và phân loại sản phẩm; không còn dữ liệu tồn kho.</p></div>
+          <div class="mini-actions"><button class="ghost" id="warehouseBtn">Tải lại</button><button id="warehouseSyncBtn">Đồng bộ toàn bộ danh mục</button></div>
+        </div>
+        <div id="warehouseSummary" class="notice">Bấm “Đồng bộ toàn bộ danh mục” ở lần đầu, sau đó mở từng combo để xem cấu tạo.</div>
+        <div class="warehouse-kpis">
+          <div class="warehouse-kpi"><span>Combo trang này</span><b id="warehouseComboCount">-</b><small id="warehouseComboPageKpi">Chưa tải</small></div>
+          <div class="warehouse-kpi"><span>Dòng cấu tạo</span><b id="warehouseItemCount">-</b><small>Tổng thành phần đang hiển thị</small></div>
+          <div class="warehouse-kpi"><span>Đã phân loại</span><b id="warehouseClassifiedCount">-</b><small>Có category hoặc product group</small></div>
+          <div class="warehouse-kpi"><span>Chưa phân loại</span><b id="warehouseUnclassifiedCount">-</b><small>Barcode chưa ghép danh mục</small></div>
+        </div>
+        <div class="catalog-toolbar">
+          <div class="field search-field"><label>Tìm combo</label><input id="warehouseSearch" placeholder="Mã combo, tên hoặc thương hiệu"></div>
+          <div class="field"><label>Trạng thái</label><select id="warehouseStatus"><option value="">Tất cả</option><option value="ACTIVE">Đang hoạt động</option><option value="DEACTIVE">Ngừng hoạt động</option></select></div>
+          <div class="field"><label>Số combo/trang</label><select id="warehouseComboLimit"><option>20</option><option selected>50</option><option>100</option><option>200</option></select></div>
+          <button class="ghost" id="warehouseSearchBtn">Tìm kiếm</button>
+        </div>
+        <div class="table-wrap"><table class="combo-table"><thead><tr><th></th><th>Mã combo</th><th>Tên combo</th><th>Thương hiệu</th><th>Trạng thái</th><th>Danh mục thành phần</th><th class="right">Số SKU</th><th class="right">Giá</th></tr></thead><tbody id="warehouseComboRows"><tr><td colspan="8" class="empty">Chưa tải dữ liệu combo.</td></tr></tbody></table></div>
+        <div class="warehouse-pagination"><button class="ghost" id="warehouseComboPrevBtn">← Trước</button><span class="muted" id="warehouseComboPageInfo">-</span><button class="ghost" id="warehouseComboNextBtn">Sau →</button></div>
+      </section>
 
-    <section class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Combo</h2><p>Danh sách combo đang hoạt động (trạng thái Yes) và tồn kho hiện tại. Số "đã bán" là số ĐƠN VỊ COMBO bán trực tiếp trên Shopee (SKU trùng mã combo) trong tháng đang chọn — chưa gồm phần đã quy đổi vào bảng SKU đơn ở trên.</p></div></div>
-      <div class="orders-toolbar">
-        <div class="field"><label>Số dòng/trang</label><select id="warehouseComboLimit"><option selected>20</option><option>50</option><option>100</option></select></div>
-        <button class="ghost" id="warehouseComboPrevBtn">Trước</button><button class="ghost" id="warehouseComboNextBtn">Sau</button>
-        <span class="muted" id="warehouseComboPageInfo">-</span>
-      </div>
-      <div class="table-wrap"><table><thead><tr><th>Combo</th><th>Mã combo</th><th class="right">Tồn combo</th><th class="right">Đã bán (đơn vị combo, tháng)</th></tr></thead><tbody id="warehouseComboRows"><tr><td colspan="4" class="empty">Chưa tải</td></tr></tbody></table></div>
-    </section>
-
+      <section class="card" style="margin-top:16px">
+        <div class="section-title"><div><h2>Danh mục SKU sản phẩm</h2><p>Tra cứu barcode/SKU và xem danh mục như Bỉm, Quà. Dữ liệu được dùng để phân loại từng thành phần trong combo.</p></div></div>
+        <div class="catalog-toolbar">
+          <div class="field search-field"><label>Tìm SKU / barcode / tên</label><input id="warehouseProductSearch" placeholder="Ví dụ: SKU-BIM hoặc tên sản phẩm"></div>
+          <div class="field"><label>Danh mục</label><input id="warehouseCategory" placeholder="Bỉm, Quà..."></div>
+          <div class="field"><label>Trạng thái</label><select id="warehouseProductStatus"><option value="">Tất cả</option><option value="active">Đang hoạt động</option><option value="inactive">Ngừng hoạt động</option></select></div>
+          <div class="field"><label>Số dòng/trang</label><select id="warehouseProductLimit"><option>20</option><option selected>50</option><option>100</option><option>500</option></select></div>
+          <button class="ghost" id="warehouseProductSearchBtn">Tìm SKU</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Barcode</th><th>SKU</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Nhóm sản phẩm</th><th>Thương hiệu</th><th>Đơn vị</th><th>Trạng thái</th></tr></thead><tbody id="warehouseProductRows"><tr><td colspan="8" class="empty">Chưa tải danh mục sản phẩm.</td></tr></tbody></table></div>
+        <div class="warehouse-pagination"><button class="ghost" id="warehouseProductPrevBtn">← Trước</button><span class="muted" id="warehouseProductPageInfo">-</span><button class="ghost" id="warehouseProductNextBtn">Sau →</button></div>
+      </section>
     </section>
 
     <section class="tab-panel hidden" id="tab-orders">
@@ -782,8 +815,7 @@ function applyCurrentUserUi(){
   $('systemGlobalSettings').classList.toggle('hidden',!currentUser.is_admin);
   $('auto24AdminPanel').classList.toggle('hidden',!currentUser.is_admin);
   $('diagClearOldBtn').classList.toggle('hidden',!currentUser.is_admin);
-  $('warehouseSyncGoodsBtn').classList.toggle('hidden',!currentUser.is_admin);
-  $('warehouseSyncComboBtn').classList.toggle('hidden',!currentUser.is_admin);
+  $('warehouseSyncBtn').classList.toggle('hidden',!currentUser.is_admin);
   updateRoleUI(currentTab());
 }
 function showLoggedOut(message){
@@ -1010,23 +1042,19 @@ async function loadOverviewMarketing(token){
 }
 async function loadOverviewInventory(token){
   const body=$('overviewInventoryBody');
-  const r=getRange();const shop=$('shop').value||'all';const month=r.to.slice(0,7);
-  body.className='module-loading';body.textContent='Đang tải dữ liệu kho hàng...';
+  body.className='module-loading';body.textContent='Đang tải danh mục combo...';
   try{
-    const data=await api('/api/warehouse/dashboard?'+new URLSearchParams({month,shop_id:shop,overview:'1',limit:'3'}).toString(),{ttlMs:900000});
+    const data=await api('/api/warehouse/dashboard?'+new URLSearchParams({overview:'1',status:'ACTIVE',page:'1',limit:'3'}).toString(),{ttlMs:900000});
     if(token!==overviewLoadToken)return;
-    const all=(data.sku_rows||[]).map(row=>({...row,available:Number(row.available||0)}));
-    const low=all.filter(row=>row.available<=50).sort((a,b)=>a.available-b.available);
-    const featured=all.slice(0,3);
-    const totalSku=Number(data.summary?.total_skus??all.length);
-    const lowCount=Number(data.summary?.low_stock_skus??low.length);
+    const featured=(data.combo_rows||[]).slice(0,3);
     body.className='';
-    if(!featured.length){body.innerHTML='<div class="module-loading">Chưa có dữ liệu tồn kho cho tháng '+escapeOverviewText(month)+'.</div>';return;}
+    if(!featured.length){body.innerHTML='<div class="module-loading">Chưa có danh mục combo. Admin cần chạy đồng bộ lần đầu.</div>';return;}
+    const itemCount=featured.reduce((sum,row)=>sum+Number(row.item_count||0),0);
     body.innerHTML=`<div class="inventory-list">${featured.map(row=>`<div class="inventory-row">
-      <div class="inventory-icon">◇</div><div><strong>${escapeOverviewText(row.name||('SKU '+row.sku))}</strong><small>SKU: ${escapeOverviewText(row.sku||'-')}</small></div>
-      <div class="stock-count"><b>${num(row.available)}</b><small class="${row.available<=50?'low':'ok'}">${row.available<=50?'Sắp hết hàng':'Còn hàng'}</small></div>
-    </div>`).join('')}</div><div class="inventory-summary"><span>Tổng SKU <b>${num(totalSku)}</b></span><span>Sắp hết hàng <b>${num(lowCount)}</b></span></div>`;
-  }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được dữ liệu kho.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
+      <div class="inventory-icon">◇</div><div><strong>${escapeOverviewText(row.combo_name||row.name||row.code||'-')}</strong><small>Mã: ${escapeOverviewText(row.code||row.combo_barcode||'-')} · ${(row.categories||[]).map(escapeOverviewText).join(', ')||'Chưa phân loại'}</small></div>
+      <div class="stock-count"><b>${num(row.item_count||0)} SKU</b><small class="ok">${escapeOverviewText(row.status||'ACTIVE')}</small></div>
+    </div>`).join('')}</div><div class="inventory-summary"><span>Combo hiển thị <b>${num(featured.length)}</b></span><span>Dòng cấu tạo <b>${num(itemCount)}</b></span></div>`;
+  }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được danh mục combo.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
 }
 function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
 function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
@@ -1680,80 +1708,125 @@ async function loadMarketingCoinSummary(){
   $('mktCoinRows').innerHTML=(data.rows||[]).map(r=>`<tr><td>${r.tx_time?new Date(r.tx_time).toLocaleString('vi-VN'):'-'}</td><td>${fmtDetailVal(r.category)}</td><td>${fmtDetailVal(r.campaign_name)}</td><td class="right">${num(r.coin_amount)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có dữ liệu.</td></tr>';
 }
 
-// ===== V66: tab Kho hàng (SSC) — tồn kho + số bán thật (kể cả quy đổi combo) =====
-function warehouseMonthValue(){ return $('warehouseMonth').value || todayVN().slice(0,7); }
-let warehouseSkuRowsAll=[], warehouseComboRowsAll=[], warehouseSkuPage=0, warehouseComboPage=0;
-async function loadWarehouse(){
-  const month=warehouseMonthValue(); const shop=$('shop').value||'all';
-  const qs=new URLSearchParams({month,shop_id:shop});
-  const data=await api('/api/warehouse/dashboard?'+qs.toString());
-  const q=($('warehouseSearch').value||'').toLowerCase().trim();
-  let rows=data.sku_rows||[];
-  if(q) rows=rows.filter(r=>String(r.sku).includes(q) || String(r.name||'').toLowerCase().includes(q) || String(r.customer_goods_barcode||'').toLowerCase().includes(q));
-  warehouseSkuRowsAll=rows; warehouseComboRowsAll=data.combo_rows||[]; warehouseSkuPage=0; warehouseComboPage=0;
-  if(!data.has_goods_report){
-    $('warehouseSummary').innerHTML='⚠️ Chưa có dữ liệu tồn kho SSC cho tháng '+month+'. Bấm "Đồng bộ tồn kho SSC".';
-  } else if(!data.has_combo_data){
-    $('warehouseSummary').innerHTML='🟡 Đã có tồn kho SKU đơn nhưng chưa đồng bộ Combo — số bán qua combo sẽ chưa được quy đổi vào SKU đơn. Bấm "Đồng bộ Combo SSC".';
-  } else if(!data.has_sold_data){
-    $('warehouseSummary').innerHTML='🟡 Chưa có số đã bán trên Shopee cho tháng '+month+' — số này chỉ tính khi bấm "Đồng bộ tồn kho SSC" hoặc "Đồng bộ Combo SSC" (không tự tính khi xem, đỡ tốn tài nguyên). Bấm 1 trong 2 nút đó để tính.';
-  } else {
-    $('warehouseSummary').innerHTML=`✅ Đang xem tháng <b>${month}</b> · ${rows.length} SKU đơn (đã lọc) · ${warehouseComboRowsAll.length} combo.`;
-  }
-  renderWarehouseSkuTable();
-  renderWarehouseComboTable();
-  const unmatched=data.unmatched_skus||[];
-  $('warehouseUnmatched').innerHTML = unmatched.length
-    ? 'Có '+unmatched.length+' mã SKU trên Shopee không khớp SKU đơn (số) lẫn mã combo nào trong kho SSC: '+unmatched.map(u=>`${u.sku} (SL ${num(u.qty)})`).join(', ')
-    : 'Không có.';
+// ===== V70.10: Danh mục combo + cấu tạo SKU, không còn tồn kho =====
+let warehouseComboPage=1,warehouseProductPage=1,warehouseComboHasMore=false,warehouseProductHasMore=false;
+let warehouseComboRowsAll=[],warehouseProductRowsAll=[];
+function warehouseCategoryChip(label){
+  const text=String(label||'Chưa phân loại');
+  return `<span class="category-chip ${text==='Chưa phân loại'?'unclassified':''}">${escapeHtml(text)}</span>`;
 }
-function renderWarehouseSkuTable(){
-  const limit=Number($('warehouseLimit').value||20);
-  const totalPages=Math.max(1,Math.ceil(warehouseSkuRowsAll.length/limit));
-  warehouseSkuPage=Math.min(warehouseSkuPage,totalPages-1);
-  const start=warehouseSkuPage*limit;
-  const rows=warehouseSkuRowsAll.slice(start,start+limit);
-  $('warehouseRows').innerHTML=rows.map(r=>`<tr><td><div class="product-name">${r.name||'(chưa có tên, chỉ có số bán từ Shopee)'}</div></td><td>${r.sku}${r.customer_goods_barcode?' · '+r.customer_goods_barcode:''}</td><td class="right">${num(r.available||0)}</td><td class="right">${num(r.total_handover_ssc||0)}</td><td class="right"><b>${num(r.sold_on_shopee||0)}</b></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Không có dữ liệu.</td></tr>';
-  $('warehousePageInfo').textContent=warehouseSkuRowsAll.length?`Trang ${warehouseSkuPage+1}/${totalPages} · ${warehouseSkuRowsAll.length} SKU`:'-';
+function warehouseStatusChip(status){
+  const active=String(status||'').toUpperCase()==='ACTIVE'||status===true;
+  return `<span class="status-chip ${active?'active':'locked'}">${active?'Đang hoạt động':'Ngừng hoạt động'}</span>`;
+}
+function warehouseUpdateKpis(){
+  const items=warehouseComboRowsAll.flatMap(c=>Array.isArray(c.items)?c.items:[]);
+  const classified=items.filter(i=>i.category||i.product_group).length;
+  $('warehouseComboCount').textContent=num(warehouseComboRowsAll.length);
+  $('warehouseComboPageKpi').textContent='Trang '+warehouseComboPage+(warehouseComboHasMore?' · còn trang sau':' · trang cuối');
+  $('warehouseItemCount').textContent=num(items.length);
+  $('warehouseClassifiedCount').textContent=num(classified);
+  $('warehouseUnclassifiedCount').textContent=num(items.length-classified);
 }
 function renderWarehouseComboTable(){
-  const limit=Number($('warehouseComboLimit').value||20);
-  const totalPages=Math.max(1,Math.ceil(warehouseComboRowsAll.length/limit));
-  warehouseComboPage=Math.min(warehouseComboPage,totalPages-1);
-  const start=warehouseComboPage*limit;
-  const rows=warehouseComboRowsAll.slice(start,start+limit);
-  $('warehouseComboRows').innerHTML=rows.map(c=>`<tr><td>${c.combo_name||'-'}</td><td>${c.combo_barcode}</td><td class="right">${num(c.available||0)}</td><td class="right"><b>${num(c.sold_units_on_shopee||0)}</b></td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có dữ liệu combo.</td></tr>';
-  $('warehouseComboPageInfo').textContent=warehouseComboRowsAll.length?`Trang ${warehouseComboPage+1}/${totalPages} · ${warehouseComboRowsAll.length} combo`:'-';
+  const rows=warehouseComboRowsAll;
+  $('warehouseComboRows').innerHTML=rows.map((c,index)=>{
+    const code=String(c.code||c.combo_barcode||'');
+    const items=Array.isArray(c.items)?c.items:[];
+    const categories=(c.categories||[...new Set(items.map(i=>i.category_label||i.category||i.product_group||'Chưa phân loại'))]);
+    const detailId='warehouseComboDetail'+warehouseComboPage+'_'+index;
+    const componentRows=items.map(i=>`<tr>
+      <td>${escapeHtml(i.role||'-')}</td><td class="combo-code">${escapeHtml(i.barcode||'-')}</td><td>${escapeHtml(i.sku_code||'-')}</td>
+      <td><div class="component-name">${escapeHtml(i.product_name||'-')}</div></td><td>${warehouseCategoryChip(i.category_label||i.category||i.product_group)}</td>
+      <td class="right"><b>${num(i.quantity||1)}</b></td><td class="right">${i.product_price==null?'-':money(i.product_price)}</td>
+      <td>${i.matched_product_catalog?'<span class="match-ok">Đã ghép</span>':'<span class="match-missing">Chưa ghép</span>'}</td>
+    </tr>`).join('')||'<tr><td colspan="8" class="empty">Combo này chưa có dòng cấu tạo.</td></tr>';
+    return `<tr>
+      <td><button type="button" class="combo-expand" data-combo-detail="${detailId}" aria-expanded="false" title="Mở cấu tạo">›</button></td>
+      <td class="combo-code">${escapeHtml(code||'-')}</td><td><div class="product-name">${escapeHtml(c.name||c.combo_name||'-')}</div></td>
+      <td>${escapeHtml(c.brand||'-')}</td><td>${warehouseStatusChip(c.status)}</td><td>${categories.map(warehouseCategoryChip).join('')}</td>
+      <td class="right"><b>${num(c.item_count??items.length)}</b></td><td class="right">${c.price==null?'-':money(c.price)}</td>
+    </tr><tr id="${detailId}" class="combo-detail-row hidden"><td colspan="8"><div class="combo-detail">
+      <div class="combo-detail-head"><b>Cấu tạo combo ${escapeHtml(code)}</b><span>${num(items.length)} dòng thành phần</span></div>
+      <div class="table-wrap"><table class="component-table"><thead><tr><th>Vai trò</th><th>Barcode</th><th>SKU</th><th>Sản phẩm</th><th>Danh mục</th><th class="right">Số lượng</th><th class="right">Giá</th><th>Đối chiếu</th></tr></thead><tbody>${componentRows}</tbody></table></div>
+    </div></td></tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty">Không có combo phù hợp bộ lọc.</td></tr>';
+  document.querySelectorAll('[data-combo-detail]').forEach(btn=>btn.addEventListener('click',()=>{
+    const detail=$(btn.dataset.comboDetail);if(!detail)return;
+    const opening=detail.classList.contains('hidden');detail.classList.toggle('hidden',!opening);btn.setAttribute('aria-expanded',String(opening));
+  }));
+  $('warehouseComboPageInfo').textContent=`Trang ${warehouseComboPage} · ${num(rows.length)} combo`;
+  $('warehouseComboPrevBtn').disabled=warehouseComboPage<=1;
+  $('warehouseComboNextBtn').disabled=!warehouseComboHasMore;
+  warehouseUpdateKpis();
 }
-function warehouseSkuPrev(){ if(warehouseSkuPage>0){ warehouseSkuPage--; renderWarehouseSkuTable(); } }
-function warehouseSkuNext(){ const limit=Number($('warehouseLimit').value||20); const totalPages=Math.max(1,Math.ceil(warehouseSkuRowsAll.length/limit)); if(warehouseSkuPage<totalPages-1){ warehouseSkuPage++; renderWarehouseSkuTable(); } }
-function warehouseComboPrev(){ if(warehouseComboPage>0){ warehouseComboPage--; renderWarehouseComboTable(); } }
-function warehouseComboNext(){ const limit=Number($('warehouseComboLimit').value||20); const totalPages=Math.max(1,Math.ceil(warehouseComboRowsAll.length/limit)); if(warehouseComboPage<totalPages-1){ warehouseComboPage++; renderWarehouseComboTable(); } }
-async function syncWarehouseGoods(){
-  const month=warehouseMonthValue();
-  $('warehouseSummary').innerHTML='⏳ Đang gọi SSC lấy tồn kho + số đã xuất tháng '+month+' (có thể mất chút thời gian vì nhiều trang)...';
-  try{
-    await api('/api/warehouse/ssc/sync-goods?month='+encodeURIComponent(month),{method:'POST'});
-    await loadWarehouse();
-  }catch(e){ $('warehouseSummary').textContent='⚠️ Đồng bộ tồn kho SSC lỗi: '+e.message; }
+function renderWarehouseProductTable(){
+  const rows=warehouseProductRowsAll;
+  $('warehouseProductRows').innerHTML=rows.map(r=>`<tr>
+    <td class="combo-code">${escapeHtml(r.barcode||'-')}</td><td>${escapeHtml(r.sku_code||'-')}</td><td><div class="product-name">${escapeHtml(r.name||'-')}</div></td>
+    <td>${warehouseCategoryChip(r.category_label||r.category||r.product_group)}</td><td>${escapeHtml(r.product_group||'-')}</td><td>${escapeHtml(r.brand||'-')}</td>
+    <td>${escapeHtml(r.unit||'-')}</td><td>${warehouseStatusChip(r.is_active)}</td>
+  </tr>`).join('')||'<tr><td colspan="8" class="empty">Không có SKU phù hợp bộ lọc.</td></tr>';
+  $('warehouseProductPageInfo').textContent=`Trang ${warehouseProductPage} · ${num(rows.length)} SKU`;
+  $('warehouseProductPrevBtn').disabled=warehouseProductPage<=1;
+  $('warehouseProductNextBtn').disabled=!warehouseProductHasMore;
 }
-async function syncWarehouseCombo(){
-  // Catalog combo rất lớn (chục nghìn dòng) — Worker chỉ quét 1 đợt nhỏ/lần gọi rồi lưu tiến độ, nên ở đây
-  // phải tự gọi lặp lại tới khi done=true. Có thể mất vài phút, cứ để chạy, đừng đóng tab.
-  const month=warehouseMonthValue();
-  let calls=0;
+async function loadWarehouseCombos(resetPage=false){
+  if(resetPage)warehouseComboPage=1;
+  const qs=new URLSearchParams({page:String(warehouseComboPage),limit:$('warehouseComboLimit').value||'50'});
+  const search=($('warehouseSearch').value||'').trim();const status=$('warehouseStatus').value||'';
+  if(search)qs.set('search',search);if(status)qs.set('status',status);
+  const data=await api('/api/warehouse/dashboard?'+qs.toString());
+  warehouseComboRowsAll=data.combo_rows||[];warehouseComboHasMore=!!data.has_more;
+  renderWarehouseComboTable();
+  return data;
+}
+async function loadWarehouseProducts(resetPage=false){
+  if(resetPage)warehouseProductPage=1;
+  const qs=new URLSearchParams({page:String(warehouseProductPage),limit:$('warehouseProductLimit').value||'50'});
+  const search=($('warehouseProductSearch').value||'').trim();const category=($('warehouseCategory').value||'').trim();const status=$('warehouseProductStatus').value||'';
+  if(search)qs.set('search',search);if(category)qs.set('category',category);if(status)qs.set('status',status);
+  const data=await api('/api/warehouse/products?'+qs.toString());
+  warehouseProductRowsAll=data.product_rows||[];warehouseProductHasMore=!!data.has_more;
+  renderWarehouseProductTable();
+  return data;
+}
+async function loadWarehouse(resetPage=false){
+  $('warehouseSummary').innerHTML='⏳ Đang đọc danh mục combo và sản phẩm...';
+  const [comboData,productData]=await Promise.all([loadWarehouseCombos(resetPage),loadWarehouseProducts(resetPage)]);
+  if(!comboData.has_combo_data&&!warehouseComboRowsAll.length){
+    $('warehouseSummary').innerHTML='ℹ️ Chưa có dữ liệu combo. Admin bấm <b>“Đồng bộ toàn bộ danh mục”</b> để lấy dữ liệu lần đầu.';
+  }else{
+    $('warehouseSummary').innerHTML=`✅ Đã tải trang ${warehouseComboPage}: <b>${num(warehouseComboRowsAll.length)} combo</b> và trang ${warehouseProductPage}: <b>${num(warehouseProductRowsAll.length)} SKU</b>. Bấm mũi tên đầu dòng combo để xem cấu tạo Bỉm/Quà.`;
+  }
+  return {comboData,productData};
+}
+async function warehouseComboPrev(){if(warehouseComboPage<=1)return;warehouseComboPage--;await loadWarehouseCombos();}
+async function warehouseComboNext(){if(!warehouseComboHasMore)return;warehouseComboPage++;await loadWarehouseCombos();}
+async function warehouseProductPrev(){if(warehouseProductPage<=1)return;warehouseProductPage--;await loadWarehouseProducts();}
+async function warehouseProductNext(){if(!warehouseProductHasMore)return;warehouseProductPage++;await loadWarehouseProducts();}
+async function syncWarehouseCatalogScope(scope,label){
+  let calls=0,first=true,last=null;
+  while(calls<100){
+    calls++;
+    const qs=new URLSearchParams({scope,pages:'4'});if(first)qs.set('full','1');first=false;
+    const response=await api('/api/warehouse/catalog/sync?'+qs.toString(),{method:'POST'});
+    last=scope==='products'?response.products:response.combos;
+    $('warehouseSummary').innerHTML=`<span class="sync-progress">⏳ Đang đồng bộ <b>${label}</b> · lượt ${calls} · đã lưu ${num(last?.rows_saved||0)} dòng · trang tiếp theo ${num(last?.next_page||1)}.</span>`;
+    if(last?.done)return last;
+  }
+  throw new Error(label+' vượt 100 lượt đồng bộ, đã dừng an toàn để tránh vòng lặp.');
+}
+async function syncWarehouseCatalog(){
+  const btn=$('warehouseSyncBtn');btn.disabled=true;
   try{
-    while(true){
-      calls++;
-      const r=await api('/api/warehouse/ssc/sync-combo?month='+encodeURIComponent(month),{method:'POST'});
-      $('warehouseSummary').innerHTML='⏳ Đang đồng bộ Combo SSC — lượt '+calls+', đã quét '+num(r.rows_scanned||0)+' dòng ('+num(r.active_scanned||0)+' combo active)...';
-      if(r.done){
-        await loadWarehouse();
-        $('warehouseSummary').innerHTML+='<br>✅ Đồng bộ Combo SSC xong: '+num(r.active_scanned||0)+' combo active / '+num(r.rows_scanned||0)+' dòng đã quét.';
-        break;
-      }
-    }
-  }catch(e){ $('warehouseSummary').textContent='⚠️ Đồng bộ Combo SSC lỗi ở lượt '+calls+' (dữ liệu đã quét trước đó vẫn được giữ, bấm lại để tiếp tục): '+e.message; }
+    const products=await syncWarehouseCatalogScope('products','danh mục SKU');
+    const combos=await syncWarehouseCatalogScope('combos','combo và cấu tạo');
+    await loadWarehouse(true);
+    $('warehouseSummary').innerHTML=`✅ Đồng bộ hoàn tất: <b>${num(products.rows_saved||0)} sản phẩm</b> và <b>${num(combos.rows_saved||0)} combo</b>. Không có dữ liệu tồn kho trong bản này.`;
+  }catch(e){
+    $('warehouseSummary').innerHTML='⚠️ Đồng bộ danh mục lỗi: '+escapeHtml(e.message)+'<br><small>Nếu thấy HTTP 401, hãy kiểm tra WAREHOUSE_API_TOKEN trong Cloudflare.</small>';
+  }finally{btn.disabled=false;}
 }
 function renderOrdersTable(data){
   const rows=data.orders||[]; $('ordersPageInfo').textContent=`${num(data.total?data.offset+1:0)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`+(data.search_note?' · '+data.search_note:'');
@@ -2410,7 +2483,7 @@ async function connectShop(){
   $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" rel="noopener noreferrer" href="'+safeUrl+'">'+safeUrl+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+escapeHtml(data.redirect_url_to_add_in_shopee)+'</code></p>';
 }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); showLoggedOut('Đã đổi Worker. Vui lòng đăng nhập lại trên backend mới.');loadBootstrapStatus(); }
-function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('warehouseMonth').value=t.slice(0,7); $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
+function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
 function reloadCurrentView(){updatePeriodFields();orderOffset=0;const tab=currentTab();if(tab==='gmv'&&hasFeature('overview'))loadDashboard();else setTab(tab);schedule();}
 async function initAuthenticatedApp(){
   applyCurrentUserUi();
@@ -2418,7 +2491,23 @@ async function initAuthenticatedApp(){
     initWorkspaceUI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
-    $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));$('warehouseBtn').addEventListener('click',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));$('warehouseSyncGoodsBtn').addEventListener('click',syncWarehouseGoods);$('warehouseSyncComboBtn').addEventListener('click',syncWarehouseCombo);$('warehouseMonth').addEventListener('change',()=>loadWarehouse().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));$('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadWarehouse().catch(err=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(err.message);})});$('warehouseLimit').addEventListener('change',()=>{warehouseSkuPage=0;renderWarehouseSkuTable();});$('warehouseComboLimit').addEventListener('change',()=>{warehouseComboPage=0;renderWarehouseComboTable();});$('warehouseSkuPrevBtn').addEventListener('click',warehouseSkuPrev);$('warehouseSkuNextBtn').addEventListener('click',warehouseSkuNext);$('warehouseComboPrevBtn').addEventListener('click',warehouseComboPrev);$('warehouseComboNextBtn').addEventListener('click',warehouseComboNext);$('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
+    $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseBtn').addEventListener('click',()=>loadWarehouse(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseSyncBtn').addEventListener('click',syncWarehouseCatalog);
+    $('warehouseSearchBtn').addEventListener('click',()=>loadWarehouseCombos(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseSearch').addEventListener('keydown',e=>{if(e.key==='Enter')$('warehouseSearchBtn').click();});
+    $('warehouseStatus').addEventListener('change',()=>loadWarehouseCombos(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseComboLimit').addEventListener('change',()=>loadWarehouseCombos(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseComboPrevBtn').addEventListener('click',()=>warehouseComboPrev().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseComboNextBtn').addEventListener('click',()=>warehouseComboNext().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseProductSearchBtn').addEventListener('click',()=>loadWarehouseProducts(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseProductSearch').addEventListener('keydown',e=>{if(e.key==='Enter')$('warehouseProductSearchBtn').click();});
+    $('warehouseCategory').addEventListener('keydown',e=>{if(e.key==='Enter')$('warehouseProductSearchBtn').click();});
+    $('warehouseProductStatus').addEventListener('change',()=>loadWarehouseProducts(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseProductLimit').addEventListener('change',()=>loadWarehouseProducts(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseProductPrevBtn').addEventListener('click',()=>warehouseProductPrev().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseProductNextBtn').addEventListener('click',()=>warehouseProductNext().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
     authenticatedAppInitialized=true;
   }
   await loadShops();
