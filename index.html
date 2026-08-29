@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.11 Paid Throughput</title>
+  <title>Gooby BI Dashboard · V70.12 Combo Sales</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -578,6 +578,24 @@
         </div>
         <div class="table-wrap"><table><thead><tr><th>Barcode</th><th>SKU</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Nhóm sản phẩm</th><th>Thương hiệu</th><th>Đơn vị</th><th>Trạng thái</th></tr></thead><tbody id="warehouseProductRows"><tr><td colspan="8" class="empty">Chưa tải danh mục sản phẩm.</td></tr></tbody></table></div>
         <div class="warehouse-pagination"><button class="ghost" id="warehouseProductPrevBtn">← Trước</button><span class="muted" id="warehouseProductPageInfo">-</span><button class="ghost" id="warehouseProductNextBtn">Sau →</button></div>
+      </section>
+
+      <section class="card" style="margin-top:16px">
+        <div class="section-title"><div><h2>Combo đã bán & barcode thành phần</h2><p>Đối chiếu chính xác SKU trong ledger với mã combo, sau đó nhân số combo đã bán với số lượng từng barcode con. Không tính đơn UNPAID, CANCELLED hoặc IN_CANCEL.</p></div></div>
+        <div id="warehouseSalesSummary" class="notice">Chọn khoảng ngày/shop phía trên rồi bấm “Tải số đã bán”.</div>
+        <div class="warehouse-kpis">
+          <div class="warehouse-kpi"><span>SKU combo có bán</span><b id="warehouseSalesComboSkuCount">-</b><small>Số mã combo khớp chính xác</small></div>
+          <div class="warehouse-kpi"><span>Combo đã bán</span><b id="warehouseSalesComboUnits">-</b><small>Tổng quantity dòng combo</small></div>
+          <div class="warehouse-kpi"><span>Barcode thành phần</span><b id="warehouseSalesBarcodeCount">-</b><small>Số barcode con khác nhau</small></div>
+          <div class="warehouse-kpi"><span>Sản phẩm con đã bán</span><b id="warehouseSalesComponentUnits">-</b><small>Combo bán × cấu tạo</small></div>
+        </div>
+        <div class="catalog-toolbar">
+          <div class="field search-field"><label>Tìm combo / barcode / SKU con</label><input id="warehouseSalesSearch" placeholder="Mã combo, barcode, SKU hoặc tên thành phần"></div>
+          <div class="field"><label>Số dòng/trang</label><select id="warehouseSalesLimit"><option>20</option><option selected>50</option><option>100</option><option>200</option><option>500</option></select></div>
+          <button class="ghost" id="warehouseSalesBtn">Tải số đã bán</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>SKU combo</th><th>Tên combo</th><th class="right">Combo đã bán</th><th class="right">Số đơn</th><th>Vai trò</th><th>Barcode con</th><th>SKU con</th><th>Tên thành phần</th><th class="right">SL/combo</th><th class="right">Tổng đã bán</th><th>Danh mục</th></tr></thead><tbody id="warehouseSalesRows"><tr><td colspan="11" class="empty">Chưa tải báo cáo combo đã bán.</td></tr></tbody></table></div>
+        <div class="warehouse-pagination"><button class="ghost" id="warehouseSalesPrevBtn">← Trước</button><span class="muted" id="warehouseSalesPageInfo">-</span><button class="ghost" id="warehouseSalesNextBtn">Sau →</button></div>
       </section>
     </section>
 
@@ -1711,6 +1729,7 @@ async function loadMarketingCoinSummary(){
 // ===== V70.10: Danh mục combo + cấu tạo SKU, không còn tồn kho =====
 let warehouseComboPage=1,warehouseProductPage=1,warehouseComboHasMore=false,warehouseProductHasMore=false;
 let warehouseComboRowsAll=[],warehouseProductRowsAll=[];
+let warehouseSalesPage=1,warehouseSalesHasMore=false,warehouseSalesRowsAll=[];
 function warehouseCategoryChip(label){
   const text=String(label||'Chưa phân loại');
   return `<span class="category-chip ${text==='Chưa phân loại'?'unclassified':''}">${escapeHtml(text)}</span>`;
@@ -1791,6 +1810,51 @@ async function loadWarehouseProducts(resetPage=false){
   renderWarehouseProductTable();
   return data;
 }
+function renderWarehouseComboSales(data){
+  const rows=warehouseSalesRowsAll;
+  const summary=data.summary||{};
+  $('warehouseSalesComboSkuCount').textContent=num(summary.combo_skus_sold||0);
+  $('warehouseSalesComboUnits').textContent=num(summary.combo_units_sold||0);
+  $('warehouseSalesBarcodeCount').textContent=num(summary.component_barcodes||0);
+  $('warehouseSalesComponentUnits').textContent=num(summary.component_units_sold||0);
+  $('warehouseSalesRows').innerHTML=rows.map(r=>`<tr>
+    <td class="combo-code">${escapeHtml(r.combo_code||'-')}</td><td><div class="product-name">${escapeHtml(r.combo_name||'-')}</div></td>
+    <td class="right"><b>${num(r.combo_units_sold||0)}</b></td><td class="right">${num(r.order_count||0)}</td><td>${escapeHtml(r.component_role||'-')}</td>
+    <td class="combo-code">${escapeHtml(r.component_barcode||'-')}</td><td>${escapeHtml(r.component_sku_code||'-')}</td><td><div class="component-name">${escapeHtml(r.component_name||'-')}</div></td>
+    <td class="right">${num(r.component_units_per_combo||0)}</td><td class="right"><b>${num(r.component_units_sold||0)}</b></td>
+    <td>${warehouseCategoryChip(r.category||r.product_group)}</td>
+  </tr>`).join('')||'<tr><td colspan="11" class="empty">Không có SKU combo khớp chính xác trong khoảng đang xem.</td></tr>';
+  const total=Number(data.total_rows||0);const pages=Math.max(1,Math.ceil(total/Number(data.limit||50)));
+  $('warehouseSalesPageInfo').textContent=`Trang ${warehouseSalesPage}/${pages} · ${num(total)} dòng barcode`;
+  $('warehouseSalesPrevBtn').disabled=warehouseSalesPage<=1;
+  $('warehouseSalesNextBtn').disabled=!warehouseSalesHasMore;
+  if(rows.length){
+    $('warehouseSalesSummary').innerHTML=`✅ Đã đối chiếu <b>${num(summary.combo_skus_sold||0)} SKU combo</b>, bán <b>${num(summary.combo_units_sold||0)} combo</b> và quy đổi thành <b>${num(summary.component_units_sold||0)} sản phẩm con</b>.`;
+  }else if(Number(summary.combo_skus_sold||0)>0){
+    $('warehouseSalesSummary').innerHTML=`⚠️ Đã khớp <b>${num(summary.combo_skus_sold||0)} SKU combo</b> nhưng chưa có dòng cấu tạo barcode tương ứng. Hãy đồng bộ lại danh mục combo trước khi sử dụng số liệu.`;
+  }else{
+    $('warehouseSalesSummary').innerHTML='ℹ️ Không có SKU dòng đơn khớp chính xác với mã combo trong khoảng ngày/shop đang xem. Hệ thống không tự đoán bằng tên để tránh ghép sai.';
+  }
+}
+async function loadWarehouseComboSales(resetPage=false){
+  if(resetPage)warehouseSalesPage=1;
+  $('warehouseSalesSummary').innerHTML='⏳ Đang tổng hợp combo và barcode thành phần từ ledger...';
+  const r=getRange();const shop=$('shop').value||'all';
+  const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,page:String(warehouseSalesPage),limit:$('warehouseSalesLimit').value||'50'});
+  const search=($('warehouseSalesSearch').value||'').trim();if(search)qs.set('search',search);
+  try{
+    const data=await api('/api/warehouse/combo-sales?'+qs.toString());
+    warehouseSalesRowsAll=data.rows||[];warehouseSalesHasMore=!!data.has_more;
+    renderWarehouseComboSales(data);return data;
+  }catch(e){
+    warehouseSalesRowsAll=[];warehouseSalesHasMore=false;
+    $('warehouseSalesRows').innerHTML='<tr><td colspan="11" class="empty">Không tải được báo cáo.</td></tr>';
+    $('warehouseSalesSummary').innerHTML='⚠️ '+escapeHtml(e.message);
+    throw e;
+  }
+}
+async function warehouseSalesPrev(){if(warehouseSalesPage<=1)return;warehouseSalesPage--;await loadWarehouseComboSales();}
+async function warehouseSalesNext(){if(!warehouseSalesHasMore)return;warehouseSalesPage++;await loadWarehouseComboSales();}
 async function loadWarehouse(resetPage=false){
   $('warehouseSummary').innerHTML='⏳ Đang đọc danh mục combo và sản phẩm...';
   const [comboData,productData]=await Promise.all([loadWarehouseCombos(resetPage),loadWarehouseProducts(resetPage)]);
@@ -2466,7 +2530,10 @@ function setTab(tab){
   if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; });
   if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); });
   if(tab==='marketing') loadMarketing();
-  if(tab==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); });
+  if(tab==='warehouse'){
+    loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); });
+    loadWarehouseComboSales(true).catch(()=>{});
+  }
   if(tab==='system'&&currentUser?.is_admin){loadAdminUsers();loadAuto24Status();}
 }
 let dashboardLoadToken=0;
@@ -2507,6 +2574,11 @@ async function initAuthenticatedApp(){
     $('warehouseProductLimit').addEventListener('change',()=>loadWarehouseProducts(true).catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
     $('warehouseProductPrevBtn').addEventListener('click',()=>warehouseProductPrev().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
     $('warehouseProductNextBtn').addEventListener('click',()=>warehouseProductNext().catch(e=>{$('warehouseSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
+    $('warehouseSalesBtn').addEventListener('click',()=>loadWarehouseComboSales(true).catch(()=>{}));
+    $('warehouseSalesSearch').addEventListener('keydown',e=>{if(e.key==='Enter')$('warehouseSalesBtn').click();});
+    $('warehouseSalesLimit').addEventListener('change',()=>loadWarehouseComboSales(true).catch(()=>{}));
+    $('warehouseSalesPrevBtn').addEventListener('click',()=>warehouseSalesPrev().catch(()=>{}));
+    $('warehouseSalesNextBtn').addEventListener('click',()=>warehouseSalesNext().catch(()=>{}));
     $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
     authenticatedAppInitialized=true;
   }
