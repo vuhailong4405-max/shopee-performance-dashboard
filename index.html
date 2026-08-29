@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.13.1 Barcode Revenue Chart</title>
+  <title>Gooby BI Dashboard · V70.13.2 Exact Number Hover</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -51,6 +51,7 @@
     .metric:after{content:"";position:absolute;right:-30px;bottom:-34px;width:96px;height:96px;border-radius:50%;background:var(--accent-soft)}
     .metric .label{position:relative;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
     .metric .value{position:relative;font-size:27px;line-height:1.1;font-weight:900;letter-spacing:-.03em;margin-top:10px;color:var(--text)}
+    .metric .value[data-exact-value]{cursor:help;text-decoration-line:underline;text-decoration-style:dotted;text-decoration-thickness:1px;text-underline-offset:6px;text-decoration-color:#98a2b3}
     .metric .subline{position:relative;display:flex;gap:8px;align-items:center;margin-top:9px;font-size:12.5px;color:var(--muted)}
     .delta{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-weight:900;font-size:11.5px}
     .delta.up{background:#ecfdf3;color:#067647}.delta.down{background:#fef3f2;color:#b42318}.delta.neutral{background:#f1f5f9;color:#475467}
@@ -990,7 +991,26 @@ function getRange(){ const p=$('period').value; if(p==='day'){ const d=$('dayDat
 function getCompareRange(r){ if(r.period==='day') return {from:addDaysISO(r.from,-1),to:addDaysISO(r.to,-1)}; if(r.period==='week') return {from:addDaysISO(r.from,-7),to:addDaysISO(r.to,-7)}; if(r.period==='month') return prevMonthRange(r.from.slice(0,7)); const span=daysInclusive(r.from,r.to); const to=addDaysISO(r.from,-1); const from=addDaysISO(to,-(span-1)); return {from,to}; }
 function deltaClass(value, reverse=false){ if(value===null || value===undefined || !isFinite(value) || value===0) return 'delta neutral'; const good = reverse ? value<0 : value>0; return 'delta '+(good?'up':'down'); }
 function deltaText(d){ if(!d || d.percent===null || d.percent===undefined) return 'mới'; const sign=d.percent>0?'+':''; return sign+percent(d.percent); }
-function setMetric(valueId, deltaId, compId, value, delta, type='money', reverse=false){ $(valueId).textContent = type==='money'?money(value):type==='percent'?percent(value):num(value); const el=$(deltaId); el.className=deltaClass(delta?.percent, reverse); el.textContent=deltaText(delta); $(compId).textContent='vs '+compareLabel(); }
+function exactMetricText(value,type){
+  const n=Number(value||0);
+  if(type==='money')return Math.round(n).toLocaleString('vi-VN')+'đ';
+  if(type==='percent')return n.toLocaleString('vi-VN',{maximumFractionDigits:10})+'%';
+  return n.toLocaleString('vi-VN',{maximumFractionDigits:10});
+}
+function bindExactMetricTooltip(element,exactText){
+  if(!element)return;
+  element.dataset.exactValue=exactText;
+  element.title='Giá trị chính xác: '+exactText;
+  if(element.dataset.exactTooltipBound==='1')return;
+  element.dataset.exactTooltipBound='1';
+  element.addEventListener('mouseenter',event=>{
+    const tip=$('tip');tip.style.display='block';tip.innerHTML='Giá trị chính xác<br><b>'+escapeHtml(element.dataset.exactValue||'0')+'</b>';
+    tip.style.left=(event.clientX+14)+'px';tip.style.top=(event.clientY+14)+'px';
+  });
+  element.addEventListener('mousemove',event=>{const tip=$('tip');tip.style.left=(event.clientX+14)+'px';tip.style.top=(event.clientY+14)+'px';});
+  element.addEventListener('mouseleave',()=>{$('tip').style.display='none';});
+}
+function setMetric(valueId, deltaId, compId, value, delta, type='money', reverse=false){ const valueEl=$(valueId); valueEl.textContent = type==='money'?money(value):type==='percent'?percent(value):num(value); bindExactMetricTooltip(valueEl,exactMetricText(value,type)); const el=$(deltaId); el.className=deltaClass(delta?.percent, reverse); el.textContent=deltaText(delta); $(compId).textContent='vs '+compareLabel(); }
 function normalizeHourly(arr){ const out={}; for(let i=0;i<24;i++){ const h=String(i).padStart(2,'0')+':00'; out[h]={hour:h,gmv:0,orders:0}; } for(const r of arr||[]){ const h=r.hour||String(r.h||'').padStart(2,'0')+':00'; out[h]={hour:h,gmv:Number(r.gmv||0),orders:Number(r.orders||0)}; } return Object.values(out); }
 function compactAxis(n){ n=Number(n||0); if(n>=1e9) return (n/1e9).toFixed(1).replace('.',',')+' tỷ'; if(n>=1e6) return Math.round(n/1e6)+' tr'; if(n>=1e3) return Math.round(n/1e3)+'k'; return String(Math.round(n)); }
 function renderChart(current, previous){
