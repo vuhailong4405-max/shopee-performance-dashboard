@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.13.2 Exact Number Hover</title>
+  <title>Gooby BI Dashboard · V70.13.3 Conversion Error Filter</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -265,9 +265,11 @@
     .conversion-group b{display:block;margin-top:6px;font-size:17px;letter-spacing:-.02em}.conversion-group small{display:block;margin-top:3px;color:#667085;font-size:9.5px}
     .conversion-table{min-width:1580px}.conversion-table td:first-child{min-width:145px;width:145px;white-space:normal}.conversion-table td{vertical-align:top}
     .conversion-source{display:block;margin-top:3px;color:#667085;font-size:9.5px}.conversion-ratio{color:#2563eb;font-weight:900}
+    .conversion-filter-bar{display:grid;grid-template-columns:minmax(260px,1fr) 210px 170px 120px auto auto;gap:9px;align-items:end;margin:13px 0 10px}.conversion-filter-bar .field{min-width:0}.conversion-filter-bar input,.conversion-filter-bar select{width:100%;min-width:0}.conversion-filter-bar button{white-space:nowrap}
+    .conversion-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;color:#667085;font-size:11px}.conversion-filter-summary b{color:#101828}.conversion-pagination{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:10px}.conversion-pagination button{height:34px;padding:0 12px}.conversion-pagination button:disabled{opacity:.45;cursor:not-allowed}
 
-    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}.warehouse-kpis{grid-template-columns:1fr 1fr}.conversion-groups{grid-template-columns:repeat(3,minmax(0,1fr))}.conversion-revenue-overview{grid-template-columns:190px 1fr}.conversion-revenue-legend{grid-template-columns:1fr}}
-    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}.warehouse-kpis{grid-template-columns:1fr}.conversion-groups{grid-template-columns:1fr 1fr}.conversion-revenue-overview{grid-template-columns:1fr}.combo-detail{padding-left:12px}.catalog-toolbar .field,.catalog-toolbar .search-field{width:100%;min-width:0}}
+    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}.warehouse-kpis{grid-template-columns:1fr 1fr}.conversion-groups{grid-template-columns:repeat(3,minmax(0,1fr))}.conversion-revenue-overview{grid-template-columns:190px 1fr}.conversion-revenue-legend{grid-template-columns:1fr}.conversion-filter-bar{grid-template-columns:1fr 1fr 1fr}}
+    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}.warehouse-kpis{grid-template-columns:1fr}.conversion-groups{grid-template-columns:1fr 1fr}.conversion-revenue-overview{grid-template-columns:1fr}.conversion-filter-bar{grid-template-columns:1fr}.combo-detail{padding-left:12px}.catalog-toolbar .field,.catalog-toolbar .search-field{width:100%;min-width:0}}
 
     @media(max-width:1260px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.overview-modules{grid-template-columns:1fr 1fr}.order-panel .order-health{margin-top:10px}.app{padding-left:20px;padding-right:20px}.hero{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
     @media(max-width:920px){
@@ -446,6 +448,15 @@
       </div>
       <div id="productConversionGroups" class="conversion-groups"></div>
       <div id="productConversionNotice" class="notice">Đang đối chiếu SKU đơn hàng với cấu tạo combo và 6 nhóm hàng...</div>
+      <div class="conversion-filter-bar">
+        <div class="field"><label for="productConversionSearch">Tìm SKU / barcode / tên</label><input id="productConversionSearch" type="search" placeholder="Nhập SKU đơn, barcode con, SKU con hoặc tên sản phẩm" /></div>
+        <div class="field"><label for="productConversionIssue">Trạng thái dữ liệu</label><select id="productConversionIssue"><option value="all">Tất cả dòng</option><option value="any_error">Chỉ dòng đang lỗi</option><option value="missing_standard_price">Chưa có giá chuẩn</option><option value="missing_allocation_price">SKU thiếu giá phân bổ</option><option value="unclassified">Chưa thuộc 6 nhóm</option><option value="unmatched">SKU chưa khớp cấu tạo</option><option value="valid">Chỉ dòng hợp lệ</option></select></div>
+        <div class="field"><label for="productConversionGroup">Nhóm hàng</label><select id="productConversionGroup"><option value="">Tất cả nhóm</option><option value="QUAN_NGAY">Quần ngày</option><option value="DAN_NGAY">Dán ngày</option><option value="QUAN_DEM">Quần đêm</option><option value="DAN_DEM">Dán đêm</option><option value="KHAN_UOT">Khăn ướt</option><option value="BANG_VS">Băng vệ sinh</option><option value="UNCLASSIFIED">Chưa phân nhóm</option></select></div>
+        <div class="field"><label for="productConversionLimit">Số dòng/trang</label><select id="productConversionLimit"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="500">500</option></select></div>
+        <button type="button" id="productConversionFilterBtn">Tìm / lọc</button>
+        <button type="button" class="ghost" id="productConversionResetBtn">Xóa lọc</button>
+      </div>
+      <div class="conversion-filter-summary"><span id="productConversionFilterInfo">Đang tải dữ liệu...</span><button type="button" class="ghost" id="productConversionErrorsBtn">Xem ngay dòng lỗi</button></div>
       <div class="table-wrap" style="margin-top:12px">
         <table class="conversion-table">
           <thead><tr>
@@ -454,6 +465,7 @@
           <tbody id="productConversionRows"><tr><td colspan="13" class="empty">Đang tải bảng quy đổi...</td></tr></tbody>
         </table>
       </div>
+      <div class="conversion-pagination"><button type="button" class="ghost" id="productConversionPrevBtn">← Trước</button><span id="productConversionPageInfo">Trang 1</span><button type="button" class="ghost" id="productConversionNextBtn">Sau →</button></div>
     </section>
 
     <details class="card storage-details">
@@ -1133,6 +1145,7 @@ async function loadOverviewInventory(token){
 }
 function conversionPriceSourceLabel(source){return ({group_rule:'Giá chuẩn nhóm',product_catalog:'Giá danh mục SKU',combo_catalog:'Giá cấu tạo combo',missing:'Thiếu giá'})[String(source||'')]||'-';}
 function conversionMatchLabel(type){return ({combo:'Combo',direct_product:'SKU đơn',unmatched:'Chưa khớp'})[String(type||'')]||String(type||'-');}
+let productConversionPage=1,productConversionHasMore=false,productConversionRequestToken=0;
 function renderProductLineConversion(data){
   const groupBox=$('productConversionGroups');
   const notice=$('productConversionNotice');
@@ -1188,25 +1201,53 @@ function renderProductLineConversion(data){
       <td class="right">${money(r.source_gmv||0)}</td>
       <td class="right">${allocated}</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="13" class="empty">Không có SKU đơn hàng phù hợp trong khoảng thời gian này.</td></tr>';
+  }).join('')||'<tr><td colspan="13" class="empty">Không có dòng nào phù hợp với bộ lọc hiện tại.</td></tr>';
+  productConversionPage=Number(data.page||productConversionPage||1);
+  productConversionHasMore=!!data.has_more;
+  const limit=Number(data.limit||$('productConversionLimit').value||50);
+  const total=Number(data.total_rows||0);
+  const pageCount=Math.max(1,Math.ceil(total/Math.max(1,limit)));
+  const start=total?(productConversionPage-1)*limit+1:0;
+  const end=total?Math.min(total,start+rows.length-1):0;
+  const issueLabel=$('productConversionIssue').options[$('productConversionIssue').selectedIndex]?.textContent||'Tất cả dòng';
+  const groupLabel=$('productConversionGroup').options[$('productConversionGroup').selectedIndex]?.textContent||'Tất cả nhóm';
+  $('productConversionFilterInfo').innerHTML=`Hiển thị <b>${num(start)}–${num(end)}</b> trong <b>${num(total)}</b> dòng · ${escapeOverviewText(issueLabel)} · ${escapeOverviewText(groupLabel)}`;
+  $('productConversionPageInfo').textContent=`Trang ${num(productConversionPage)} / ${num(pageCount)}`;
+  $('productConversionPrevBtn').disabled=productConversionPage<=1;
+  $('productConversionNextBtn').disabled=!productConversionHasMore;
 }
-async function loadProductLineConversion(token){
+async function loadProductLineConversion(){
+  const token=++productConversionRequestToken;
   const notice=$('productConversionNotice');
   const body=$('productConversionRows');
   const groupBox=$('productConversionGroups');
   const r=getRange();const shop=$('shop').value||'all';
-  notice.className='notice';notice.textContent='Đang đối chiếu SKU đơn hàng với cấu tạo combo và 6 nhóm hàng...';
-  groupBox.innerHTML='';$('productConversionDonut').style.background='#eaecf0';$('productConversionRevenueTotal').textContent='0đ';$('productConversionRevenueLegend').innerHTML='<div class="muted">Đang tính doanh thu theo 6 nhóm...</div>';body.innerHTML='<tr><td colspan="13" class="empty">Đang tải bảng quy đổi...</td></tr>';
+  const params={
+    date_from:r.from,date_to:r.to,shop_id:shop,page:String(productConversionPage),
+    limit:$('productConversionLimit').value||'50',
+    search:$('productConversionSearch').value.trim(),
+    issue:$('productConversionIssue').value||'all',
+    group_code:$('productConversionGroup').value||''
+  };
+  $('productConversionFilterInfo').textContent='Đang tìm và lọc dữ liệu...';
+  body.innerHTML='<tr><td colspan="13" class="empty">Đang tải bảng quy đổi...</td></tr>';
   try{
-    const data=await api('/api/dashboard/product-conversion?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,page:'1',limit:'500'}).toString(),{ttlMs:120000});
-    if(token!==overviewLoadToken)return;
+    const data=await api('/api/dashboard/product-conversion?'+new URLSearchParams(params).toString(),{ttlMs:120000});
+    if(token!==productConversionRequestToken)return;
     renderProductLineConversion(data);
   }catch(error){
-    if(token!==overviewLoadToken)return;
+    if(token!==productConversionRequestToken)return;
     groupBox.innerHTML='';notice.className='notice warn-note';notice.innerHTML='⚠️ Không tải được bảng quy đổi: '+escapeOverviewText(error.message);
-    body.innerHTML='<tr><td colspan="13" class="empty">Cần chạy SQL V70.13.1 và upload đúng Worker V70.13.1 trước khi sử dụng biểu đồ doanh thu.</td></tr>';
+    $('productConversionFilterInfo').textContent='Không tải được dữ liệu.';
+    body.innerHTML='<tr><td colspan="13" class="empty">Cần chạy SQL V70.13.3 và upload đúng Worker V70.13.3 trước khi sử dụng bộ lọc lỗi.</td></tr>';
   }
 }
+$('productConversionFilterBtn').addEventListener('click',()=>{productConversionPage=1;loadProductLineConversion();});
+$('productConversionResetBtn').addEventListener('click',()=>{$('productConversionSearch').value='';$('productConversionIssue').value='all';$('productConversionGroup').value='';$('productConversionLimit').value='50';productConversionPage=1;loadProductLineConversion();});
+$('productConversionErrorsBtn').addEventListener('click',()=>{$('productConversionIssue').value='any_error';productConversionPage=1;loadProductLineConversion();});
+$('productConversionPrevBtn').addEventListener('click',()=>{if(productConversionPage>1){productConversionPage--;loadProductLineConversion();}});
+$('productConversionNextBtn').addEventListener('click',()=>{if(productConversionHasMore){productConversionPage++;loadProductLineConversion();}});
+$('productConversionSearch').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();productConversionPage=1;loadProductLineConversion();}});
 function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[loadProductLineConversion(token)];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
 function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
