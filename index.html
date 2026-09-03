@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.13.3 Conversion Error Filter</title>
+  <title>Gooby BI Dashboard · V70.13.4 Conversion Diagnostics & Admin</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -267,9 +267,11 @@
     .conversion-source{display:block;margin-top:3px;color:#667085;font-size:9.5px}.conversion-ratio{color:#2563eb;font-weight:900}
     .conversion-filter-bar{display:grid;grid-template-columns:minmax(260px,1fr) 210px 170px 120px auto auto;gap:9px;align-items:end;margin:13px 0 10px}.conversion-filter-bar .field{min-width:0}.conversion-filter-bar input,.conversion-filter-bar select{width:100%;min-width:0}.conversion-filter-bar button{white-space:nowrap}
     .conversion-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;color:#667085;font-size:11px}.conversion-filter-summary b{color:#101828}.conversion-pagination{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:10px}.conversion-pagination button{height:34px;padding:0 12px}.conversion-pagination button:disabled{opacity:.45;cursor:not-allowed}
+    .conversion-diagnostic{min-width:280px;width:280px;white-space:normal!important}.conversion-diagnostic-line{display:block;margin-bottom:5px;color:#475467;font-size:10.5px;line-height:1.45}.conversion-diagnostic-line.error{color:#b42318;font-weight:750}.conversion-diagnostic-line.warning{color:#b54708}.conversion-diagnostic-line.ok{color:#067647}.conversion-row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.conversion-row-actions button{height:29px;padding:0 9px;font-size:10px;box-shadow:none}
+    .conversion-admin{margin-top:16px;border:1px solid #b9e6f2;border-radius:13px;background:#f5fdff;padding:0 14px 14px}.conversion-admin>summary{cursor:pointer;padding:14px 0;color:#0e7490;font-weight:900}.conversion-admin-intro{margin:0 0 12px;color:#475467;font-size:11.5px;line-height:1.55}.conversion-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.conversion-admin-panel{padding:13px;border:1px solid #d0eef5;border-radius:11px;background:#fff}.conversion-admin-panel h3{margin:0 0 5px;font-size:13px}.conversion-admin-panel>p{margin:0 0 11px;color:#667085;font-size:10.5px;line-height:1.5}.conversion-admin-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}.conversion-admin-fields .wide{grid-column:1/-1}.conversion-admin-fields input,.conversion-admin-fields select{width:100%;min-width:0}.conversion-admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.conversion-admin-actions button{height:34px;padding:0 11px;font-size:11px}.conversion-admin-table{min-width:760px}.conversion-admin-table th,.conversion-admin-table td{padding:8px 9px;font-size:10.5px}.conversion-admin-table td:first-child{min-width:100px;width:auto;white-space:normal}.conversion-admin-table button{height:28px;padding:0 8px;font-size:9.5px;box-shadow:none}.conversion-admin-list-title{display:flex;justify-content:space-between;gap:10px;align-items:end;margin:14px 0 7px}.conversion-admin-list-title h3{margin:0;font-size:12.5px}.conversion-admin-list-title input{height:34px;min-width:240px}.conversion-admin-message{margin:10px 0 0;font-size:11px}.conversion-admin-message.ok{color:#067647}.conversion-admin-message.error{color:#b42318}
 
-    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}.warehouse-kpis{grid-template-columns:1fr 1fr}.conversion-groups{grid-template-columns:repeat(3,minmax(0,1fr))}.conversion-revenue-overview{grid-template-columns:190px 1fr}.conversion-revenue-legend{grid-template-columns:1fr}.conversion-filter-bar{grid-template-columns:1fr 1fr 1fr}}
-    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}.warehouse-kpis{grid-template-columns:1fr}.conversion-groups{grid-template-columns:1fr 1fr}.conversion-revenue-overview{grid-template-columns:1fr}.conversion-filter-bar{grid-template-columns:1fr}.combo-detail{padding-left:12px}.catalog-toolbar .field,.catalog-toolbar .search-field{width:100%;min-width:0}}
+    @media(max-width:1000px){.account-fields{grid-template-columns:1fr 1fr}.permission-grid{grid-template-columns:1fr 1fr}.warehouse-kpis{grid-template-columns:1fr 1fr}.conversion-groups{grid-template-columns:repeat(3,minmax(0,1fr))}.conversion-revenue-overview{grid-template-columns:190px 1fr}.conversion-revenue-legend{grid-template-columns:1fr}.conversion-filter-bar{grid-template-columns:1fr 1fr 1fr}.conversion-admin-grid{grid-template-columns:1fr}}
+    @media(max-width:680px){.account-fields,.permission-grid{grid-template-columns:1fr}.auth-card{padding:21px}.account-table{min-width:850px}.warehouse-kpis{grid-template-columns:1fr}.conversion-groups{grid-template-columns:1fr 1fr}.conversion-revenue-overview{grid-template-columns:1fr}.conversion-filter-bar,.conversion-admin-fields{grid-template-columns:1fr}.conversion-admin-fields .wide{grid-column:auto}.conversion-admin-list-title{align-items:stretch;flex-direction:column}.conversion-admin-list-title input{width:100%;min-width:0}.combo-detail{padding-left:12px}.catalog-toolbar .field,.catalog-toolbar .search-field{width:100%;min-width:0}}
 
     @media(max-width:1260px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.overview-modules{grid-template-columns:1fr 1fr}.order-panel .order-health{margin-top:10px}.app{padding-left:20px;padding-right:20px}.hero{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
     @media(max-width:920px){
@@ -460,12 +462,44 @@
       <div class="table-wrap" style="margin-top:12px">
         <table class="conversion-table">
           <thead><tr>
-            <th>SKU đơn</th><th>Tên dòng sản phẩm</th><th class="right">SL SKU bán</th><th>Barcode con</th><th>SKU con</th><th>Nhóm hàng</th><th class="right">SL/con</th><th class="right">Barcode đã bán</th><th class="right">Giá chuẩn</th><th class="right">Doanh thu giá chuẩn</th><th class="right">Tỷ lệ GMV</th><th class="right">GMV dòng SKU</th><th class="right">GMV phân bổ</th>
+            <th>SKU đơn</th><th>Tên dòng sản phẩm</th><th class="right">SL SKU bán</th><th>Barcode con</th><th>SKU con</th><th>Nhóm hàng</th><th class="right">SL/con</th><th class="right">Barcode đã bán</th><th class="right">Giá chuẩn</th><th class="right">Doanh thu giá chuẩn</th><th class="right">Tỷ lệ GMV</th><th class="right">GMV dòng SKU</th><th class="right">GMV phân bổ</th><th>Nguyên nhân / cách sửa</th>
           </tr></thead>
-          <tbody id="productConversionRows"><tr><td colspan="13" class="empty">Đang tải bảng quy đổi...</td></tr></tbody>
+          <tbody id="productConversionRows"><tr><td colspan="14" class="empty">Đang tải bảng quy đổi...</td></tr></tbody>
         </table>
       </div>
       <div class="conversion-pagination"><button type="button" class="ghost" id="productConversionPrevBtn">← Trước</button><span id="productConversionPageInfo">Trang 1</span><button type="button" class="ghost" id="productConversionNextBtn">Sau →</button></div>
+      <details id="conversionAdminEditor" class="conversion-admin hidden">
+        <summary>⚙ Quản lý quy đổi (chỉ Admin)</summary>
+        <p class="conversion-admin-intro">Bạn có thể gán một SKU đơn chưa khớp vào đúng combo, hoặc thêm/sửa/xóa barcode trong 6 nhóm. Thay đổi chỉ áp dụng cho bảng quy đổi; dữ liệu đơn hàng gốc không bị sửa.</p>
+        <div class="conversion-admin-grid">
+          <section class="conversion-admin-panel">
+            <h3>Thêm hoặc sửa barcode trong nhóm</h3>
+            <p>Nhập barcode, chọn nhóm và giá chuẩn. Để trống giá nếu chỉ muốn phân nhóm nhưng chưa chốt giá.</p>
+            <div class="conversion-admin-fields">
+              <div class="field"><label for="conversionRuleBarcode">Barcode</label><input id="conversionRuleBarcode" autocomplete="off" placeholder="Ví dụ: 399549" /></div>
+              <div class="field"><label for="conversionRuleGroup">Nhóm hàng</label><select id="conversionRuleGroup"><option value="QUAN_NGAY">Quần ngày</option><option value="DAN_NGAY">Dán ngày</option><option value="QUAN_DEM">Quần đêm</option><option value="DAN_DEM">Dán đêm</option><option value="KHAN_UOT">Khăn ướt</option><option value="BANG_VS">Băng vệ sinh</option></select></div>
+              <div class="field"><label for="conversionRulePrice">Giá chuẩn (VND)</label><input id="conversionRulePrice" type="number" min="1" step="1" placeholder="Ví dụ: 335000" /></div>
+              <div class="field"><label for="conversionRuleNote">Ghi chú</label><input id="conversionRuleNote" maxlength="500" placeholder="Không bắt buộc" /></div>
+            </div>
+            <div class="conversion-admin-actions"><button type="button" id="conversionRuleSaveBtn">Lưu barcode</button><button type="button" class="ghost" id="conversionRuleResetBtn">Nhập mới</button></div>
+          </section>
+          <section class="conversion-admin-panel">
+            <h3>Gán SKU đơn vào combo</h3>
+            <p>Dùng khi SKU trên đơn Shopee khác mã combo trong kho. Mã combo phải tồn tại chính xác trong danh mục Kho hàng.</p>
+            <div class="conversion-admin-fields">
+              <div class="field"><label for="conversionMappingOrderSku">SKU đơn đang lỗi</label><input id="conversionMappingOrderSku" autocomplete="off" placeholder="Ví dụ: CA330002" /></div>
+              <div class="field"><label for="conversionMappingComboCode">Mã combo đúng</label><input id="conversionMappingComboCode" autocomplete="off" placeholder="Copy mã combo từ Kho hàng" /></div>
+              <div class="field wide"><label for="conversionMappingNote">Ghi chú</label><input id="conversionMappingNote" maxlength="500" placeholder="Lý do ánh xạ, không bắt buộc" /></div>
+            </div>
+            <div class="conversion-admin-actions"><button type="button" id="conversionMappingSaveBtn">Lưu ánh xạ</button><button type="button" class="ghost" id="conversionMappingResetBtn">Nhập mới</button></div>
+          </section>
+        </div>
+        <div id="conversionAdminMessage" class="conversion-admin-message">Mở khu vực này để tải danh sách đang dùng.</div>
+        <div class="conversion-admin-list-title"><h3>Barcode trong 6 nhóm</h3><input id="conversionRuleSearch" type="search" placeholder="Tìm barcode, nhóm hoặc ghi chú" /></div>
+        <div class="table-wrap"><table class="conversion-admin-table"><thead><tr><th>Barcode</th><th>Nhóm</th><th class="right">Giá chuẩn</th><th>Ghi chú</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody id="conversionRuleRows"><tr><td colspan="6" class="empty">Chưa tải danh sách.</td></tr></tbody></table></div>
+        <div class="conversion-admin-list-title"><h3>Ánh xạ SKU đơn đã lưu</h3></div>
+        <div class="table-wrap"><table class="conversion-admin-table"><thead><tr><th>SKU đơn</th><th>Mã combo đích</th><th>Ghi chú</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody id="conversionMappingRows"><tr><td colspan="5" class="empty">Chưa có ánh xạ.</td></tr></tbody></table></div>
+      </details>
     </section>
 
     <details class="card storage-details">
@@ -884,6 +918,7 @@ function applyCurrentUserUi(){
   $('auto24AdminPanel').classList.toggle('hidden',!currentUser.is_admin);
   $('diagClearOldBtn').classList.toggle('hidden',!currentUser.is_admin);
   $('warehouseSyncBtn').classList.toggle('hidden',!currentUser.is_admin);
+  $('conversionAdminEditor').classList.toggle('hidden',!currentUser.is_admin);
   updateRoleUI(currentTab());
 }
 function showLoggedOut(message){
@@ -1144,8 +1179,94 @@ async function loadOverviewInventory(token){
   }catch(error){if(token===overviewLoadToken){body.className='module-loading';body.innerHTML='Không tải được danh mục combo.<br><small>'+escapeOverviewText(error.message)+'</small>';}}
 }
 function conversionPriceSourceLabel(source){return ({group_rule:'Giá chuẩn nhóm',product_catalog:'Giá danh mục SKU',combo_catalog:'Giá cấu tạo combo',missing:'Thiếu giá'})[String(source||'')]||'-';}
-function conversionMatchLabel(type){return ({combo:'Combo',direct_product:'SKU đơn',unmatched:'Chưa khớp'})[String(type||'')]||String(type||'-');}
-let productConversionPage=1,productConversionHasMore=false,productConversionRequestToken=0;
+function conversionMatchLabel(type){return ({combo:'Combo khớp trực tiếp',combo_mapping:'Combo do Admin gán',direct_product:'SKU đơn khớp trực tiếp',product_mapping:'Sản phẩm do Admin gán',invalid_mapping:'Ánh xạ không hợp lệ',unmatched:'Chưa khớp'})[String(type||'')]||String(type||'-');}
+const conversionGroupNames={QUAN_NGAY:'Quần ngày',DAN_NGAY:'Dán ngày',QUAN_DEM:'Quần đêm',DAN_DEM:'Dán đêm',KHAN_UOT:'Khăn ướt',BANG_VS:'Băng vệ sinh'};
+let conversionAdminData={rules:[],mappings:[]},conversionAdminLoaded=false,conversionAdminLoading=false;
+function conversionAdminMessage(message,type){const el=$('conversionAdminMessage');el.className='conversion-admin-message '+(type||'');el.textContent=message;}
+function conversionDateTime(value){if(!value)return '-';try{return new Date(value).toLocaleString('vi-VN');}catch{return String(value);}}
+function renderConversionAdminRules(){
+  const term=String($('conversionRuleSearch').value||'').trim().toLowerCase();
+  const rows=(conversionAdminData.rules||[]).filter(row=>!term||[row.barcode,row.group_code,row.group_name,row.note].some(value=>String(value||'').toLowerCase().includes(term)));
+  $('conversionRuleRows').innerHTML=rows.map(row=>`<tr>
+    <td class="combo-code">${escapeOverviewText(row.barcode||'-')}</td><td>${escapeOverviewText(row.group_name||conversionGroupNames[row.group_code]||row.group_code||'-')}</td>
+    <td class="right">${row.reference_price==null?'<span class="match-missing">Chưa có giá</span>':Math.round(Number(row.reference_price)).toLocaleString('vi-VN')+'đ'}</td><td>${escapeOverviewText(row.note||'-')}</td><td>${escapeOverviewText(conversionDateTime(row.updated_at))}</td>
+    <td><div class="conversion-row-actions"><button type="button" class="ghost" data-rule-action="edit" data-barcode="${escapeOverviewText(row.barcode||'')}">Sửa</button><button type="button" class="ghost" data-rule-action="delete" data-barcode="${escapeOverviewText(row.barcode||'')}">Bỏ khỏi nhóm</button></div></td>
+  </tr>`).join('')||'<tr><td colspan="6" class="empty">Không có barcode phù hợp.</td></tr>';
+}
+function renderConversionAdminMappings(){
+  const rows=conversionAdminData.mappings||[];
+  $('conversionMappingRows').innerHTML=rows.map(row=>`<tr>
+    <td class="combo-code">${escapeOverviewText(row.order_sku||'-')}</td><td class="combo-code">${escapeOverviewText(row.target_code||'-')}</td><td>${escapeOverviewText(row.note||'-')}</td><td>${escapeOverviewText(conversionDateTime(row.updated_at))}</td>
+    <td><div class="conversion-row-actions"><button type="button" class="ghost" data-mapping-action="edit" data-order-sku="${escapeOverviewText(row.order_sku||'')}">Sửa</button><button type="button" class="ghost" data-mapping-action="delete" data-order-sku="${escapeOverviewText(row.order_sku||'')}">Xóa</button></div></td>
+  </tr>`).join('')||'<tr><td colspan="5" class="empty">Chưa có ánh xạ SKU đơn.</td></tr>';
+}
+async function loadConversionAdminData(force){
+  if(!currentUser?.is_admin||conversionAdminLoading||(!force&&conversionAdminLoaded))return;
+  conversionAdminLoading=true;conversionAdminMessage('Đang tải danh sách quy đổi...');
+  try{
+    const data=await api('/api/admin/warehouse/conversion-rules',{ttlMs:force?0:60000});
+    conversionAdminData={rules:data.rules||[],mappings:data.mappings||[]};conversionAdminLoaded=true;
+    renderConversionAdminRules();renderConversionAdminMappings();
+    conversionAdminMessage(`Đang dùng ${num(conversionAdminData.rules.length)} barcode trong 6 nhóm và ${num(conversionAdminData.mappings.length)} ánh xạ SKU đơn.`,'ok');
+  }catch(error){conversionAdminMessage('Không tải được dữ liệu quản trị: '+error.message,'error');}
+  finally{conversionAdminLoading=false;}
+}
+function resetConversionRuleForm(){
+  $('conversionRuleBarcode').value='';$('conversionRuleBarcode').readOnly=false;$('conversionRuleGroup').value='QUAN_NGAY';$('conversionRulePrice').value='';$('conversionRuleNote').value='';
+}
+function editConversionRule(barcode){
+  const row=(conversionAdminData.rules||[]).find(item=>String(item.barcode)===String(barcode));if(!row)return;
+  $('conversionRuleBarcode').value=row.barcode||'';$('conversionRuleBarcode').readOnly=true;$('conversionRuleGroup').value=row.group_code||'QUAN_NGAY';$('conversionRulePrice').value=row.reference_price==null?'':String(row.reference_price);$('conversionRuleNote').value=row.note||'';
+  $('conversionAdminEditor').open=true;$('conversionRuleGroup').focus();
+}
+function resetConversionMappingForm(){ $('conversionMappingOrderSku').value='';$('conversionMappingOrderSku').readOnly=false;$('conversionMappingComboCode').value='';$('conversionMappingNote').value=''; }
+function editConversionMapping(orderSku){
+  const row=(conversionAdminData.mappings||[]).find(item=>String(item.order_sku).toLowerCase()===String(orderSku).toLowerCase());if(!row)return;
+  $('conversionMappingOrderSku').value=row.order_sku||'';$('conversionMappingOrderSku').readOnly=true;$('conversionMappingComboCode').value=row.target_code||'';$('conversionMappingNote').value=row.note||'';
+  $('conversionAdminEditor').open=true;$('conversionMappingComboCode').focus();
+}
+async function saveConversionRule(){
+  const body={barcode:$('conversionRuleBarcode').value.trim(),group_code:$('conversionRuleGroup').value,reference_price:$('conversionRulePrice').value.trim()||null,note:$('conversionRuleNote').value.trim()};
+  conversionAdminMessage('Đang lưu barcode...');
+  try{await api('/api/admin/warehouse/conversion-rules/save',{method:'POST',body});resetConversionRuleForm();conversionAdminLoaded=false;await loadConversionAdminData(true);await loadProductLineConversion();conversionAdminMessage('Đã lưu barcode và tính lại bảng đang xem.','ok');}
+  catch(error){conversionAdminMessage('Không lưu được barcode: '+error.message,'error');}
+}
+async function deleteConversionRule(barcode){
+  if(!confirm(`Bỏ barcode ${barcode} khỏi 6 nhóm? Barcode sẽ chuyển thành “Chưa phân nhóm”, dữ liệu đơn hàng không bị xóa.`))return;
+  try{await api('/api/admin/warehouse/conversion-rules/delete',{method:'POST',body:{barcode}});conversionAdminLoaded=false;await loadConversionAdminData(true);await loadProductLineConversion();conversionAdminMessage(`Đã bỏ barcode ${barcode} khỏi nhóm.`,'ok');}
+  catch(error){conversionAdminMessage('Không xóa được barcode: '+error.message,'error');}
+}
+async function saveConversionMapping(){
+  const body={order_sku:$('conversionMappingOrderSku').value.trim(),combo_code:$('conversionMappingComboCode').value.trim(),note:$('conversionMappingNote').value.trim()};
+  conversionAdminMessage('Đang kiểm tra mã combo và lưu ánh xạ...');
+  try{const data=await api('/api/admin/warehouse/order-sku-mappings/save',{method:'POST',body});resetConversionMappingForm();conversionAdminLoaded=false;await loadConversionAdminData(true);await loadProductLineConversion();conversionAdminMessage(`Đã gán ${data.order_sku} vào combo ${data.combo_code}.`,'ok');}
+  catch(error){conversionAdminMessage('Không lưu được ánh xạ: '+error.message,'error');}
+}
+async function deleteConversionMapping(orderSku){
+  if(!confirm(`Xóa ánh xạ của SKU đơn ${orderSku}? Sau đó hệ thống sẽ quay lại đối chiếu trực tiếp theo mã.`))return;
+  try{await api('/api/admin/warehouse/order-sku-mappings/delete',{method:'POST',body:{order_sku:orderSku}});conversionAdminLoaded=false;await loadConversionAdminData(true);await loadProductLineConversion();conversionAdminMessage(`Đã xóa ánh xạ ${orderSku}.`,'ok');}
+  catch(error){conversionAdminMessage('Không xóa được ánh xạ: '+error.message,'error');}
+}
+function openConversionMappingFor(orderSku){
+  if(!currentUser?.is_admin)return;
+  $('conversionAdminEditor').classList.remove('hidden');$('conversionAdminEditor').open=true;$('conversionMappingOrderSku').value=orderSku||'';$('conversionMappingOrderSku').readOnly=true;$('conversionMappingComboCode').value='';
+  loadConversionAdminData();setTimeout(()=>$('conversionMappingComboCode').focus(),0);
+}
+function openConversionRuleFor(row){
+  if(!currentUser?.is_admin||!row?.component_barcode)return;
+  $('conversionAdminEditor').classList.remove('hidden');$('conversionAdminEditor').open=true;$('conversionRuleBarcode').value=row.component_barcode;$('conversionRuleBarcode').readOnly=true;$('conversionRuleGroup').value=conversionGroupNames[row.group_code]?row.group_code:'QUAN_NGAY';$('conversionRulePrice').value=row.price_source==='group_rule'&&row.reference_price!=null?String(row.reference_price):'';$('conversionRuleNote').value='';
+  loadConversionAdminData();setTimeout(()=>$('conversionRuleGroup').focus(),0);
+}
+function conversionDiagnosticHtml(row){
+  const diagnostics=Array.isArray(row.diagnostics)&&row.diagnostics.length?row.diagnostics:[{level:'error',message:'Worker chưa trả chẩn đoán chi tiết. Hãy upload Worker V70.13.4.'}];
+  const messages=diagnostics.map(item=>`<span class="conversion-diagnostic-line ${escapeOverviewText(item.level||'')}">${escapeOverviewText(item.message||'')}</span>`).join('');
+  const buttons=[];
+  if(['unmatched','invalid_mapping'].includes(String(row.match_type||''))&&currentUser?.is_admin)buttons.push(`<button type="button" data-conversion-action="map" data-order-sku="${escapeOverviewText(row.order_sku||'')}">Gán đúng combo</button>`);
+  if(row.component_barcode&&currentUser?.is_admin&&(row.component_unclassified||row.standard_price_missing))buttons.push(`<button type="button" class="ghost" data-conversion-action="rule" data-barcode="${escapeOverviewText(row.component_barcode||'')}">Sửa nhóm / giá</button>`);
+  if(row.saved_mapping&&currentUser?.is_admin)buttons.push(`<button type="button" class="ghost" data-conversion-action="unmap" data-order-sku="${escapeOverviewText(row.order_sku||'')}">Xóa ánh xạ</button>`);
+  return messages+(buttons.length?`<div class="conversion-row-actions">${buttons.join('')}</div>`:'');
+}
+let productConversionPage=1,productConversionHasMore=false,productConversionRequestToken=0,productConversionRenderedRows=[];
 function renderProductLineConversion(data){
   const groupBox=$('productConversionGroups');
   const notice=$('productConversionNotice');
@@ -1179,6 +1300,7 @@ function renderProductLineConversion(data){
     notice.innerHTML=`✅ Doanh thu theo giá chuẩn: <b>${money(totalStandard)}</b> · GMV thực tế đã phân bổ: <b>${money(data.quality?.allocated_gmv||0)}</b> · ${num(data.total_rows||0)} dòng SKU/barcode.`;
   }
   const rows=data.rows||[];
+  productConversionRenderedRows=rows;
   body.innerHTML=rows.map(r=>{
     const ratio=r.conversion_ratio==null?null:Number(r.conversion_ratio)*100;
     const groupClass=r.component_unclassified?'category-chip unclassified':'category-chip';
@@ -1200,8 +1322,9 @@ function renderProductLineConversion(data){
       <td class="right">${ratioText}</td>
       <td class="right">${money(r.source_gmv||0)}</td>
       <td class="right">${allocated}</td>
+      <td class="conversion-diagnostic">${conversionDiagnosticHtml(r)}</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="13" class="empty">Không có dòng nào phù hợp với bộ lọc hiện tại.</td></tr>';
+  }).join('')||'<tr><td colspan="14" class="empty">Không có dòng nào phù hợp với bộ lọc hiện tại.</td></tr>';
   productConversionPage=Number(data.page||productConversionPage||1);
   productConversionHasMore=!!data.has_more;
   const limit=Number(data.limit||$('productConversionLimit').value||50);
@@ -1230,7 +1353,7 @@ async function loadProductLineConversion(){
     group_code:$('productConversionGroup').value||''
   };
   $('productConversionFilterInfo').textContent='Đang tìm và lọc dữ liệu...';
-  body.innerHTML='<tr><td colspan="13" class="empty">Đang tải bảng quy đổi...</td></tr>';
+  body.innerHTML='<tr><td colspan="14" class="empty">Đang tải bảng quy đổi...</td></tr>';
   try{
     const data=await api('/api/dashboard/product-conversion?'+new URLSearchParams(params).toString(),{ttlMs:120000});
     if(token!==productConversionRequestToken)return;
@@ -1239,7 +1362,7 @@ async function loadProductLineConversion(){
     if(token!==productConversionRequestToken)return;
     groupBox.innerHTML='';notice.className='notice warn-note';notice.innerHTML='⚠️ Không tải được bảng quy đổi: '+escapeOverviewText(error.message);
     $('productConversionFilterInfo').textContent='Không tải được dữ liệu.';
-    body.innerHTML='<tr><td colspan="13" class="empty">Cần chạy SQL V70.13.3 và upload đúng Worker V70.13.3 trước khi sử dụng bộ lọc lỗi.</td></tr>';
+    body.innerHTML='<tr><td colspan="14" class="empty">Cần chạy SQL V70.13.4 và upload đúng Worker V70.13.4 trước khi dùng chẩn đoán và quản trị quy đổi.</td></tr>';
   }
 }
 $('productConversionFilterBtn').addEventListener('click',()=>{productConversionPage=1;loadProductLineConversion();});
@@ -1248,6 +1371,32 @@ $('productConversionErrorsBtn').addEventListener('click',()=>{$('productConversi
 $('productConversionPrevBtn').addEventListener('click',()=>{if(productConversionPage>1){productConversionPage--;loadProductLineConversion();}});
 $('productConversionNextBtn').addEventListener('click',()=>{if(productConversionHasMore){productConversionPage++;loadProductLineConversion();}});
 $('productConversionSearch').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();productConversionPage=1;loadProductLineConversion();}});
+$('productConversionRows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-conversion-action]');if(!button)return;
+  const action=button.dataset.conversionAction;
+  if(action==='map')openConversionMappingFor(button.dataset.orderSku||'');
+  if(action==='unmap')deleteConversionMapping(button.dataset.orderSku||'');
+  if(action==='rule'){
+    const row=productConversionRenderedRows.find(item=>String(item.component_barcode||'')===String(button.dataset.barcode||''));
+    if(row)openConversionRuleFor(row);
+  }
+});
+$('conversionAdminEditor').addEventListener('toggle',()=>{if($('conversionAdminEditor').open)loadConversionAdminData();});
+$('conversionRuleSaveBtn').addEventListener('click',saveConversionRule);
+$('conversionRuleResetBtn').addEventListener('click',resetConversionRuleForm);
+$('conversionMappingSaveBtn').addEventListener('click',saveConversionMapping);
+$('conversionMappingResetBtn').addEventListener('click',resetConversionMappingForm);
+$('conversionRuleSearch').addEventListener('input',renderConversionAdminRules);
+$('conversionRuleRows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-rule-action]');if(!button)return;
+  if(button.dataset.ruleAction==='edit')editConversionRule(button.dataset.barcode||'');
+  if(button.dataset.ruleAction==='delete')deleteConversionRule(button.dataset.barcode||'');
+});
+$('conversionMappingRows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-mapping-action]');if(!button)return;
+  if(button.dataset.mappingAction==='edit')editConversionMapping(button.dataset.orderSku||'');
+  if(button.dataset.mappingAction==='delete')deleteConversionMapping(button.dataset.orderSku||'');
+});
 function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[loadProductLineConversion(token)];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
 function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
