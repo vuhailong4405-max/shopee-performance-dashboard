@@ -711,6 +711,16 @@
         <button class="ghost" id="ordersPrevBtn">Trước</button><button class="ghost" id="ordersNextBtn">Sau</button>
         <span class="muted" id="ordersPageInfo">-</span>
       </div>
+      <div class="notice hidden" id="walletProbePanel" style="margin:12px 0">
+        <b>Kiểm tra nguồn giao dịch ví người bán</b><br>
+        <span class="muted">Chỉ đọc một trang tối đa 40 giao dịch của shop đang chọn; chưa lưu giao dịch, chưa đổi số liệu hoặc công thức báo cáo.</span>
+        <div class="orders-toolbar" style="margin-top:10px">
+          <div class="field"><label>Từ ngày giao dịch ví</label><input type="date" id="walletProbeFrom"></div>
+          <div class="field"><label>Đến ngày</label><input type="date" id="walletProbeTo"></div>
+          <button class="ghost" id="walletProbeBtn">Thử đọc giao dịch ví</button>
+        </div>
+        <div id="walletProbeSummary" class="muted">Chọn một shop cụ thể rồi bấm thử đọc.</div>
+      </div>
       <div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Shop</th><th>Tỉnh/Thành phố</th><th>Thời gian tạo</th><th>Trạng thái</th><th class="right">GMV</th><th class="right">Total amount</th><th class="right">Item subtotal</th><th class="right">SL</th><th>Thao tác</th></tr></thead><tbody id="ordersRows"><tr><td colspan="10" class="empty">Chưa tải đơn</td></tr></tbody></table></div>
       <div id="orderDetailBox" class="order-detail hidden"></div>
     </section>
@@ -919,6 +929,7 @@ function applyCurrentUserUi(){
   $('diagClearOldBtn').classList.toggle('hidden',!currentUser.is_admin);
   $('warehouseSyncBtn').classList.toggle('hidden',!currentUser.is_admin);
   $('conversionAdminEditor').classList.toggle('hidden',!currentUser.is_admin);
+  $('walletProbePanel').classList.toggle('hidden',!hasFeature('system'));
   updateRoleUI(currentTab());
 }
 function showLoggedOut(message){
@@ -2282,6 +2293,21 @@ async function loadOrders(reset=false){
   const regionTask=reset?loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ Không tải được khu vực đơn hàng: '+e.message;}):Promise.resolve();
   const data=await api('/api/orders?'+qs.toString()); renderOrdersTable(data); await regionTask;
 }
+async function probeWalletTransactions(){
+  const box=$('walletProbeSummary'),btn=$('walletProbeBtn'),shop=$('shop').value||'all';
+  if(shop==='all'){box.textContent='Hãy chọn một shop cụ thể trước khi thử đọc ví.';return;}
+  btn.disabled=true;box.textContent='Đang kiểm tra quyền Payment API và đọc tối đa 40 giao dịch...';
+  try{
+    const qs=new URLSearchParams({shop_id:shop,date_from:$('walletProbeFrom').value,date_to:$('walletProbeTo').value});
+    const data=await api('/api/orders/wallet/probe?'+qs.toString());
+    const types=Object.entries(data.transaction_type_counts||{}).map(([type,count])=>escapeHtml(type)+': '+num(count)).join(' · ')||'-';
+    const samples=(data.samples||[]).map(row=>`<tr><td>${row.order_sn_last4?'…'+escapeHtml(row.order_sn_last4):'-'}</td><td>${escapeHtml(row.transaction_type??'-')}</td><td>${escapeHtml(row.money_flow??'-')}</td><td>${escapeHtml(row.status??'-')}</td><td class="right">${row.amount===null?'-':money(row.amount)}</td></tr>`).join('');
+    box.innerHTML=`<p>Đọc được <b>${num(data.returned)} giao dịch</b>${data.more?' (còn trang tiếp theo)':''}; <b>${num(data.with_order_sn)}</b> có mã đơn, <b>${num(data.with_refund_sn)}</b> có mã hoàn. Loại giao dịch: ${types}.</p>`+
+      (samples?`<div class="table-wrap"><table><thead><tr><th>4 số cuối mã đơn</th><th>Loại</th><th>Chiều tiền</th><th>Trạng thái</th><th class="right">Số tiền</th></tr></thead><tbody>${samples}</tbody></table></div>`:'<p>Không thấy giao dịch trong trang đầu của khoảng ngày này. Có thể thử khoảng ngày khác.</p>')+
+      '<p class="muted">Đây chỉ là kiểm tra nguồn; chưa cộng/trừ tiền vào báo cáo.</p>';
+  }catch(e){box.textContent='Không đọc được giao dịch ví: '+e.message;}
+  finally{btn.disabled=false;}
+}
 function fmtDetailVal(v){
   if(v===undefined || v===null || v==='') return '<span class="muted">-</span>';
   if(typeof v==='number') return Number(v).toLocaleString('vi-VN');
@@ -2906,7 +2932,7 @@ async function connectShop(){
   $('oauthBox').innerHTML='<p>Copy link này mở tab mới để kết nối shop:</p><p><a target="_blank" rel="noopener noreferrer" href="'+safeUrl+'">'+safeUrl+'</a></p><p class="muted">Redirect domain trong Shopee dùng domain Worker; callback đầy đủ: <code>'+escapeHtml(data.redirect_url_to_add_in_shopee)+'</code></p>';
 }
 function saveWorker(){ localStorage.setItem('gooby_bi_worker',getWorker()); updateUrls(); showLoggedOut('Đã đổi Worker. Vui lòng đăng nhập lại trên backend mới.');loadBootstrapStatus(); }
-function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
+function setDefaults(){ const t=todayVN(); $('dayDate').value=t; $('weekInput').value=isoWeekString(t); $('monthInput').value=t.slice(0,7); $('fromDate').value=t; $('toDate').value=t; $('walletProbeFrom').value=addDaysISO(t,-6); $('walletProbeTo').value=t; $('workerUrl').value=localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v44')||localStorage.getItem('ledger_worker_v43')||localStorage.getItem('ledger_worker_v42')||DEFAULT_WORKER; }
 function reloadCurrentView(){updatePeriodFields();orderOffset=0;const tab=currentTab();if(tab==='gmv'&&hasFeature('overview'))loadDashboard();else setTab(tab);schedule();}
 async function initAuthenticatedApp(){
   applyCurrentUserUi();
@@ -2937,7 +2963,7 @@ async function initAuthenticatedApp(){
     $('warehouseSalesNextBtn').addEventListener('click',()=>warehouseSalesNext().catch(()=>{}));
     $('warehouseComponentSalesPrevBtn').addEventListener('click',()=>warehouseComponentSalesPrev().catch(()=>{}));
     $('warehouseComponentSalesNextBtn').addEventListener('click',()=>warehouseComponentSalesNext().catch(()=>{}));
-    $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
+    $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});$('walletProbeBtn').addEventListener('click',probeWalletTransactions);window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
     authenticatedAppInitialized=true;
   }
   await loadShops();
