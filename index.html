@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.13.4 Conversion Diagnostics & Admin</title>
+  <title>Gooby BI Dashboard · V70.18</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -86,6 +86,13 @@
     .perf-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfcfe}
     .perf-card .k{font-size:11.5px;text-transform:uppercase;color:var(--muted);font-weight:900;letter-spacing:.04em}
     .perf-card .v{font-size:22px;font-weight:900;margin-top:8px;letter-spacing:-.02em;color:var(--text)}
+    .income-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+    .income-summary .income-box{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px;min-width:0}
+    .income-summary .income-box.escrow{border-top:4px solid #667085}.income-summary .income-box.credit{border-top:4px solid #12b76a}.income-summary .income-box.refund{border-top:4px solid #f79009}
+    .income-summary .income-label{font-size:12px;font-weight:900;color:var(--muted)}
+    .income-summary .income-value{font-size:24px;font-weight:900;line-height:1.2;margin-top:8px;word-break:break-word}
+    .income-summary .income-help{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.45}
+    .income-source-note{background:#eff8ff;border:1px solid #b2ddff;border-radius:12px;padding:12px 14px;color:#175cd3;font-size:12.5px;line-height:1.5;margin-top:12px}
     .badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:900}
     .badge.good{background:#ecfdf3;color:#067647}.badge.warn{background:#fffaeb;color:#b54708}.badge.bad{background:#fef3f2;color:#b42318}
     .orders-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
@@ -101,7 +108,9 @@
     .kv{display:grid;grid-template-columns:220px 1fr;border-top:1px solid var(--line);font-size:13px}
     .kv div{padding:9px 10px;border-bottom:1px solid var(--line)}
     .kv div:nth-child(odd){color:var(--muted);font-weight:800;background:#fbfcfe}
+    .kv div:nth-child(even){overflow-wrap:anywhere}
     .nowrap{white-space:nowrap}.scroll-x{overflow:auto}.detail-note{font-size:13px;color:var(--muted);margin:8px 0 0}
+    @media(max-width:760px){.income-summary{grid-template-columns:1fr}}
 
     /* ---- Thanh chuyển tab: mỗi tab có màu riêng (đặt qua --accent/--accent2 ngay trên từng nút) ---- */
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:sticky;top:0;z-index:5;background:rgba(241,243,248,.86);backdrop-filter:blur(10px);padding:10px 0;border-bottom:1px solid var(--line)}
@@ -281,6 +290,96 @@
     }
     @media(max-width:680px){.metrics,body.layout-focus .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-grid,.sync-plan,.sys-grid,.diag-grid,.detail-grid{grid-template-columns:1fr}.topbar{padding:12px}.filters{display:grid;grid-template-columns:1fr 1fr;width:100%}.field,select,input{width:100%;min-width:0}.status{justify-content:flex-start}.metric{min-height:125px}.chart-wrap{height:300px;max-width:100%}.section-title{min-width:0;flex-wrap:wrap}.section-title>*{min-width:0}.legend{max-width:100%}.range-note{display:none}.heroRight{display:grid!important;grid-template-columns:1fr 1fr}.heroRight .pill{grid-column:1/-1}.header-action{width:100%;min-width:0;justify-content:center}.tab-title p{display:none}}
     @media(max-width:420px){.metrics,body.layout-focus .metrics{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.metric{min-height:118px}.order-health,.order-panel .order-health{grid-template-columns:110px minmax(0,1fr)}.order-donut,.order-panel .order-donut{width:105px}}
+
+    /* ---- V70.17: bố cục điều hành — tiêu đề trang, bộ lọc dính, mục con, cảnh báo vận hành ---- */
+    .sub-hidden{display:none!important}
+    .hero h1{font-size:20px}.hero p{max-width:760px}
+    .topbar{position:sticky;top:0;z-index:25;margin-top:14px;box-shadow:0 6px 18px -12px rgba(16,24,40,.25)}
+    .page-subnav{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 0;padding:4px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2)}
+    .page-subnav button{height:36px;padding:0 14px;border-radius:9px;background:transparent;color:#475467;border:0;box-shadow:none;font-weight:750;font-size:12.5px;display:inline-flex;align-items:center;gap:7px}
+    .page-subnav button:hover{background:#f2f4f7;color:var(--text)}
+    .page-subnav button.active{background:var(--navy);color:#fff}
+    .subcount{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#fee4e2;color:#b42318;font-size:10.5px;font-weight:900}
+    .subcount:empty{display:none}.page-subnav button.active .subcount{background:#f04438;color:#fff}
+    .tabbtn{position:relative}.nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;display:inline-grid;place-items:center;border-radius:999px;background:#f04438;color:#fff;font-size:10.5px;font-weight:900}
+    .nav-badge:empty{display:none}
+    .section-title p.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .more-toggle{height:auto;padding:0;margin:3px 0 0;background:none!important;border:0!important;box-shadow:none!important;color:#2563eb!important;font-size:11px;font-weight:800}
+
+    /* KPI: 7 chỉ số gốc, icon theo data-icon (không phụ thuộc thứ tự kéo thả) */
+    .metrics{grid-template-columns:repeat(7,minmax(0,1fr))}
+    .metric:before{content:attr(data-icon)!important}
+    .metric[data-tone="brand"]:before{background:#fff1eb;color:var(--brand)}
+    .metric[data-tone="violet"]:before{background:#f0edff;color:#7c3aed}
+    .metric[data-tone="green"]:before{background:#eafbf5;color:#12a676}
+    .metric[data-tone="red"]:before{background:#fff0f0;color:#ef4444}
+    .metric[data-tone="blue"]:before{background:#eef4ff;color:#3b82f6}
+    .metric[data-tone="orange"]:before{background:#fff3ed;color:#f97316}
+    .metric[data-tone="teal"]:before{background:#e6fbfa;color:#0e9384}
+    .metric .formula{position:relative;margin-top:6px;color:var(--muted2);font-size:10px}
+    .metric:first-child{border-color:var(--line);box-shadow:var(--shadow2)}
+    .metric[data-primary]{border-color:rgba(255,107,53,.72)}
+    @media(max-width:1360px){.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media(min-width:1361px){.metric .value{font-size:22px}.metric .label{font-size:11px}}
+    @media(max-width:1260px){.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media(max-width:920px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.topbar{position:relative}}
+    .overview-modules{grid-template-columns:1.1fr 1fr 1.1fr}
+    @media(max-width:1260px){.overview-modules{grid-template-columns:1fr 1fr}}
+
+    /* Thẻ cảnh báo vận hành */
+    .ops-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 14px}
+    .ops-kpi{height:auto;min-height:92px;padding:13px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;border:1px solid var(--line);border-left:4px solid #98a2b3;border-radius:12px;background:#fff;color:var(--text);box-shadow:none;font-weight:500}
+    button.ops-kpi:hover{border-color:#d0d5dd;box-shadow:var(--shadow)}
+    .ops-kpi span{color:#475467;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .ops-kpi b{font-size:24px;letter-spacing:-.02em;line-height:1.15}
+    .ops-kpi small{color:var(--muted);font-size:11px}
+    .ops-kpi.danger{border-left-color:#f04438}.ops-kpi.danger b{color:#b42318}
+    .ops-kpi.warn{border-left-color:#f79009}.ops-kpi.warn b{color:#b54708}
+    .ops-kpi.ok{border-left-color:#12b76a}.ops-kpi.muted-kpi{border-left-color:#667085}
+    .ops-kpi.selected{box-shadow:0 0 0 2px var(--navy)}
+    .ship-filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:4px 0 10px}
+    .ship-filter-bar .field input,.ship-filter-bar .field select{min-width:150px}
+    .chip-group{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#344054;box-shadow:none;font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+    .chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+    .chip .n{opacity:.75;font-weight:700}
+    .check-inline{display:inline-flex;align-items:center;gap:7px;height:40px;font-size:12.5px;font-weight:700;color:#344054}.check-inline input{width:16px;height:16px;min-width:0}
+    .priority-settings{margin:0 0 10px;padding:10px 12px;border:1px dashed #d0d5dd;border-radius:11px;background:#fcfcfd}
+    .priority-settings summary{cursor:pointer;font-weight:850;color:#344054;font-size:12.5px}
+    .priority-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:8px}
+    .priority-grid input{width:100%;min-width:0}
+    .prio{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;padding:0 7px;border-radius:7px;font-size:10.5px;font-weight:900;letter-spacing:.02em}
+    .prio.p1{background:#b42318;color:#fff}.prio.p2{background:#fee4e2;color:#b42318}.prio.p3{background:#fef0c7;color:#93370d}.prio.p4{background:#eff8ff;color:#175cd3}.prio.p0{background:#f2f4f7;color:#475467}.prio.px{background:#f4ebff;color:#6941c6}
+    .ship-meta{margin:2px 0 10px;font-size:11.5px}
+    .ship-table td:first-child{min-width:0;width:90px}
+    .countdown{font-weight:850;font-variant-numeric:tabular-nums}.countdown.overdue{color:#b42318}.countdown.soon{color:#b54708}.countdown.ok{color:#067647}
+    .est-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:#f4ebff;color:#6941c6;font-size:10px;font-weight:800}
+    tr.row-p1 td{background:#fff5f4}tr.row-p2 td{background:#fffbfa}
+    .reason-bar{position:relative;min-width:160px;height:20px;border-radius:6px;background:#f2f4f7;overflow:hidden}
+    .reason-bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#f97066,#f04438);border-radius:6px}
+    .reason-bar span{position:relative;z-index:1;display:block;padding:0 7px;line-height:20px;font-size:10.5px;font-weight:850;color:#101828}
+    .cancel-table td:first-child{min-width:240px;white-space:normal}
+    .cancel-raw{display:block;margin-top:2px;color:var(--muted2);font-size:10px}
+    .ops-module-list{display:grid;gap:8px}
+    .ops-module-row{height:auto;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 11px;border:1px solid #eaecf0;border-radius:10px;background:#fcfcfd;color:var(--text);box-shadow:none;text-align:left;font-weight:600;font-size:11.5px}
+    .ops-module-row:hover{border-color:#d0d5dd;background:#fff}
+    .ops-module-row b{font-size:17px}.ops-module-row .dot-ind{width:10px;height:10px;border-radius:50%}
+    @media(max-width:1000px){.ops-kpis,.priority-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:680px){.ops-kpis,.priority-grid{grid-template-columns:1fr}.page-subnav{flex-wrap:nowrap;overflow-x:auto}.page-subnav button{flex:none}.ship-filter-bar .field{width:100%}}
+
+    /* ---- V70.18: mục tiêu tháng & runrate ---- */
+    .biz-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .biz-chart-wrap{height:300px}
+    .budget-bar i{background:linear-gradient(90deg,#53b1fd,#2e90fa)}.budget-bar.over i{background:linear-gradient(90deg,#f97066,#f04438)}
+    tr.biz-total td{background:#f9fafb;border-top:2px solid var(--line)}
+    .biz-editor{margin-top:16px;border:1px solid #b2ddff;border-radius:13px;background:#f5faff;padding:0 14px 14px}
+    .biz-editor>summary{cursor:pointer;padding:14px 0;color:#175cd3;font-weight:900}
+    .biz-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .biz-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.biz-form-grid input,.biz-form-grid select{width:100%;min-width:0}
+    .biz-subhead{margin:12px 0 6px;font-size:12px;color:#344054}
+    .money-hint{min-height:14px;color:var(--muted);font-size:10.5px}
+    @media(max-width:1000px){.biz-editor-grid{grid-template-columns:1fr}.biz-kpis{grid-template-columns:1fr 1fr}}
+    @media(max-width:680px){.biz-kpis,.biz-form-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="auth-pending">
@@ -315,7 +414,7 @@
       <strong>GOOBY <span>BI</span></strong>
     </div>
     <button class="tabbtn active" data-tab="gmv"><span class="ic">⌂</span>Tổng quan</button>
-    <button class="tabbtn" data-tab="orders"><span class="ic">▣</span>Đơn hàng</button>
+    <button class="tabbtn" data-tab="orders"><span class="ic">▣</span>Đơn hàng<span class="nav-badge" id="navBadgeOrders" title="Đơn quá hạn + sắp đến hạn bàn giao"></span></button>
     <button class="tabbtn" data-tab="performance"><span class="ic">◎</span>Hiệu quả</button>
     <button class="tabbtn" data-tab="marketing"><span class="ic">↗</span>Marketing</button>
     <button class="tabbtn" data-tab="warehouse"><span class="ic">◇</span>Kho hàng</button>
@@ -340,7 +439,7 @@
       <div class="brandmark">
         <div>
           <h1 id="welcomeTitle">Xin chào, LazyMom! 👋</h1>
-          <p>Dưới đây là bức tranh tổng quan hoạt động kinh doanh của bạn.</p>
+          <p id="heroSubtitle">Dưới đây là bức tranh tổng quan hoạt động kinh doanh của bạn.</p>
         </div>
       </div>
       <div class="heroRight">
@@ -381,18 +480,21 @@
     </section>
 
     <section class="tab-panel active" id="tab-gmv">
-      <div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V62 giữ luồng sync riêng từng shop và thêm AccountHealth chính thức cho tab hiệu quả hoạt động.</p></div></div>
+      
+    <nav class="page-subnav" data-tab="gmv" aria-label="Mục trong trang"><button type="button" data-sub="overview">Tổng quan</button><button type="button" data-sub="products">Sản phẩm & quy đổi</button><button type="button" data-sub="targets">Mục tiêu & runrate</button></nav>
+<div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V62 giữ luồng sync riêng từng shop và thêm AccountHealth chính thức cho tab hiệu quả hoạt động.</p></div></div>
 
-    <section class="metrics">
-      <div class="card metric"><div class="label">Doanh số đã đặt / Data Center</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Đơn đã đặt</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
-      <div class="card metric"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
-      <div class="card metric"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div></div>
-      <div class="card metric"><div class="label">Tỷ lệ hủy</div><div class="value" id="mCancelRate">-</div><div class="subline"><span id="dCancelRate" class="delta neutral">-</span><span id="cCancelRate">so sánh</span></div></div>
+    <section class="metrics" data-subpanel="gmv:overview">
+      <div class="card metric" data-icon="↗" data-tone="brand" data-primary><div class="label">GMV</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div><div class="formula">Doanh số đã đặt · Data Center</div></div>
+      <div class="card metric" data-icon="₫" data-tone="teal"><div class="label">NMV</div><div class="value" id="mNmv">-</div><div class="subline"><span id="dNmv" class="delta neutral">-</span><span id="cNmv">so sánh</span></div><div class="formula">(GMV − GMV hủy) / 1,08</div></div>
+      <div class="card metric" data-icon="▣" data-tone="violet"><div class="label">Đơn đã đặt</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
+      <div class="card metric" data-icon="✓" data-tone="green"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
+      <div class="card metric" data-icon="×" data-tone="red"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
+      <div class="card metric" data-icon="%" data-tone="orange"><div class="label">Tỷ lệ hủy</div><div class="value" id="mCancelRate">-</div><div class="subline"><span id="dCancelRate" class="delta neutral">-</span><span id="cCancelRate">so sánh</span></div><div class="formula">GMV hủy / GMV</div></div>
+      <div class="card metric" data-icon="◇" data-tone="blue"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div><div class="formula">GMV / đơn đã đặt</div></div>
     </section>
 
-    <section class="grid2">
+    <section class="grid2" data-subpanel="gmv:overview">
       <div class="card">
         <div class="section-title">
           <div><h2 id="chartTitle">GMV theo khung giờ</h2><p id="chartDesc">Biểu đồ cột theo doanh số Data Center, gom theo create_time.</p></div>
@@ -419,7 +521,15 @@
       </article>
     </section>
 
-    <section class="overview-modules" aria-label="Các module điều hành nhanh">
+    <section class="overview-modules" aria-label="Các module điều hành nhanh" data-subpanel="gmv:overview">
+      <article class="card overview-module" data-widget-key="ops-alerts">
+        <div class="module-head">
+          <div><h3>Cảnh báo vận hành</h3><p>Hạn bàn giao và lý do hủy bất thường</p></div>
+          <button type="button" class="module-link" data-jump-sub="orders:deadlines">Xem chi tiết →</button>
+        </div>
+        <div id="overviewOpsBody" class="module-loading">Đang tải cảnh báo...</div>
+      </article>
+
       <article class="card overview-module" data-widget-key="marketing-health">
         <div class="module-head">
           <div><h3>Hiệu quả Marketing</h3><p>Dữ liệu Shopee Ads đã lưu</p></div>
@@ -437,12 +547,12 @@
       </article>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section data-subpanel="gmv:products" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Top sản phẩm</h2><p>Xếp hạng theo doanh số sản phẩm đã đặt trong khoảng thời gian đang chọn.</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Phân loại</th><th>SKU</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Đơn</th></tr></thead><tbody id="topProducts"></tbody></table></div>
     </section>
 
-    <section class="card" style="margin-top:16px" id="productConversionCard">
+    <section data-subpanel="gmv:products" class="card" style="margin-top:16px" id="productConversionCard">
       <div class="section-title"><div><h2>Quy đổi SKU bán → barcode → nhóm hàng</h2><p>Doanh thu giá chuẩn = tổng barcode đã bán × giá bạn cung cấp. GMV thực tế từ đơn hàng vẫn được giữ riêng và phân bổ theo tỷ trọng để hai số liệu không bị trộn lẫn.</p></div></div>
       <div class="conversion-revenue-overview">
         <div id="productConversionDonut" class="conversion-revenue-donut"><div class="conversion-revenue-center"><strong id="productConversionRevenueTotal">0đ</strong><span>Doanh thu giá chuẩn</span></div></div>
@@ -502,7 +612,62 @@
       </details>
     </section>
 
-    <details class="card storage-details">
+
+    <section class="card" data-subpanel="gmv:targets" id="bizPanel">
+      <div class="section-title">
+        <div><h2>Mục tiêu tháng &amp; runrate</h2><p>Runrate = thực tế từ đầu tháng đến hiện tại ÷ số ngày đã qua × số ngày trong tháng (giờ Việt Nam, tính cả phần đã qua của hôm nay). Chi phí tự động lấy từ Quảng cáo, phí sàn và Xu Shop trong Income, Xu Marketing đã tải lên; chi phí nhập tay được cộng thêm và không bị nhân theo runrate.</p></div>
+        <div class="mini-actions" style="margin-top:0"><div class="field"><label for="bizMonth">Tháng</label><input type="month" id="bizMonth"></div><button class="ghost" id="bizReloadBtn">↻ Tải lại</button></div>
+      </div>
+      <div id="bizNotice" class="notice">Chọn tháng để xem mục tiêu và runrate.</div>
+      <div class="ops-kpis biz-kpis">
+        <div class="ops-kpi"><span>GMV từ đầu tháng</span><b id="bizGmvActual">-</b><small id="bizGmvActualNote">-</small></div>
+        <div class="ops-kpi" id="bizRunrateCard"><span>Runrate GMV cuối tháng</span><b id="bizGmvProjected">-</b><small id="bizGmvProjectedNote">-</small></div>
+        <div class="ops-kpi"><span>Tiến độ so với kế hoạch</span><b id="bizGmvPace">-</b><small id="bizGmvPaceNote">-</small></div>
+        <div class="ops-kpi"><span>Cần mỗi ngày để đạt mục tiêu</span><b id="bizGmvRequired">-</b><small id="bizGmvRequiredNote">-</small></div>
+        <div class="ops-kpi"><span>NMV từ đầu tháng</span><b id="bizNmvActual">-</b><small id="bizNmvNote">-</small></div>
+        <div class="ops-kpi" id="bizCostCard"><span>Tổng chi phí từ đầu tháng</span><b id="bizCostActual">-</b><small id="bizCostNote">-</small></div>
+        <div class="ops-kpi"><span>Chi phí / GMV</span><b id="bizCostRatio">-</b><small id="bizCostRatioNote">-</small></div>
+        <div class="ops-kpi"><span>Chi phí / NMV</span><b id="bizCostNmvRatio">-</b><small id="bizCostNmvNote">-</small></div>
+      </div>
+      <div class="section-title" style="margin-top:6px"><div><h2 style="font-size:14px">GMV lũy kế so với kế hoạch</h2></div><div class="legend"><span><i class="sw" style="background:#ff6b35"></i>Thực tế lũy kế</span><span><i class="sw" style="background:#98a2b3"></i>Kế hoạch tuyến tính</span><span><i class="sw" style="background:#2563eb"></i>Runrate dự phóng</span></div></div>
+      <div class="chart-wrap biz-chart-wrap"><svg id="bizChart" class="chart" role="img" aria-label="GMV lũy kế so với kế hoạch"></svg></div>
+      <div class="table-wrap" style="margin-top:14px"><table class="biz-table"><thead><tr><th>Nhóm chi phí</th><th>Nguồn</th><th class="right">Ngân sách tháng</th><th class="right">Thực tế đến nay</th><th>Đã dùng</th><th class="right">Runrate cuối tháng</th><th class="right">% ngân sách (runrate)</th><th class="right">% GMV</th><th>Trạng thái</th></tr></thead><tbody id="bizCostRows"><tr><td colspan="9" class="empty">Chưa tải.</td></tr></tbody></table></div>
+      <p class="muted" id="bizFootnote" style="margin-top:8px"></p>
+
+      <details class="biz-editor hidden" id="bizEditor">
+        <summary>⚙ Cập nhật mục tiêu &amp; chi phí tháng (Admin)</summary>
+        <div class="biz-editor-grid">
+          <section class="conversion-admin-panel">
+            <h3>Mục tiêu và ngân sách của tháng <span id="bizEditorMonth">-</span></h3>
+            <p>Áp dụng cho shop đang chọn ở bộ lọc trên (chọn “Tất cả shop” để đặt mục tiêu chung). Để trống ô nào thì nhóm đó chưa có mục tiêu.</p>
+            <div class="biz-form-grid">
+              <div class="field"><label for="bizGmvTarget">Mục tiêu GMV (đ)</label><input id="bizGmvTarget" type="number" min="0" step="1000" inputmode="numeric"><small class="money-hint" data-for="bizGmvTarget"></small></div>
+              <div class="field"><label for="bizNmvTarget">Mục tiêu NMV (đ)</label><input id="bizNmvTarget" type="number" min="0" step="1000" inputmode="numeric"><small class="money-hint" data-for="bizNmvTarget"></small></div>
+            </div>
+            <h4 class="biz-subhead">Ngân sách chi phí (đ)</h4>
+            <div class="biz-form-grid" id="bizBudgetFields"></div>
+            <div class="field" style="margin-top:8px"><label for="bizNote">Ghi chú</label><input id="bizNote" maxlength="1000" placeholder="VD: Tháng có Mega Sale 10.10"></div>
+            <div class="conversion-admin-actions"><button type="button" id="bizSaveTargetBtn">Lưu mục tiêu</button><button type="button" class="ghost" id="bizCopyPrevBtn">Sao chép từ tháng trước</button></div>
+            <div class="conversion-admin-message" id="bizTargetMessage"></div>
+          </section>
+          <section class="conversion-admin-panel">
+            <h3>Thêm chi phí nhập tay</h3>
+            <p>Dùng cho khoản hệ thống không tự lấy được (KOL, vận hành, quảng cáo ngoài Shopee...). Không nhập lại khoản đã có nguồn tự động để tránh tính trùng.</p>
+            <div class="biz-form-grid">
+              <div class="field"><label for="bizCostDate">Ngày</label><input id="bizCostDate" type="date"></div>
+              <div class="field"><label for="bizCostCategory">Nhóm chi phí</label><select id="bizCostCategory"></select></div>
+              <div class="field"><label for="bizCostAmount">Số tiền (đ)</label><input id="bizCostAmount" type="number" min="1" step="1000" inputmode="numeric"><small class="money-hint" data-for="bizCostAmount"></small></div>
+              <div class="field"><label for="bizCostNote">Ghi chú</label><input id="bizCostNote" maxlength="500" placeholder="Không bắt buộc"></div>
+            </div>
+            <div class="conversion-admin-actions"><button type="button" id="bizAddCostBtn">Thêm chi phí</button></div>
+            <div class="conversion-admin-message" id="bizCostMessage"></div>
+            <div class="table-wrap" style="margin-top:10px"><table class="conversion-admin-table"><thead><tr><th>Ngày</th><th>Nhóm</th><th class="right">Số tiền</th><th>Ghi chú</th><th>Người nhập</th><th></th></tr></thead><tbody id="bizManualRows"><tr><td colspan="6" class="empty">Chưa có chi phí nhập tay.</td></tr></tbody></table></div>
+          </section>
+        </div>
+      </details>
+    </section>
+
+    <details class="card storage-details" data-subpanel="gmv:overview">
       <summary>Thông tin dữ liệu và trạng thái lưu trữ</summary>
       <div id="storageBox" class="notice">Đang đọc snapshot từ database...</div>
       <div class="table-wrap" style="margin-top:12px"><table><tbody id="statusTable"></tbody></table></div>
@@ -544,7 +709,9 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-marketing">
-    <section class="card" style="margin-top:16px">
+
+    <nav class="page-subnav" data-tab="marketing" aria-label="Mục trong trang"><button type="button" data-sub="traffic">Traffic toàn shop</button><button type="button" data-sub="ads">Quảng cáo</button><button type="button" data-sub="coin">Xu Shop</button><button type="button" data-sub="mktcoin">Xu Marketing</button></nav>
+    <section data-subpanel="marketing:traffic" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Traffic toàn shop · tất cả nguồn</h2><p>Tổng hợp traffic tự nhiên và trả phí từ báo cáo Phân tích bán hàng/Business Insights: Tìm kiếm, Đề xuất, Trang shop, Shopee Live, Quảng cáo, nguồn ngoài… nếu file Shopee có cột nguồn. Phần này độc lập với Ads bên dưới để không đếm nhầm click quảng cáo thành toàn shop.</p></div></div>
       <div id="shopTrafficSummary" class="notice">Chọn một shop, xuất báo cáo Traffic theo ngày từ Kênh Người Bán rồi tải file Excel/CSV lên. Nếu file có cột “Nguồn truy cập”, dashboard sẽ tự tách từng nguồn.</div>
       <div class="orders-toolbar">
@@ -567,7 +734,7 @@
       <div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Hiển thị</th><th class="right">Link click</th><th class="right">CTR</th><th class="right">Khách truy cập</th><th class="right">Lượt xem trang</th></tr></thead><tbody id="shopTrafficDailyRows"><tr><td colspan="6" class="empty">Chưa có dữ liệu.</td></tr></tbody></table></div>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section data-subpanel="marketing:ads" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Chi phí quảng cáo Shopee</h2><p>Product/CPC Ads được đồng bộ tự động từ OpenAPI. Chi phí Dịch vụ hiển thị Livestream được tách riêng vì OpenAPI hiện không trả khoản chi này; hãy xuất báo cáo Livestream Ads từ Kênh Người Bán và tải file lên bên dưới. Dashboard sẽ cộng hai phần thành Tổng chi phí quảng cáo mà không ghi đè lẫn nhau.</p></div><div class="mini-actions"><button class="ghost" id="adsBtn">Tải chi phí quảng cáo</button><button id="adsSyncBtn">Đồng bộ Product Ads</button></div></div>
       <div id="adsSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên rồi bấm "Đồng bộ Product Ads" để lấy dữ liệu lần đầu.</div>
       <div class="perf-grid">
@@ -588,7 +755,7 @@
       <details class="settings" style="margin-top:14px"><summary>Raw dữ liệu Ads</summary><pre id="adsRaw" class="diag-raw">Chưa tải</pre></details>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section data-subpanel="marketing:coin" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Chi phí Xu Shop (Shopee Coins)</h2><p>Lấy từ đối soát escrow từng đơn (get_escrow_detail_batch, tối đa 50 đơn/lần gọi) — chỉ tính đơn <b>COMPLETED</b> vì escrow mới ổn định. Đồng bộ tự động ~100 đơn mỗi 10 phút cho hôm nay; bấm nút để quét bù ngày cũ.</p></div><div class="mini-actions"><button class="ghost" id="coinBtn">Tải chi phí Xu Shop</button><button id="coinSyncBtn">Đồng bộ Xu Shop</button></div></div>
       <div id="coinSummary" class="notice">Chọn 1 shop cụ thể rồi bấm "Đồng bộ Xu Shop" để quét đơn COMPLETED trong khoảng đang chọn.</div>
       <div class="perf-grid">
@@ -601,7 +768,7 @@
       <details class="settings" style="margin-top:14px"><summary>Raw dữ liệu Xu Shop</summary><pre id="coinRaw" class="diag-raw">Chưa tải</pre></details>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section data-subpanel="marketing:mktcoin" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Xu Marketing (Xu Của Shop)</h2><p>Xu dùng cho Livestream, Giải thưởng của Shop, Xu thưởng đánh giá — <b>Shopee không có API công khai cho dữ liệu này</b>, chỉ xem được ở Kênh Marketing → Xu Của Shop trên Shopee. Bấm "Xuất dữ liệu" ở trang đó rồi tải file lên đây khi cần xem/lọc chi tiết; không upload thì các số dưới đây vẫn giữ nguyên lần tải gần nhất, không tự mất.</p></div></div>
       <div id="mktCoinSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên, sau đó tải file Excel/CSV đã xuất từ Shopee lên để xem.</div>
       <div class="orders-toolbar">
@@ -624,7 +791,9 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-warehouse">
-      <section class="card" style="margin-top:16px">
+
+    <nav class="page-subnav" data-tab="warehouse" aria-label="Mục trong trang"><button type="button" data-sub="combos">Combo & cấu tạo</button><button type="button" data-sub="skus">Danh mục SKU</button><button type="button" data-sub="sales">Combo đã bán</button></nav>
+      <section data-subpanel="warehouse:combos" class="card" style="margin-top:16px">
         <div class="section-title">
           <div><h2>Danh mục combo & cấu tạo SKU</h2><p>Đồng bộ từ combo-list-api và product-list-api. Trang này chỉ quản lý mã combo, thành phần và phân loại sản phẩm; không còn dữ liệu tồn kho.</p></div>
           <div class="mini-actions"><button class="ghost" id="warehouseBtn">Tải lại</button><button id="warehouseSyncBtn">Đồng bộ toàn bộ danh mục</button></div>
@@ -646,7 +815,7 @@
         <div class="warehouse-pagination"><button class="ghost" id="warehouseComboPrevBtn">← Trước</button><span class="muted" id="warehouseComboPageInfo">-</span><button class="ghost" id="warehouseComboNextBtn">Sau →</button></div>
       </section>
 
-      <section class="card" style="margin-top:16px">
+      <section data-subpanel="warehouse:skus" class="card" style="margin-top:16px">
         <div class="section-title"><div><h2>Danh mục SKU sản phẩm</h2><p>Tra cứu barcode/SKU và xem danh mục như Bỉm, Quà. Dữ liệu được dùng để phân loại từng thành phần trong combo.</p></div></div>
         <div class="catalog-toolbar">
           <div class="field search-field"><label>Tìm SKU / barcode / tên</label><input id="warehouseProductSearch" placeholder="Ví dụ: SKU-BIM hoặc tên sản phẩm"></div>
@@ -659,7 +828,7 @@
         <div class="warehouse-pagination"><button class="ghost" id="warehouseProductPrevBtn">← Trước</button><span class="muted" id="warehouseProductPageInfo">-</span><button class="ghost" id="warehouseProductNextBtn">Sau →</button></div>
       </section>
 
-      <section class="card" style="margin-top:16px">
+      <section data-subpanel="warehouse:sales" class="card" style="margin-top:16px">
         <div class="section-title"><div><h2>Combo đã bán & barcode thành phần</h2><p>Đối chiếu chính xác SKU trong ledger với mã combo, sau đó nhân số combo đã bán với số lượng từng barcode con. Không tính đơn UNPAID, CANCELLED hoặc IN_CANCEL.</p></div></div>
         <div id="warehouseSalesSummary" class="notice">Chọn khoảng ngày/shop phía trên rồi bấm “Tải số đã bán”.</div>
         <div class="warehouse-kpis">
@@ -684,7 +853,63 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-orders">
-    <section class="card" style="margin-top:16px">
+
+    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+
+    <section class="card ops-card" data-subpanel="orders:deadlines" id="shipDeadlinePanel">
+      <div class="section-title">
+        <div><h2>Cảnh báo hạn bàn giao cho đơn vị vận chuyển</h2><p>Đơn đã sẵn sàng giao (READY_TO_SHIP, PROCESSED, RETRY_SHIP) nhưng chưa bàn giao. Hạn lấy từ <code>ship_by_date</code> Shopee trả cho từng đơn; đơn thiếu trường này được ước tính theo mốc 14h (trước 14h bàn giao trong ngày, sau 14h bàn giao trước 23:59 hôm sau) và gắn nhãn “ước tính”. Cảnh báo bật từ 2 giờ trước hạn.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="shipDeadlineReloadBtn">↻ Tải lại</button></div>
+      </div>
+      <div class="ops-kpis">
+        <button type="button" class="ops-kpi danger" data-ship-quick="overdue"><span>Đã quá hạn</span><b id="shipKpiOverdue">-</b><small>Cần bàn giao ngay</small></button>
+        <button type="button" class="ops-kpi warn" data-ship-quick="due_soon"><span>Sắp đến hạn</span><b id="shipKpiDueSoon">-</b><small id="shipKpiDueSoonNote">Còn ≤ 2 giờ</small></button>
+        <button type="button" class="ops-kpi ok" data-ship-quick="on_track"><span>Còn hạn</span><b id="shipKpiOnTrack">-</b><small>Chưa tới mốc cảnh báo</small></button>
+        <button type="button" class="ops-kpi muted-kpi" data-ship-quick="all"><span>Tổng chờ bàn giao</span><b id="shipKpiTotal">-</b><small id="shipKpiEstimated">-</small></button>
+      </div>
+      <div class="ship-filter-bar">
+        <div class="field"><label>Mức ưu tiên</label><div class="chip-group" id="shipPriorityChips"></div></div>
+        <div class="field"><label for="shipRangeFrom">So với hạn: từ (giờ)</label><input id="shipRangeFrom" type="number" step="0.5" placeholder="VD: -24 = quá hạn 24h"></div>
+        <div class="field"><label for="shipRangeTo">đến (giờ)</label><input id="shipRangeTo" type="number" step="0.5" placeholder="VD: 2 = còn 2h"></div>
+        <div class="field"><label for="shipCarrier">Đơn vị vận chuyển</label><select id="shipCarrier"><option value="">Tất cả</option></select></div>
+        <div class="field"><label for="shipSearch">Tìm mã đơn</label><input id="shipSearch" type="search" placeholder="order_sn"></div>
+        <div class="field"><label for="shipSort">Sắp xếp</label><select id="shipSort"><option value="deadline">Hạn sớm nhất trước</option><option value="priority">Theo mức ưu tiên</option><option value="overdue_desc">Quá hạn lâu nhất trước</option></select></div>
+        <button type="button" class="ghost" id="shipFilterResetBtn">Xóa lọc</button>
+      </div>
+      <details class="priority-settings" id="shipPrioritySettings">
+        <summary>⚙ Thiết lập mức ưu tiên</summary>
+        <p class="muted">Mốc tính theo thời gian còn lại tới hạn bàn giao. Thiết lập được lưu trên trình duyệt này.</p>
+        <div class="priority-grid">
+          <div class="field"><label for="prioP1Hours"><span class="prio p1">P1</span> Khẩn cấp: quá hạn từ (giờ)</label><input id="prioP1Hours" type="number" min="0" step="0.5"></div>
+          <div class="field"><label><span class="prio p2">P2</span> Quá hạn: quá hạn dưới mốc P1</label><input type="text" value="Tự động" disabled></div>
+          <div class="field"><label for="prioP3Minutes"><span class="prio p3">P3</span> Gấp: còn tối đa (phút)</label><input id="prioP3Minutes" type="number" min="1" step="5"></div>
+          <div class="field"><label for="prioP4Minutes"><span class="prio p4">P4</span> Sắp đến hạn: còn tối đa (phút)</label><input id="prioP4Minutes" type="number" min="5" step="5"></div>
+        </div>
+        <div class="mini-actions"><button type="button" id="prioSaveBtn">Lưu mức ưu tiên</button><button type="button" class="ghost" id="prioResetBtn">Về mặc định (24h · 30 phút · 120 phút)</button><span class="muted" id="prioMessage"></span></div>
+      </details>
+      <div class="muted ship-meta" id="shipDeadlineMeta">Chưa tải.</div>
+      <div class="table-wrap"><table class="ship-table"><thead><tr><th>Ưu tiên</th><th>Mã đơn</th><th>Shop</th><th>Trạng thái</th><th>Đơn vị vận chuyển</th><th>Hạn bàn giao</th><th class="right">Còn lại / quá hạn</th><th>Thanh toán lúc</th><th class="right">Giá trị</th></tr></thead><tbody id="shipDeadlineRows"><tr><td colspan="9" class="empty">Chưa tải.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="card ops-card" data-subpanel="orders:cancel" id="cancelReasonPanel">
+      <div class="section-title">
+        <div><h2>Lý do hủy đơn</h2><p>Thống kê theo ngày tạo đơn trong kỳ đang chọn, so với kỳ nền 28 ngày liền trước. Cảnh báo khi tỷ lệ một lý do (trên tổng đơn) tăng từ 1,5 lần và thêm ít nhất 0,5 điểm %, với tối thiểu 5 đơn; hoặc khi một lý do mới xuất hiện từ 5 đơn.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="cancelReasonReloadBtn">↻ Tải lại</button></div>
+      </div>
+      <div id="cancelOverallAlert" class="notice warn-note hidden"></div>
+      <div class="ops-kpis">
+        <div class="ops-kpi danger"><span>Đơn hủy</span><b id="cancelKpiOrders">-</b><small id="cancelKpiOrdersNote">-</small></div>
+        <div class="ops-kpi warn"><span>GMV hủy</span><b id="cancelKpiGmv">-</b><small id="cancelKpiGmvNote">-</small></div>
+        <div class="ops-kpi"><span>Tỷ lệ hủy (GMV hủy / GMV)</span><b id="cancelKpiRate">-</b><small id="cancelKpiRateNote">-</small></div>
+        <div class="ops-kpi"><span>Lý do đang cảnh báo</span><b id="cancelKpiAlerts">-</b><small id="cancelKpiBaseline">-</small></div>
+      </div>
+      <div class="ship-filter-bar">
+        <div class="field"><label for="cancelByFilter">Bên hủy</label><select id="cancelByFilter"><option value="">Tất cả</option><option value="buyer">Người mua</option><option value="seller">Người bán</option><option value="system">Hệ thống</option><option value="unknown">Không rõ</option></select></div>
+        <label class="check-inline"><input type="checkbox" id="cancelAlertOnly"> Chỉ lý do đang cảnh báo</label>
+      </div>
+      <div class="table-wrap"><table class="cancel-table"><thead><tr><th>Lý do hủy</th><th>Bên hủy</th><th class="right">Số đơn</th><th>Tỷ trọng trong đơn hủy</th><th class="right">% tổng đơn</th><th class="right">Kỳ nền</th><th class="right">Thay đổi</th><th class="right">GMV hủy</th><th>Cảnh báo</th></tr></thead><tbody id="cancelReasonRows"><tr><td colspan="9" class="empty">Chưa tải.</td></tr></tbody></table></div>
+    </section>
+    <section data-subpanel="orders:regions" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Đơn hàng theo Tỉnh/Thành phố</h2><p>Chỉ đọc trường khu vực trong <code>recipient_address</code> của Shopee API. Hệ thống không hiển thị địa chỉ chi tiết và không suy đoán dữ liệu đã bị che bằng <code>****</code>.</p></div><button class="ghost" id="orderRegionsReloadBtn">Tải khu vực</button></div>
       <div id="orderRegionsSummary" class="notice">Đang chờ tải dữ liệu khu vực theo khoảng ngày đã chọn.</div>
       <div class="perf-grid">
@@ -702,7 +927,7 @@
       <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Tỉnh/Thành phố</th><th class="right">Số đơn</th><th class="right">Tỷ trọng</th><th class="right">GMV</th></tr></thead><tbody id="orderRegionRows"><tr><td colspan="4" class="empty">Chưa tải.</td></tr></tbody></table></div>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section data-subpanel="orders:list" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Chi tiết đơn hàng</h2><p>Xem danh sách đơn theo shop đang chọn ở bộ lọc phía trên; có thể lọc thêm trạng thái, mã đơn, sản phẩm hoặc SKU.</p></div><button class="ghost" id="ordersReloadBtn">Tải đơn</button></div>
       <div class="orders-toolbar">
         <div class="field"><label>Trạng thái</label><select id="orderStatus"><option value="all">Tất cả</option><option value="READY_TO_SHIP">READY_TO_SHIP</option><option value="PROCESSED">PROCESSED</option><option value="SHIPPED">SHIPPED</option><option value="TO_CONFIRM_RECEIVE">TO_CONFIRM_RECEIVE</option><option value="COMPLETED">COMPLETED</option><option value="CANCELLED">CANCELLED</option><option value="UNPAID">UNPAID</option></select></div>
@@ -725,15 +950,46 @@
       <div id="orderDetailBox" class="order-detail hidden"></div>
     </section>
 
+    <section class="card" style="margin-top:16px" id="walletReportPanel" data-subpanel="orders:wallet">
+      <div class="section-title"><div><h2>Đối soát tiền về ví theo ngày phát sinh đơn</h2><p>Khoảng ngày ở bộ lọc phía trên là <b>ngày tạo đơn</b>. Giao dịch ví được quét riêng từ ngày đó đến hiện tại, kể cả khi Shopee trả tiền hoặc trừ tiền hoàn sau nhiều ngày. Báo cáo doanh thu hiện tại không thay đổi.</p></div><button class="ghost" id="walletReportReloadBtn">Xem đối soát</button></div>
+      <div class="orders-toolbar">
+        <div class="field"><label>Tình trạng tiền về ví</label><select id="walletReportStatus"><option value="all">Tất cả</option><option value="paid">Đã thấy tiền vào ví</option><option value="paid_refund_debited">Đã vào ví, sau đó bị trừ hoàn</option><option value="refund_debited_no_credit">Thấy trừ hoàn, chưa thấy cộng tiền</option><option value="no_wallet_credit_seen">Cần kiểm tra: chưa thấy tiền vào ví</option><option value="within_grace">Mới hoàn tất, đang chờ tiền về</option><option value="unverified">Chưa đủ dữ liệu ví</option><option value="not_completed">Đơn chưa hoàn tất</option></select></div>
+        <div class="field"><label>Số dòng</label><select id="walletReportLimit"><option>25</option><option selected>50</option><option>100</option><option>200</option></select></div>
+        <button class="ghost" id="walletReportPrevBtn">Trước</button><button class="ghost" id="walletReportNextBtn">Sau</button>
+        <span class="muted" id="walletReportPageInfo">-</span>
+      </div>
+      <div class="orders-toolbar hidden" id="walletReportSyncControls" style="margin-top:8px">
+        <button id="walletReportSyncBtn">Cập nhật giao dịch ví cho kỳ đang chọn</button>
+        <button class="ghost hidden" id="walletReportStopBtn">Dừng sau lượt hiện tại</button>
+        <span class="muted">Có thể chạy tiếp cho kỳ dài; chỉ tài khoản có quyền Hệ thống được cập nhật.</span>
+      </div>
+      <div class="muted" id="walletReportProgress" style="margin:10px 0">Chưa quét giao dịch ví cho kỳ này.</div>
+      <div class="perf-grid">
+        <div class="perf-card"><div class="k">Đơn phát sinh</div><div class="v" id="walletReportTotal">-</div></div>
+        <div class="perf-card"><div class="k">Đã thấy tiền vào ví</div><div class="v" id="walletReportPaid">-</div></div>
+        <div class="perf-card"><div class="k">Cần kiểm tra chưa thấy tiền</div><div class="v" id="walletReportNoCredit">-</div></div>
+        <div class="perf-card"><div class="k">Chưa đủ dữ liệu ví</div><div class="v" id="walletReportUnverified">-</div><div class="muted" id="walletReportWithinGrace">-</div></div>
+      </div>
+      <div class="income-summary" aria-label="Tổng hợp Income và giao dịch ví">
+        <div class="income-box escrow"><div class="income-label">Income/escrow Shopee đã ghi nhận</div><div class="income-value" id="walletIncomeEscrow">-</div><div class="income-help" id="walletIncomeEscrowHelp">Ảnh chụp thu nhập đơn; chưa xác nhận tiền đã vào ví.</div></div>
+        <div class="income-box credit"><div class="income-label">Tiền thực tế đã cộng ví</div><div class="income-value" id="walletIncomeCredit">-</div><div class="income-help">Chỉ cộng các giao dịch ví hoàn tất, có mã đơn và được nhận diện là tiền đơn.</div></div>
+        <div class="income-box refund"><div class="income-label">Tiền bị trừ do hoàn</div><div class="income-value" id="walletIncomeRefund">-</div><div class="income-help">Chỉ cộng các giao dịch trừ ví hoàn tất được nhận diện là hoàn/điều chỉnh hoàn.</div></div>
+      </div>
+      <div class="income-source-note">Các ô tổng hợp áp dụng cho <b>toàn bộ đơn trong kỳ đã chọn</b>, kể cả khi bảng đang lọc một trạng thái. Ba số tiền là <b>ba nguồn/chứng từ riêng</b>, chưa được ghép thành “tiền thực nhận” hay tự trừ khỏi GMV. Mở từng đơn để xem Income, phí và lịch sử giao dịch ví.</div>
+      <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Mã đơn</th><th>Ngày phát sinh</th><th>Trạng thái đơn</th><th>Tình trạng tiền về ví</th><th class="right">Income/escrow</th><th class="right">Đã cộng ví</th><th class="right">Đã trừ hoàn</th><th>Ngày cộng ví cuối</th><th>Chi tiết</th></tr></thead><tbody id="walletReportRows"><tr><td colspan="9" class="empty">Chọn một shop cụ thể và bấm Xem đối soát.</td></tr></tbody></table></div>
+      <div id="walletIncomeDetailBox" class="order-detail hidden" aria-live="polite"></div>
+      <p class="muted" id="walletReportNote" style="margin-top:10px">“Chưa thấy tiền” là cảnh báo cần kiểm tra, không khẳng định Shopee chưa thanh toán.</p>
+    </section>
+
 
     </section>
 
     <section class="tab-panel hidden" id="tab-system">
-    <div class="tab-title"><div><h2>Hệ thống</h2><p>Chẩn đoán đồng bộ dữ liệu, kiểm tra sai lệch số liệu, và cấu hình kết nối Worker/shop. Các mục này áp dụng chung cho toàn bộ dashboard, không riêng theo tab nào.</p></div></div>
+    <nav class="page-subnav" data-tab="system" aria-label="Mục trong trang"><button type="button" data-sub="accounts" data-admin-only>Tài khoản & phân quyền</button><button type="button" data-sub="sync">Quét tự động 24/7</button><button type="button" data-sub="diagnostics">Chẩn đoán số liệu</button><button type="button" data-sub="connect">Kết nối & cài đặt</button></nav>
     <div class="notice warn-note">🔒 Trang nội bộ cho các shop Gooby / LazyMom / Rouya đã được ủy quyền. Trang này không thu thập tài khoản, mật khẩu hoặc thông tin thanh toán. Việc ủy quyền shop đi qua Open Platform OAuth.</div>
 
 
-    <section class="card hidden" id="adminAccountsPanel" style="margin-top:16px">
+    <section class="card hidden" id="adminAccountsPanel" data-subpanel="system:accounts" style="margin-top:16px">
       <div class="section-title">
         <div><h2>Tài khoản & phân quyền</h2><p>Admin tạo tài khoản, chọn shop được xem và bật đúng nhóm tính năng cần sử dụng. Quyền được kiểm tra lại ở Worker trước khi dữ liệu được trả về.</p></div>
         <button type="button" class="ghost" id="adminReloadBtn">Tải lại</button>
@@ -768,7 +1024,7 @@
       <div class="table-wrap" style="margin-top:16px"><table class="account-table"><thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Trạng thái</th><th>Shop</th><th>Tính năng</th><th>Thao tác</th></tr></thead><tbody id="accountRows"><tr><td colspan="6" class="empty">Chưa tải danh sách tài khoản.</td></tr></tbody></table></div>
     </section>
 
-    <section class="card" id="auto24AdminPanel" style="margin-top:16px">
+    <section class="card" id="auto24AdminPanel" data-subpanel="system:sync" style="margin-top:16px">
       <div class="section-title">
         <div>
           <h2>Quét tự động 24/7</h2>
@@ -792,7 +1048,7 @@
       </p>
     </section>
 
-    <section class="card" id="systemGlobalSettings" style="margin-top:16px">
+    <section class="card" id="systemGlobalSettings" data-subpanel="system:diagnostics" style="margin-top:16px">
       <div class="section-title">
         <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, số đơn ledger thiếu, công thức GMV hoặc nguồn tiền total_amount/item_subtotal.</p></div>
         <div class="mini-actions" style="margin-top:0">
@@ -821,7 +1077,7 @@
       <div class="table-wrap" style="margin-top:14px"><table class="log-table"><thead><tr><th>Khu vực</th><th>Nội dung lỗi/cảnh báo</th></tr></thead><tbody id="diagLogRows"></tbody></table></div>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section data-subpanel="system:connect" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Cài đặt kỹ thuật / kết nối shop</h2><p>Cấu hình địa chỉ Worker backend và tạo link ủy quyền OAuth cho shop mới.</p></div></div>
       <div class="settings-panel">
         <div class="filters">
@@ -844,6 +1100,10 @@ const DEFAULT_WORKER = 'https://shopee-ledger-sync.vuhailong4405.workers.dev';
 const $ = id => document.getElementById(id);
 let timer = null;
 let orderOffset = 0;
+let walletReportOffset = 0;
+let walletReportLoadToken = 0;
+let walletIncomeDetailToken = 0;
+let walletSyncStop = false;
 const AUTH_SESSION_KEY='gooby_bi_auth_session_v70';
 const TAB_FEATURE={gmv:'overview',orders:'orders',performance:'performance',marketing:'marketing',warehouse:'warehouse',system:'system'};
 const FEATURE_LABEL={overview:'Tổng quan',orders:'Đơn hàng',performance:'Hiệu quả',marketing:'Marketing',warehouse:'Kho hàng',system:'Hệ thống'};
@@ -864,6 +1124,7 @@ function isoWeekString(date){ const d=new Date(Date.parse(date+'T00:00:00Z')); c
 function weekToRange(w){ const [y,ww]=w.split('-W'); const year=Number(y), week=Number(ww); const jan4=new Date(Date.UTC(year,0,4)); const jan4Day=jan4.getUTCDay()||7; const monday=new Date(jan4.getTime()-(jan4Day-1)*86400000+(week-1)*7*86400000); return {from:isoDate(monday), to:isoDate(new Date(monday.getTime()+6*86400000))}; }
 function getWorker(){ return (($('workerUrl')?.value)||localStorage.getItem('gooby_bi_worker')||localStorage.getItem('ledger_worker_v53')||localStorage.getItem('ledger_worker_v49')||localStorage.getItem('ledger_worker_v45')||localStorage.getItem('ledger_worker_v43')||DEFAULT_WORKER).replace(/\/$/,''); }
 function money(n){ n=Number(n||0); if(Math.abs(n)>=1e9) return (n/1e9).toFixed(n>=1e10?1:2).replace('.',',')+' tỷ'; if(Math.abs(n)>=1e6) return (n/1e6).toFixed(n>=1e7?1:2).replace('.',',')+' tr'; return n.toLocaleString('vi-VN')+'đ'; }
+function moneyExact(n){ const value=Number(n); return Number.isFinite(value)?value.toLocaleString('vi-VN',{maximumFractionDigits:2})+'đ':'-'; }
 function num(n){ return Number(n||0).toLocaleString('vi-VN'); }
 function percent(n){ return (Number(n||0)).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%'; }
 function vnDateLabel(date){ const [y,m,d]=date.split('-'); return `${d}/${m}/${y}`; }
@@ -930,6 +1191,7 @@ function applyCurrentUserUi(){
   $('warehouseSyncBtn').classList.toggle('hidden',!currentUser.is_admin);
   $('conversionAdminEditor').classList.toggle('hidden',!currentUser.is_admin);
   $('walletProbePanel').classList.toggle('hidden',!hasFeature('system'));
+  $('walletReportSyncControls').classList.toggle('hidden',!hasFeature('system'));
   updateRoleUI(currentTab());
 }
 function showLoggedOut(message){
@@ -1408,8 +1670,8 @@ $('conversionMappingRows').addEventListener('click',event=>{
   if(button.dataset.mappingAction==='edit')editConversionMapping(button.dataset.orderSku||'');
   if(button.dataset.mappingAction==='delete')deleteConversionMapping(button.dataset.orderSku||'');
 });
-function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[loadProductLineConversion(token)];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
-function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
+function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[loadProductLineConversion(token),loadOverviewOps()];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
+function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); setMetric('mNmv','dNmv','cNmv',s.nmv,d.nmv,'money'); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
 function shortMoney(n){ return money(n||0); }
 function issueClass(level){ return level==='error'?'issue error':level==='warn'?'issue warn':'issue ok'; }
@@ -2290,8 +2552,115 @@ async function loadOrderRegions(){
 async function loadOrders(reset=false){
   if(reset) orderOffset=0; const r=getRange(); const shop=$('shop').value||'all'; const limit=Number($('orderLimit').value||50); const status=$('orderStatus').value||'all'; const q=$('orderSearch').value||'';
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,status,q,limit:String(limit),offset:String(orderOffset)});
-  const regionTask=reset?loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ Không tải được khu vực đơn hàng: '+e.message;}):Promise.resolve();
+  const regionTask=reset&&daysInclusive(r.from,r.to)<=31?loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ Không tải được khu vực đơn hàng: '+e.message;}):Promise.resolve();
+  if(reset&&daysInclusive(r.from,r.to)>31)$('orderRegionsSummary').textContent='Khoảng dài hơn 31 ngày: tạm không tải biểu đồ tỉnh/thành để báo cáo đơn và đối soát ví chạy nhanh hơn.';
   const data=await api('/api/orders?'+qs.toString()); renderOrdersTable(data); await regionTask;
+}
+function walletStatusBadge(status){
+  const labels={paid:'Đã thấy tiền vào ví',paid_refund_debited:'Đã vào ví · bị trừ hoàn',refund_debited_no_credit:'Thấy trừ hoàn · chưa thấy cộng',no_wallet_credit_seen:'Cần kiểm tra · chưa thấy tiền',within_grace:'Mới hoàn tất · chờ tiền về',unverified:'Chưa đủ dữ liệu ví',not_completed:'Đơn chưa hoàn tất'};
+  const tone=status==='paid'?'good':status==='no_wallet_credit_seen'||status==='refund_debited_no_credit'?'bad':'warn';
+  return `<span class="badge ${tone}">${escapeHtml(labels[status]||status||'Không rõ')}</span>`;
+}
+function renderIncomeBreakdown(raw){
+  const labels={escrow_amount:'Tiền thu nhập escrow',commission_fee:'Phí hoa hồng',service_fee:'Phí dịch vụ',seller_transaction_fee:'Phí giao dịch',seller_coin_cash_back:'Xu Shop',seller_voucher_code:'Mã giảm giá shop',seller_voucher:'Giảm giá shop',shipping_fee:'Phí vận chuyển',buyer_total_amount:'Tổng người mua trả'};
+  const entries=Object.entries(raw&&typeof raw==='object'?raw:{});
+  if(!entries.length)return '';
+  const value=v=>v&&typeof v==='object'?escapeHtml(JSON.stringify(v)):fmtDetailVal(v);
+  return `<details class="detail-section" style="margin-top:12px"><summary style="cursor:pointer;font-weight:900">Tất cả thành phần Income Shopee đã lưu (${num(entries.length)})</summary><div class="kv" style="margin-top:12px">${entries.map(([key,v])=>`<div title="${escapeHtml(key)}">${escapeHtml(labels[key]||key.replaceAll('_',' '))}</div><div>${value(v)}</div>`).join('')}</div></details>`;
+}
+function renderWalletReport(data){
+  const summary=data.summary||{},rows=data.orders||[],coverage=data.coverage||{};
+  $('walletReportTotal').textContent=num(summary.total_orders||0);
+  $('walletReportPaid').textContent=num(summary.paid_orders||0);
+  $('walletReportNoCredit').textContent=num(summary.no_wallet_credit_seen_orders||0);
+  $('walletReportUnverified').textContent=num(summary.unverified_orders||0);
+  $('walletReportWithinGrace').textContent=`${num(summary.within_grace_orders||0)} đơn mới hoàn tất, đang trong ${num(data.credit_grace_days??3)} ngày chờ tiền về`;
+  $('walletIncomeEscrow').textContent=moneyExact(summary.escrow_recorded_amount||0);
+  $('walletIncomeEscrowHelp').textContent=`Có ảnh chụp Income cho ${num(summary.escrow_recorded_orders||0)} / ${num(summary.total_orders||0)} đơn trong kỳ; số này không xác nhận tiền đã vào ví.`;
+  $('walletIncomeCredit').textContent=coverage.source_verified===false?'Chưa xác nhận nguồn':moneyExact(summary.wallet_credited_amount||0);
+  $('walletIncomeRefund').textContent=coverage.source_verified===false?'Chưa xác nhận nguồn':moneyExact(summary.wallet_refund_debited_amount||0);
+  $('walletReportPageInfo').textContent=`${num(data.total?data.offset+1:0)}-${num(Math.min(data.offset+data.limit,data.total))} / ${num(data.total)} đơn`;
+  const lastCredit=sec=>sec?new Date(Number(sec)*1000).toLocaleString('vi-VN'):'-';
+  $('walletReportRows').innerHTML=rows.map(row=>`<tr><td><b>${escapeHtml(row.order_sn)}</b></td><td>${escapeHtml(row.create_date||'-')}</td><td>${statusBadge(row.order_status)}</td><td>${walletStatusBadge(row.wallet_status)}</td><td class="right">${row.escrow_amount===null?'<span class="muted">Chưa có</span>':moneyExact(row.escrow_amount)}</td><td class="right">${moneyExact(row.credited_amount||0)}</td><td class="right">${moneyExact(row.refund_debited_amount||0)}</td><td>${escapeHtml(lastCredit(row.last_credit_time))}</td><td><button class="linkbtn" data-income-sn="${escapeHtml(row.order_sn)}" data-income-status="${escapeHtml(row.wallet_status)}">Xem Income</button></td></tr>`).join('')||'<tr><td colspan="9" class="empty">Không có đơn theo bộ lọc này.</td></tr>';
+  walletIncomeDetailToken++;
+  $('walletIncomeDetailBox').classList.add('hidden');
+  document.querySelectorAll('[data-income-sn]').forEach(btn=>btn.addEventListener('click',()=>loadWalletIncomeDetail(btn.dataset.incomeSn,btn.dataset.incomeStatus)));
+  const coverageText=coverage.coverage_from?`Dữ liệu ví đã phủ liên tục từ ${escapeHtml(coverage.coverage_from)} đến ${escapeHtml(coverage.as_of)}.`:`Chưa đủ dữ liệu ví liên tục đến ${escapeHtml(coverage.as_of||'-')} để cảnh báo đơn chưa thấy tiền.`;
+  const gapText=coverage.missing_date?` Thiếu ngày ${escapeHtml(coverage.missing_date)}.`:'';
+  const unlinkedText=(coverage.unlinked_order_income_days||[]).length?` Có ${num(coverage.unlinked_order_income_days.length)} ngày có giao dịch cộng ví thiếu mã đơn; chỉ các đơn hoàn tất gần những ngày đó được để trạng thái chưa đủ dữ liệu.`:'';
+  const sourceText=coverage.source_verified===false?' Chưa xác nhận được giao dịch cộng ví có mã đơn của shop này; chưa phát cảnh báo thiếu tiền.':'';
+  $('walletReportProgress').textContent=coverageText+gapText+unlinkedText+sourceText;
+  $('walletReportNote').textContent='Khoảng chọn theo ngày tạo đơn; dữ liệu ví tính đến hết '+(coverage.as_of||'-')+'. “Chưa thấy tiền” chỉ là cảnh báo cần kiểm tra sau khi quét đủ, không phải xác nhận Shopee chưa thanh toán.';
+}
+async function loadWalletIncomeDetail(orderSn,walletStatus=''){
+  const box=$('walletIncomeDetailBox'),shop=$('shop').value||'all';
+  const token=++walletIncomeDetailToken;
+  box.classList.remove('hidden');box.innerHTML='<div class="empty">Đang đọc Income và chứng từ ví của đơn...</div>';
+  try{
+    const qs=new URLSearchParams({shop_id:shop,order_sn:orderSn});
+    const data=await api('/api/orders/wallet/income-detail?'+qs.toString());
+    if(token!==walletIncomeDetailToken)return;
+    const inc=data.income,o=data.order||{},transactions=data.wallet_transactions||[];
+    const incomeBlock=inc?kvBlock('Income/escrow Shopee đã lưu',{
+      'Tiền thu nhập escrow':inc.income_status==='success'?moneyExact(inc.escrow_amount):'Chưa xác nhận',
+      'Phí hoa hồng':inc.income_status==='success'?moneyExact(inc.commission_fee):'Chưa xác nhận',
+      'Phí dịch vụ':inc.income_status==='success'?moneyExact(inc.service_fee):'Chưa xác nhận',
+      'Phí giao dịch':inc.income_status==='success'?moneyExact(inc.seller_transaction_fee):'Chưa xác nhận',
+      'Xu Shop hoàn/chi':inc.income_status==='success'?moneyExact(inc.seller_coin_cash_back):'Chưa xác nhận',
+      'Trạng thái dữ liệu':inc.income_status||'-',
+      'Cập nhật Income':inc.synced_at?new Date(inc.synced_at).toLocaleString('vi-VN'):'-',
+      'Lỗi nguồn':inc.fail_error||'-',
+    }):'<div class="detail-section"><h3>Income/escrow Shopee</h3><p class="muted">Chưa có ảnh chụp Income của đơn này. Điều đó không có nghĩa là Shopee chưa thanh toán.</p></div>';
+    const walletRows=transactions.map(tx=>`<tr><td>${tx.create_time?escapeHtml(new Date(Number(tx.create_time)*1000).toLocaleString('vi-VN')):'-'}</td><td>${escapeHtml(tx.transaction_type||'-')}</td><td>${tx.event_kind==='order_credit'?'Cộng tiền đơn':tx.event_kind==='refund_debit'?'Trừ do hoàn':'Giao dịch khác'}</td><td>${escapeHtml(tx.money_flow||'-')}</td><td>${escapeHtml(tx.transaction_status||'-')}</td><td class="right">${tx.amount===null?'-':moneyExact(tx.amount)}</td><td>${escapeHtml(tx.refund_sn||'-')}</td></tr>`).join('');
+    box.innerHTML=`<div class="section-title"><div><h2>Income đơn ${escapeHtml(o.order_sn||orderSn)}</h2><p>Ngày phát sinh ${escapeHtml(o.create_date||'-')} · ${statusBadge(o.order_status)} · ${walletStatusBadge(walletStatus)}</p></div><button class="ghost" id="walletIncomeCloseBtn">Đóng</button></div>
+      <div class="income-source-note">Income/escrow là dữ liệu thu nhập đơn Shopee đã lưu; giao dịch ví bên dưới là chứng từ cộng/trừ tiền. Hai nguồn được đặt cạnh nhau để kiểm tra, chưa tự tính tiền thực nhận.</div>
+      <div class="detail-grid">${incomeBlock}${kvBlock('Chứng từ ví',{'Số giao dịch hiển thị':num(transactions.length),'Giao dịch cộng ví hiển thị':num(transactions.filter(tx=>tx.event_kind==='order_credit'&&tx.transaction_status==='COMPLETED').length),'Giao dịch trừ hoàn hiển thị':num(transactions.filter(tx=>tx.event_kind==='refund_debit'&&tx.transaction_status==='COMPLETED').length),'Có thêm giao dịch':data.transactions_truncated?'Có, chỉ hiển thị 200 giao dịch đầu':'Không'})}</div>
+      <div class="detail-section"><h3>Lịch sử giao dịch ví gắn mã đơn</h3><div class="table-wrap"><table><thead><tr><th>Thời gian ví</th><th>Loại giao dịch</th><th>Nhóm</th><th>Chiều tiền</th><th>Trạng thái</th><th class="right">Số tiền</th><th>Mã hoàn</th></tr></thead><tbody>${walletRows||'<tr><td colspan="7" class="empty">Chưa thấy giao dịch ví gắn mã đơn này trong dữ liệu đã quét.</td></tr>'}</tbody></table></div></div>
+      ${renderIncomeBreakdown(inc?.raw_order_income)}
+      ${inc?.raw_order_income?`<details style="margin-top:12px"><summary class="muted" style="cursor:pointer;font-weight:800">Dữ liệu Income gốc đã lưu</summary><pre>${escapeHtml(JSON.stringify(inc.raw_order_income,null,2))}</pre></details>`:''}`;
+    $('walletIncomeCloseBtn').addEventListener('click',()=>box.classList.add('hidden'));
+    box.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){if(token===walletIncomeDetailToken)box.innerHTML='<div class="empty">Không đọc được chi tiết Income: '+escapeHtml(e.message)+'</div>';}
+}
+async function loadWalletReport(reset=false){
+  if(reset)walletReportOffset=0;
+  const token=++walletReportLoadToken,r=getRange(),shop=$('shop').value||'all';
+  const clearSummary=()=>{for(const id of ['walletReportTotal','walletReportPaid','walletReportNoCredit','walletReportUnverified','walletReportWithinGrace','walletIncomeEscrow','walletIncomeCredit','walletIncomeRefund'])$(id).textContent='-';$('walletIncomeEscrowHelp').textContent='Ảnh chụp thu nhập đơn; chưa xác nhận tiền đã vào ví.';};
+  if(shop==='all'){
+    clearSummary();
+    $('walletReportProgress').textContent='Hãy chọn một shop cụ thể để xem đối soát ví.';
+    $('walletReportRows').innerHTML='<tr><td colspan="9" class="empty">Đối soát ví cần chọn một shop cụ thể.</td></tr>';
+    walletIncomeDetailToken++;
+    $('walletIncomeDetailBox').classList.add('hidden');
+    return;
+  }
+  const qs=new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to,wallet_status:$('walletReportStatus').value,limit:$('walletReportLimit').value,offset:String(walletReportOffset)});
+  clearSummary();
+  $('walletReportProgress').textContent='Đang tổng hợp đơn theo ngày phát sinh...';
+  try{const data=await api('/api/orders/wallet/report?'+qs.toString());if(token===walletReportLoadToken)renderWalletReport(data);}
+  catch(e){if(token===walletReportLoadToken)$('walletReportProgress').textContent='Không tải được đối soát ví: '+e.message;}
+}
+async function syncWalletReport(){
+  const shop=$('shop').value||'all',r=getRange(),btn=$('walletReportSyncBtn'),stopBtn=$('walletReportStopBtn');
+  if(shop==='all'){$('walletReportProgress').textContent='Hãy chọn một shop cụ thể trước khi cập nhật giao dịch ví.';return;}
+  const dateTo=todayVN();
+  if(daysInclusive(r.from,dateTo)>3660){$('walletReportProgress').textContent='Khoảng quét vượt 10 năm; hãy chọn ngày bắt đầu gần hơn.';return;}
+  if(daysInclusive(r.from,dateTo)>30&&!confirm(`Cập nhật giao dịch ví từ ${r.from} đến ${dateTo} (${num(daysInclusive(r.from,dateTo))} ngày)? Quá trình có thể mất thời gian và có thể dừng để chạy tiếp.`))return;
+  walletSyncStop=false;btn.disabled=true;stopBtn.classList.remove('hidden');
+  let cursor=r.from,iterations=0;
+  try{
+    while(cursor&&!walletSyncStop){
+      if(++iterations>5000)throw new Error('Đã dừng sau 5.000 lượt để tránh vòng lặp; hãy tiếp tục bằng cách bấm Cập nhật lần nữa.');
+      const result=await api('/api/orders/wallet/sync',{method:'POST',body:{shop_id:shop,date_from:r.from,date_to:dateTo,cursor_date:cursor}});
+      const latest=(result.results||[]).at(-1);
+      $('walletReportProgress').textContent=`Đang quét giao dịch ví từ ${r.from} đến ${dateTo}: đã đi tới ${latest?.scan_date||cursor}; lượt ${num(iterations)}, ${num(result.skipped_days||0)} ngày đã có dữ liệu trong lượt này.${latest?.status==='partial'?' Ngày này còn trang tiếp theo.':''}`;
+      cursor=result.next_date;
+      if(result.done)break;
+    }
+    await loadWalletReport(true);
+    if(walletSyncStop)$('walletReportProgress').textContent+=' Đã dừng theo yêu cầu; dữ liệu đã quét được giữ lại, có thể bấm Cập nhật để tiếp tục.';
+  }catch(e){$('walletReportProgress').textContent='Đồng bộ ví dừng: '+e.message+' Dữ liệu đã lấy được vẫn được giữ; có thể thử lại.';}
+  finally{btn.disabled=false;stopBtn.classList.add('hidden');}
 }
 async function probeWalletTransactions(){
   const box=$('walletProbeSummary'),btn=$('walletProbeBtn'),shop=$('shop').value||'all';
@@ -2903,13 +3272,422 @@ function initWorkspaceUI(){
   initWidgetReorder('.grid2','.card','analysisOrder');
   initWidgetReorder('.overview-modules','.overview-module','overviewOrder');
 }
+
+// ===== V70.17: tiêu đề trang, mục con trong từng tab, cảnh báo bàn giao, lý do hủy =====
+const PAGE_META={
+  gmv:{title:'Tổng quan kinh doanh',desc:'GMV, NMV, đơn hàng và tỷ lệ hủy của kỳ đang chọn; cảnh báo vận hành cần xử lý.'},
+  orders:{title:'Đơn hàng & vận hành',desc:'Cảnh báo hạn bàn giao, lý do hủy, danh sách đơn, đối soát tiền về ví và phân bổ khu vực.'},
+  performance:{title:'Hiệu quả hoạt động shop',desc:'Chỉ số AccountHealth chính thức từ Shopee: điểm phạt, đơn muộn, sản phẩm vi phạm.'},
+  marketing:{title:'Marketing',desc:'Traffic toàn shop, chi phí quảng cáo, chi phí Xu Shop và Xu Marketing.'},
+  warehouse:{title:'Kho hàng & danh mục',desc:'Combo, cấu tạo SKU, danh mục sản phẩm và số barcode đã bán.'},
+  system:{title:'Hệ thống',desc:'Tài khoản, quét tự động 24/7, chẩn đoán số liệu và kết nối shop.'},
+};
+const SUB_DEFAULT={gmv:'overview',orders:'deadlines',marketing:'traffic',warehouse:'combos',system:'sync'};
+const SUB_LOADERS={
+  'gmv:targets':()=>loadBusinessMonthly(),
+  'orders:deadlines':()=>loadShipDeadlines(),
+  'orders:cancel':()=>loadCancelReasons(),
+  'orders:list':()=>loadOrders(true).catch(err=>{$('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>';}),
+  'orders:wallet':()=>loadWalletReport(true),
+  'orders:regions':()=>loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ '+e.message;}),
+};
+function subnavFor(tab){return document.querySelector(`.page-subnav[data-tab="${tab}"]`);}
+function subButtonVisible(btn){return !btn.classList.contains('hidden')&&!btn.classList.contains('sub-hidden');}
+function currentSub(tab){
+  const nav=subnavFor(tab);if(!nav)return '';
+  const saved=(readWorkspacePrefs().subTabs||{})[tab];
+  const buttons=[...nav.querySelectorAll('[data-sub]')].filter(subButtonVisible);
+  const pick=buttons.find(b=>b.dataset.sub===saved)||buttons.find(b=>b.dataset.sub===SUB_DEFAULT[tab])||buttons[0];
+  return pick?.dataset.sub||'';
+}
+function setSub(tab,sub,{load=true}={}){
+  const nav=subnavFor(tab);if(!nav)return;
+  nav.querySelectorAll('[data-sub]').forEach(btn=>btn.classList.toggle('active',btn.dataset.sub===sub));
+  document.querySelectorAll(`[data-subpanel^="${tab}:"]`).forEach(panel=>panel.classList.toggle('sub-hidden',panel.dataset.subpanel!==`${tab}:${sub}`));
+  writeWorkspacePrefs({subTabs:{...(readWorkspacePrefs().subTabs||{}),[tab]:sub}});
+  if(tab==='gmv'&&sub==='overview'&&chartState.payload)setTimeout(renderMainChart,30);
+  if(load&&SUB_LOADERS[`${tab}:${sub}`])SUB_LOADERS[`${tab}:${sub}`]();
+}
+function activateSubnav(tab){const sub=currentSub(tab);if(sub)setSub(tab,sub);}
+function initSubnav(){
+  document.querySelectorAll('.page-subnav').forEach(nav=>nav.addEventListener('click',event=>{
+    const btn=event.target.closest('[data-sub]');if(!btn)return;setSub(nav.dataset.tab,btn.dataset.sub);
+  }));
+  document.querySelectorAll('[data-jump-sub]').forEach(btn=>btn.addEventListener('click',()=>{
+    const [tab,sub]=btn.dataset.jumpSub.split(':');
+    writeWorkspacePrefs({subTabs:{...(readWorkspacePrefs().subTabs||{}),[tab]:sub}});
+    setTab(tab);
+  }));
+  document.querySelectorAll('.section-title p').forEach(p=>{
+    if(p.textContent.trim().length<170)return;
+    p.classList.add('clamp');
+    const more=document.createElement('button');more.type='button';more.className='more-toggle';more.textContent='Xem thêm';
+    more.addEventListener('click',()=>{const open=p.classList.toggle('clamp');more.textContent=open?'Xem thêm':'Thu gọn';});
+    p.insertAdjacentElement('afterend',more);
+  });
+}
+function updatePageHeader(tab){
+  const meta=PAGE_META[tab]||PAGE_META.gmv;
+  const title=$('welcomeTitle');if(title)title.textContent=tab==='gmv'?'Xin chào, LazyMom! 👋':meta.title;
+  const sub=$('heroSubtitle');if(sub)sub.textContent=meta.desc;
+  document.title=meta.title+' · Gooby BI';
+}
+function opsShopScope(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'&&!currentUser?.is_admin)return null;
+  return shop;
+}
+function durationText(seconds){
+  const s=Math.abs(Math.round(Number(seconds)||0));
+  const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  if(d)return `${d} ngày ${h} giờ`;
+  if(h)return `${h} giờ ${String(m).padStart(2,'0')} phút`;
+  return `${m} phút`;
+}
+function vnDateTime(sec){return sec?new Date(Number(sec)*1000).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'-';}
+
+// ---- Cảnh báo hạn bàn giao ----
+const PRIORITY_DEFAULTS={p1Hours:24,p3Minutes:30,p4Minutes:120};
+const PRIORITY_LABEL={p1:'P1 Khẩn cấp',p2:'P2 Quá hạn',p3:'P3 Gấp',p4:'P4 Sắp đến hạn',p0:'Còn hạn',px:'Thiếu hạn'};
+const PRIORITY_RANK={p1:0,p2:1,p3:2,p4:3,p0:4,px:5};
+let shipDeadlineData=null,shipClockOffset=0,shipTickTimer=null,shipReloadTimer=null,shipLoadToken=0;
+const shipFilter={priorities:new Set(),quick:''};
+function readPrioritySettings(){
+  const saved=readWorkspacePrefs().shipPriority||{};
+  const n=(v,d,min)=>{const x=Number(v);return Number.isFinite(x)&&x>=min?x:d;};
+  const p3=n(saved.p3Minutes,PRIORITY_DEFAULTS.p3Minutes,1);
+  return {p1Hours:n(saved.p1Hours,PRIORITY_DEFAULTS.p1Hours,0),p3Minutes:p3,p4Minutes:Math.max(p3,n(saved.p4Minutes,PRIORITY_DEFAULTS.p4Minutes,5))};
+}
+function fillPriorityForm(){const p=readPrioritySettings();$('prioP1Hours').value=p.p1Hours;$('prioP3Minutes').value=p.p3Minutes;$('prioP4Minutes').value=p.p4Minutes;$('shipKpiDueSoonNote').textContent='Còn ≤ '+durationText(p.p4Minutes*60);}
+function shipNow(){return Math.floor(Date.now()/1000)+shipClockOffset;}
+function shipPriority(secondsLeft,p){
+  if(secondsLeft===null||secondsLeft===undefined)return 'px';
+  if(secondsLeft<0)return -secondsLeft>=p.p1Hours*3600?'p1':'p2';
+  if(secondsLeft<=p.p3Minutes*60)return 'p3';
+  if(secondsLeft<=p.p4Minutes*60)return 'p4';
+  return 'p0';
+}
+function shipRows(){
+  if(!shipDeadlineData)return [];
+  const p=readPrioritySettings(),now=shipNow();
+  return (shipDeadlineData.orders||[]).map(o=>{
+    const left=o.ship_deadline?o.ship_deadline-now:null;
+    const prio=shipPriority(left,p);
+    const state=left===null?'missing_deadline':left<0?'overdue':left<=p.p4Minutes*60?'due_soon':'on_track';
+    return {...o,seconds_left:left,prio,state};
+  });
+}
+function filteredShipRows(rows){
+  const from=$('shipRangeFrom').value===''?null:Number($('shipRangeFrom').value)*3600;
+  const to=$('shipRangeTo').value===''?null:Number($('shipRangeTo').value)*3600;
+  const carrier=$('shipCarrier').value,q=$('shipSearch').value.trim().toUpperCase();
+  let out=rows.filter(o=>{
+    if(shipFilter.quick&&shipFilter.quick!=='all'&&o.state!==shipFilter.quick)return false;
+    if(shipFilter.priorities.size&&!shipFilter.priorities.has(o.prio))return false;
+    if(from!==null&&(o.seconds_left===null||o.seconds_left<from))return false;
+    if(to!==null&&(o.seconds_left===null||o.seconds_left>to))return false;
+    if(carrier&&(o.shipping_carrier||'')!==carrier)return false;
+    if(q&&!String(o.order_sn).toUpperCase().includes(q))return false;
+    return true;
+  });
+  const sort=$('shipSort').value,left=o=>o.seconds_left??Infinity;
+  if(sort==='priority')out.sort((a,b)=>PRIORITY_RANK[a.prio]-PRIORITY_RANK[b.prio]||left(a)-left(b));
+  else if(sort==='overdue_desc')out.sort((a,b)=>left(a)-left(b));
+  else out.sort((a,b)=>left(a)-left(b));
+  return out;
+}
+function renderShipChips(rows){
+  const counts={};rows.forEach(o=>{counts[o.prio]=(counts[o.prio]||0)+1;});
+  $('shipPriorityChips').innerHTML=['p1','p2','p3','p4','p0','px'].map(k=>`<button type="button" class="chip${shipFilter.priorities.has(k)?' on':''}" data-prio="${k}">${escapeHtml(PRIORITY_LABEL[k])} <span class="n">${num(counts[k]||0)}</span></button>`).join('');
+}
+function updateOpsBadges(overdue,dueSoon){
+  const total=(Number(overdue)||0)+(Number(dueSoon)||0);
+  const badge=$('navBadgeOrders');if(badge)badge.textContent=total?String(total>99?'99+':total):'';
+  const sub=$('subCountDeadlines');if(sub)sub.textContent=total?String(total):'';
+}
+function renderShipDeadlines(){
+  const body=$('shipDeadlineRows');
+  if(!shipDeadlineData){return;}
+  const rows=shipRows();
+  const c=s=>rows.filter(o=>o.state===s).length;
+  $('shipKpiOverdue').textContent=num(c('overdue'));$('shipKpiDueSoon').textContent=num(c('due_soon'));$('shipKpiOnTrack').textContent=num(c('on_track'));
+  $('shipKpiTotal').textContent=num(rows.length);
+  const est=rows.filter(o=>o.deadline_source==='estimated_rule').length,missing=c('missing_deadline');
+  $('shipKpiEstimated').textContent=est||missing?`${num(est)} đơn hạn ước tính${missing?' · '+num(missing)+' thiếu hạn':''}`:'Tất cả có hạn từ Shopee';
+  document.querySelectorAll('[data-ship-quick]').forEach(b=>b.classList.toggle('selected',b.dataset.shipQuick===shipFilter.quick));
+  updateOpsBadges(c('overdue'),c('due_soon'));
+  renderShipChips(rows);
+  const carriers=[...new Set(rows.map(o=>o.shipping_carrier).filter(Boolean))].sort();
+  const sel=$('shipCarrier'),cur=sel.value;
+  sel.innerHTML='<option value="">Tất cả</option>'+carriers.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+  sel.value=carriers.includes(cur)?cur:'';
+  const list=filteredShipRows(rows);
+  const shopName=new Map(availableShops.map(s=>[Number(s.shop_id),s.channel_name||s.shop_name||String(s.shop_id)]));
+  const shown=list.slice(0,500);
+  body.innerHTML=shown.map(o=>{
+    const left=o.seconds_left;
+    const cd=left===null?'<span class="muted">Không có hạn</span>':left<0?`<span class="countdown overdue">Quá hạn ${escapeHtml(durationText(left))}</span>`:`<span class="countdown ${o.prio==='p0'?'ok':'soon'}">Còn ${escapeHtml(durationText(left))}</span>`;
+    return `<tr class="row-${o.prio}"><td><span class="prio ${o.prio}" title="${escapeHtml(PRIORITY_LABEL[o.prio])}">${escapeHtml(PRIORITY_LABEL[o.prio].split(' ')[0])}</span></td><td><button class="linkbtn" data-ship-order="${escapeHtml(o.order_sn)}">${escapeHtml(o.order_sn)}</button></td><td>${escapeHtml(shopName.get(o.shop_id)||o.shop_id)}</td><td>${statusBadge(o.order_status)}</td><td>${escapeHtml(o.shipping_carrier||'-')}</td><td>${escapeHtml(vnDateTime(o.ship_deadline))}${o.deadline_source==='estimated_rule'?'<span class="est-tag" title="Shopee chưa trả ship_by_date; hạn ước tính theo mốc 14h">ước tính</span>':''}</td><td class="right">${cd}</td><td>${escapeHtml(vnDateTime(o.pay_time||o.create_time))}</td><td class="right">${money(o.total_amount)}</td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty">Không có đơn khớp bộ lọc.</td></tr>';
+  const synced=(shipDeadlineData.orders||[]).map(o=>Date.parse(o.synced_at||0)).filter(Boolean);
+  const freshest=synced.length?new Date(Math.max(...synced)).toLocaleTimeString('vi-VN'):'-';
+  $('shipDeadlineMeta').textContent=`Hiển thị ${num(shown.length)} / ${num(list.length)} đơn khớp lọc · ${num(rows.length)} đơn chờ bàn giao${shipDeadlineData.truncated?' (đã giới hạn danh sách)':''} · đồng bộ đơn gần nhất ${freshest} · đồng hồ đếm cập nhật mỗi 30 giây.`;
+}
+async function loadShipDeadlines(){
+  const shop=opsShopScope();
+  if(shop===null){$('shipDeadlineRows').innerHTML='<tr><td colspan="9" class="empty">Hãy chọn một shop cụ thể.</td></tr>';return null;}
+  const token=++shipLoadToken;
+  $('shipDeadlineMeta').textContent='Đang tải đơn chờ bàn giao...';
+  try{
+    const data=await api('/api/orders/ship-deadlines?'+new URLSearchParams({shop_id:shop}).toString());
+    if(token!==shipLoadToken)return data;
+    shipDeadlineData=data;shipClockOffset=Number(data.server_time||0)-Math.floor(Date.now()/1000);
+    renderShipDeadlines();
+    clearInterval(shipTickTimer);shipTickTimer=setInterval(()=>{if(!$('shipDeadlinePanel').classList.contains('sub-hidden')&&currentTab()==='orders')renderShipDeadlines();},30000);
+    clearTimeout(shipReloadTimer);shipReloadTimer=setTimeout(()=>{if(currentTab()==='orders'&&!$('shipDeadlinePanel').classList.contains('sub-hidden'))loadShipDeadlines();},300000);
+    return data;
+  }catch(e){if(token===shipLoadToken){$('shipDeadlineMeta').textContent='Không tải được cảnh báo bàn giao: '+e.message;$('shipDeadlineRows').innerHTML='<tr><td colspan="9" class="empty">'+escapeHtml(e.message)+'</td></tr>';}return null;}
+}
+function initShipDeadlineUI(){
+  fillPriorityForm();
+  $('shipDeadlineReloadBtn').addEventListener('click',loadShipDeadlines);
+  $('shipPriorityChips').addEventListener('click',e=>{const b=e.target.closest('[data-prio]');if(!b)return;const k=b.dataset.prio;shipFilter.priorities.has(k)?shipFilter.priorities.delete(k):shipFilter.priorities.add(k);renderShipDeadlines();});
+  document.querySelectorAll('[data-ship-quick]').forEach(b=>b.addEventListener('click',()=>{shipFilter.quick=shipFilter.quick===b.dataset.shipQuick?'':b.dataset.shipQuick;renderShipDeadlines();}));
+  ['shipRangeFrom','shipRangeTo','shipSearch'].forEach(id=>$(id).addEventListener('input',renderShipDeadlines));
+  ['shipCarrier','shipSort'].forEach(id=>$(id).addEventListener('change',renderShipDeadlines));
+  $('shipFilterResetBtn').addEventListener('click',()=>{shipFilter.priorities.clear();shipFilter.quick='';['shipRangeFrom','shipRangeTo','shipSearch'].forEach(id=>$(id).value='');$('shipCarrier').value='';$('shipSort').value='deadline';renderShipDeadlines();});
+  $('prioSaveBtn').addEventListener('click',()=>{
+    const p={p1Hours:Number($('prioP1Hours').value),p3Minutes:Number($('prioP3Minutes').value),p4Minutes:Number($('prioP4Minutes').value)};
+    if(!(p.p1Hours>=0)||!(p.p3Minutes>=1)||!(p.p4Minutes>=p.p3Minutes)){$('prioMessage').textContent='Mốc P4 phải lớn hơn hoặc bằng mốc P3; các giá trị phải là số dương.';return;}
+    writeWorkspacePrefs({shipPriority:p});fillPriorityForm();$('prioMessage').textContent='Đã lưu.';renderShipDeadlines();
+  });
+  $('prioResetBtn').addEventListener('click',()=>{writeWorkspacePrefs({shipPriority:PRIORITY_DEFAULTS});fillPriorityForm();$('prioMessage').textContent='Đã về mặc định.';renderShipDeadlines();});
+  $('shipDeadlineRows').addEventListener('click',e=>{const b=e.target.closest('[data-ship-order]');if(!b)return;writeWorkspacePrefs({subTabs:{...(readWorkspacePrefs().subTabs||{}),orders:'list'}});$('orderSearch').value=b.dataset.shipOrder;setSub('orders','list');});
+}
+
+// ---- Lý do hủy ----
+const CANCEL_REASON_VI={
+  'UNKNOWN':'Không ghi nhận lý do','Out of Stock':'Hết hàng','Need to change delivery address':'Cần đổi địa chỉ giao hàng',
+  'Modify existing order (color, size, voucher, etc.)':'Muốn sửa đơn (màu, size, voucher...)','Others / change of mind':'Lý do khác / đổi ý',
+  "Don't want to buy anymore":'Không muốn mua nữa','Payment procedure too troublesome':'Thủ tục thanh toán phức tạp','Found cheaper elsewhere':'Tìm được chỗ rẻ hơn',
+  "Seller is not responsive to buyer's inquiries":'Người bán không phản hồi','Seller asked me to cancel':'Người bán yêu cầu hủy','Failed delivery':'Giao hàng thất bại',
+  'Customer request':'Theo yêu cầu khách','Undeliverable area':'Khu vực không giao được','COD not supported':'Không hỗ trợ COD',
+  'Logistics request canceled':'Đơn vị vận chuyển hủy','Inactive seller':'Shop không hoạt động','Fraud':'Nghi gian lận','Unpaid order':'Đơn chưa thanh toán',
+  'Lost parcel':'Thất lạc kiện hàng','BACKEND_LOGISTICS_NOT_STARTED':'Quá hạn chưa bàn giao vận chuyển','BACKEND_UNPAID':'Hết hạn thanh toán',
+  'Modify existing order (colour, size, address, voucher, etc.)':'Muốn sửa đơn (màu, size, địa chỉ, voucher...)','Others / change of mind':'Lý do khác / đổi ý','Need to Modify Order':'Cần sửa đơn','Need to input / Change Voucher Code':'Cần nhập / đổi mã giảm giá','Unpaid Order':'Đơn chưa thanh toán (hết hạn)',
+};
+const CANCEL_BY_VI={buyer:'Người mua',seller:'Người bán',system:'Hệ thống',unknown:'Không rõ'};
+let cancelReasonData=null,cancelLoadToken=0;
+function renderCancelReasons(){
+  const d=cancelReasonData;if(!d)return;
+  const s=d.summary||{};
+  $('cancelKpiOrders').textContent=num(s.cancelled_orders);$('cancelKpiOrdersNote').textContent=`trên ${num(s.orders)} đơn đã đặt`;
+  $('cancelKpiGmv').textContent=money(s.cancel_gmv);$('cancelKpiGmvNote').textContent=`trên GMV ${money(s.gmv)}`;
+  $('cancelKpiRate').textContent=percent(s.cancel_rate);$('cancelKpiRateNote').textContent=s.baseline_ready?`Kỳ nền: ${percent(s.baseline_cancel_rate)}`:'Chưa có dữ liệu kỳ nền';
+  $('cancelKpiAlerts').textContent=num(s.alert_count);$('cancelKpiBaseline').textContent=`Kỳ nền ${vnDateLabel(d.baseline.date_from)} → ${vnDateLabel(d.baseline.date_to)}`;
+  const overall=$('cancelOverallAlert');
+  overall.classList.toggle('hidden',!d.overall_alert);if(d.overall_alert)overall.textContent='⚠️ '+d.overall_alert.message;
+  const by=$('cancelByFilter').value,alertOnly=$('cancelAlertOnly').checked;
+  const rows=(d.reasons||[]).filter(r=>r.orders>0&&(!alertOnly||r.alert)&&(!by||(r.cancel_by||{})[by]>0));
+  const maxShare=Math.max(1,...rows.map(r=>r.share_of_cancelled||0));
+  $('cancelReasonRows').innerHTML=rows.map(r=>{
+    const vi=CANCEL_REASON_VI[r.reason];
+    const byText=Object.entries(r.cancel_by||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${escapeHtml(CANCEL_BY_VI[k]||k)} ${num(v)}`).join(' · ')||'-';
+    const change=r.change_ratio===null?(r.orders&&r.baseline_orders===0?'Mới':'-'):`×${String(r.change_ratio).replace('.',',')}`;
+    const badge=r.alert?`<span class="badge bad" title="${escapeHtml(r.alert.message)}">${r.alert.level==='new'?'Lý do mới':'Tăng bất thường'}</span>`:'<span class="muted">-</span>';
+    return `<tr><td><b>${escapeHtml(vi||r.reason)}</b>${vi&&vi!==r.reason?`<span class="cancel-raw">${escapeHtml(r.reason)}</span>`:''}${r.alert?`<span class="cancel-raw" style="color:#b42318">${escapeHtml(r.alert.message)}</span>`:''}</td><td>${byText}</td><td class="right"><b>${num(r.orders)}</b></td><td><div class="reason-bar"><i style="width:${Math.max(2,(r.share_of_cancelled||0)/maxShare*100)}%"></i><span>${percent(r.share_of_cancelled)}</span></div></td><td class="right">${percent(r.rate_of_orders)}</td><td class="right">${percent(r.baseline_rate_of_orders)} <span class="muted">(${num(r.baseline_orders)})</span></td><td class="right">${escapeHtml(change)}</td><td class="right">${money(r.gmv)}</td><td>${badge}</td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty">Không có đơn hủy trong kỳ đang chọn.</td></tr>';
+  const sub=$('subCountCancel');if(sub)sub.textContent=s.alert_count?String(s.alert_count):'';
+}
+async function loadCancelReasons(){
+  const shop=opsShopScope();
+  if(shop===null){$('cancelReasonRows').innerHTML='<tr><td colspan="9" class="empty">Hãy chọn một shop cụ thể.</td></tr>';return null;}
+  const r=getRange(),token=++cancelLoadToken;
+  $('cancelReasonRows').innerHTML='<tr><td colspan="9" class="empty">Đang thống kê lý do hủy...</td></tr>';
+  try{
+    const data=await api('/api/orders/cancel-reasons?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString());
+    if(token!==cancelLoadToken)return data;
+    cancelReasonData=data;renderCancelReasons();return data;
+  }catch(e){if(token===cancelLoadToken)$('cancelReasonRows').innerHTML='<tr><td colspan="9" class="empty">Không tải được lý do hủy: '+escapeHtml(e.message)+'</td></tr>';return null;}
+}
+function initCancelReasonUI(){
+  $('cancelReasonReloadBtn').addEventListener('click',loadCancelReasons);
+  $('cancelByFilter').addEventListener('change',renderCancelReasons);
+  $('cancelAlertOnly').addEventListener('change',renderCancelReasons);
+}
+
+// ---- Module "Cảnh báo vận hành" ở Tổng quan ----
+let overviewOpsToken=0;
+async function loadOverviewOps(){
+  const box=$('overviewOpsBody');if(!box)return;
+  if(!hasFeature('orders')){box.innerHTML='<div class="module-loading">Tài khoản chưa được cấp quyền Đơn hàng.</div>';return;}
+  const shop=opsShopScope();
+  if(shop===null){box.innerHTML='<div class="module-loading">Chọn một shop cụ thể để xem cảnh báo.</div>';return;}
+  const token=++overviewOpsToken,r=getRange();
+  const [ship,cancel,biz]=await Promise.all([
+    api('/api/orders/ship-deadlines?'+new URLSearchParams({shop_id:shop}).toString()).catch(e=>({error:e.message})),
+    api('/api/orders/cancel-reasons?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString()).catch(e=>({error:e.message})),
+    api('/api/business/monthly?'+new URLSearchParams({month:todayVN().slice(0,7),shop_id:shop}).toString()).catch(e=>({error:e.message})),
+  ]);
+  if(token!==overviewOpsToken)return;
+  if(!ship.error){shipDeadlineData=ship;shipClockOffset=Number(ship.server_time||0)-Math.floor(Date.now()/1000);}
+  const rows=ship.error?[]:shipRows();
+  const overdue=rows.filter(o=>o.state==='overdue').length,soon=rows.filter(o=>o.state==='due_soon').length;
+  if(!ship.error)updateOpsBadges(overdue,soon);
+  const spikes=cancel.error?[]:(cancel.reasons||[]).filter(x=>x.alert);
+  const row=(color,label,value,jump,note)=>`<button type="button" class="ops-module-row" data-jump-sub="${jump}"><i class="dot-ind" style="background:${color}"></i><span>${escapeHtml(label)}${note?`<br><small class="muted">${escapeHtml(note)}</small>`:''}</span><b>${value}</b></button>`;
+  box.className='ops-module-list';
+  box.innerHTML=
+    (ship.error?row('#98a2b3','Không tải được hạn bàn giao','!','orders:deadlines',ship.error):row('#f04438','Đơn đã quá hạn bàn giao',num(overdue),'orders:deadlines','Cần bàn giao ngay cho ĐVVC')+row('#f79009','Sắp đến hạn bàn giao',num(soon),'orders:deadlines','Còn ≤ '+durationText(readPrioritySettings().p4Minutes*60)))+
+    (cancel.error?row('#98a2b3','Không tải được lý do hủy','!','orders:cancel',cancel.error):row('#7c3aed','Lý do hủy tăng bất thường',num(spikes.length+(cancel.overall_alert?1:0)),'orders:cancel',spikes[0]?(CANCEL_REASON_VI[spikes[0].reason]||spikes[0].reason):(cancel.overall_alert?.message||'Không có cảnh báo')))+
+    (biz.error?'':row(({on_track:'#12b76a',at_risk:'#f79009',off_track:'#f04438'})[biz.gmv?.status]||'#98a2b3','Runrate GMV tháng này',biz.gmv?.projected_pct!=null?percent(biz.gmv.projected_pct):'-','gmv:targets',biz.gmv?.target?'Dự phóng '+money(biz.gmv.projected)+' / mục tiêu '+money(biz.gmv.target):'Chưa đặt mục tiêu tháng'));
+  box.querySelectorAll('[data-jump-sub]').forEach(btn=>btn.addEventListener('click',()=>{const [tab,sub]=btn.dataset.jumpSub.split(':');writeWorkspacePrefs({subTabs:{...(readWorkspacePrefs().subTabs||{}),[tab]:sub}});setTab(tab);}));
+}
+
+// ===== V70.18: mục tiêu tháng, chi phí và runrate =====
+let bizData=null,bizLoadToken=0;
+const BIZ_STATUS={
+  gain:{on_track:['good','Đúng tiến độ'],at_risk:['warn','Cần chú ý'],off_track:['bad','Chậm tiến độ'],no_target:['warn','Chưa đặt mục tiêu']},
+  cost:{on_track:['good','Trong ngân sách'],at_risk:['warn','Sắp vượt'],off_track:['bad','Vượt ngân sách'],no_target:['warn','Chưa có ngân sách']},
+};
+function bizBadge(status,kind='gain'){const [tone,label]=BIZ_STATUS[kind][status]||BIZ_STATUS[kind].no_target;return `<span class="badge ${tone}">${escapeHtml(label)}</span>`;}
+function bizPct(v){return v===null||v===undefined?'-':percent(v);}
+function bizMonthDefault(){const r=getRangeSafe();return (r?.to||todayVN()).slice(0,7);}
+function bizMonthLabel(m){const [y,mm]=m.split('-');return `${mm}/${y}`;}
+function bizPrevMonth(m){let [y,mm]=m.split('-').map(Number);mm--;if(!mm){mm=12;y--;}return `${y}-${String(mm).padStart(2,'0')}`;}
+function bizShopParam(){return $('shop').value||'all';}
+function renderBizChart(series,projected,period){
+  const svg=$('bizChart');if(!svg)return;
+  const w=Math.max(320,svg.clientWidth||svg.parentElement.clientWidth||800),h=Math.max(220,svg.clientHeight||300);
+  const pad={l:56,r:14,t:12,b:26};
+  const n=series.length;if(!n){svg.innerHTML='';return;}
+  const last=[...series].reverse().find(p=>p.cumulative_gmv!==null);
+  const maxV=Math.max(1,...series.map(p=>Math.max(p.cumulative_gmv||0,p.target_pace||0)),projected||0);
+  const x=i=>pad.l+(w-pad.l-pad.r)*(n===1?0:i/(n-1)),y=v=>pad.t+(h-pad.t-pad.b)*(1-v/maxV);
+  const grid=[0,.25,.5,.75,1].map(f=>`<line class="gridline" x1="${pad.l}" x2="${w-pad.r}" y1="${y(maxV*f)}" y2="${y(maxV*f)}"/><text class="axis" x="${pad.l-6}" y="${y(maxV*f)+3}" text-anchor="end">${escapeHtml(compactAxis(maxV*f))}</text>`).join('');
+  const days=series.map((p,i)=>(i===0||i===n-1||(i+1)%5===0)?`<text class="axis" x="${x(i)}" y="${h-8}" text-anchor="middle">${Number(p.date.slice(8,10))}</text>`:'').join('');
+  const target=series.some(p=>p.target_pace)?`<polyline fill="none" stroke="#98a2b3" stroke-width="2" stroke-dasharray="5 5" points="${series.map((p,i)=>`${x(i)},${y(p.target_pace||0)}`).join(' ')}"/>`:'';
+  const pts=series.map((p,i)=>p.cumulative_gmv===null?null:[x(i),y(p.cumulative_gmv)]).filter(Boolean);
+  const area=pts.length?`<polygon fill="rgba(255,107,53,.12)" points="${pts[0][0]},${y(0)} ${pts.map(p=>p.join(',')).join(' ')} ${pts.at(-1)[0]},${y(0)}"/><polyline fill="none" stroke="#ff6b35" stroke-width="2.5" points="${pts.map(p=>p.join(',')).join(' ')}"/>`:'';
+  const lastIdx=last?series.indexOf(last):-1;
+  const proj=last&&period.phase==='current'&&projected?`<line x1="${x(lastIdx)}" y1="${y(last.cumulative_gmv)}" x2="${x(n-1)}" y2="${y(projected)}" stroke="#2563eb" stroke-width="2" stroke-dasharray="2 4"/><circle cx="${x(n-1)}" cy="${y(projected)}" r="4" fill="#2563eb"><title>Runrate cuối tháng: ${escapeHtml(money(projected))}</title></circle>`:'';
+  const dot=last?`<circle cx="${x(lastIdx)}" cy="${y(last.cumulative_gmv)}" r="4" fill="#ff6b35"><title>${escapeHtml(vnDateLabel(last.date))}: ${escapeHtml(money(last.cumulative_gmv))}</title></circle>`:'';
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.innerHTML=grid+days+target+area+proj+dot;
+}
+function renderBizBudgetFields(categories,budgets){
+  $('bizBudgetFields').innerHTML=categories.map(c=>`<div class="field"><label for="bizBudget_${c.key}">${escapeHtml(c.label)}</label><input id="bizBudget_${c.key}" data-budget="${c.key}" type="number" min="0" step="1000" inputmode="numeric" value="${budgets?.[c.key]??''}"><small class="money-hint" data-for="bizBudget_${c.key}"></small></div>`).join('');
+  $('bizCostCategory').innerHTML=categories.map(c=>`<option value="${c.key}"${c.key==='other'?' selected':''}>${escapeHtml(c.label)}</option>`).join('');
+  updateMoneyHints();
+}
+function updateMoneyHints(){document.querySelectorAll('.money-hint').forEach(el=>{const v=$(el.dataset.for)?.value;el.textContent=v?moneyExact(Number(v)):'';});}
+function renderBizMonthly(d){
+  bizData=d;
+  const g=d.gmv,n=d.nmv,c=d.cost_total,p=d.period,t=d.target;
+  const phase=p.phase==='current'?`đã qua ${String(Math.round(p.elapsed_days*10)/10).replace('.',',')}/${p.days} ngày`:p.phase==='past'?'tháng đã kết thúc':'tháng chưa bắt đầu';
+  $('bizNotice').className=t?'notice':'notice warn-note';
+  $('bizNotice').innerHTML=t?`Tháng ${escapeHtml(bizMonthLabel(d.month))} · ${escapeHtml(phase)} · mục tiêu GMV ${t.gmv_target!=null?'<b>'+escapeHtml(money(t.gmv_target))+'</b>':'chưa đặt'}${t.source==='sum_of_shop_targets'?' (cộng mục tiêu các shop)':''}${t.note?' · '+escapeHtml(t.note):''}${t.updated_by?` · cập nhật bởi ${escapeHtml(t.updated_by)}`:''}`
+    :`Tháng ${escapeHtml(bizMonthLabel(d.month))} chưa có mục tiêu cho phạm vi đang chọn (${escapeHtml(phase)}). ${currentUser?.is_admin?'Mở “Cập nhật mục tiêu & chi phí tháng” bên dưới để đặt mục tiêu.':'Liên hệ Admin để đặt mục tiêu.'}`;
+  $('bizGmvActual').textContent=money(g.actual);
+  $('bizGmvActualNote').textContent=g.target?`Đạt ${bizPct(g.achievement_pct)} mục tiêu ${money(g.target)}`:'Chưa đặt mục tiêu GMV';
+  $('bizGmvProjected').textContent=p.phase==='future'?'-':money(g.projected);
+  $('bizGmvProjectedNote').innerHTML=g.target?`${bizPct(g.projected_pct)} mục tiêu · ${bizBadge(g.status)}`:'Dựa trên tốc độ hiện tại';
+  $('bizRunrateCard').className='ops-kpi '+({on_track:'ok',at_risk:'warn',off_track:'danger'}[g.status]||'');
+  $('bizGmvPace').textContent=bizPct(g.pace_pct);
+  $('bizGmvPaceNote').textContent=g.expected_to_date!=null?`Kế hoạch đến hiện tại: ${money(g.expected_to_date)}`:'Cần mục tiêu GMV';
+  $('bizGmvRequired').textContent=g.required_per_day!=null?money(g.required_per_day):'-';
+  $('bizGmvRequiredNote').textContent=`Tốc độ hiện tại ${money(g.current_per_day)}/ngày`+(g.gap_to_target!=null?` · còn thiếu ${money(Math.max(0,g.gap_to_target))}`:'');
+  $('bizNmvActual').textContent=money(n.actual);
+  $('bizNmvNote').textContent=n.target?`Runrate ${money(n.projected)} · ${bizPct(n.projected_pct)} mục tiêu`:`Runrate ${money(n.projected)} · chưa đặt mục tiêu`;
+  $('bizCostActual').textContent=money(c.actual);
+  $('bizCostNote').innerHTML=c.budget!=null?`Ngân sách ${escapeHtml(money(c.budget))} · runrate ${escapeHtml(bizPct(c.projected_pct))} · ${bizBadge(c.status,'cost')}`:`Runrate ${escapeHtml(money(c.projected))} · chưa có ngân sách`;
+  $('bizCostCard').className='ops-kpi '+({on_track:'ok',at_risk:'warn',off_track:'danger'}[c.status]||'');
+  $('bizCostRatio').textContent=bizPct(c.gmv_ratio_pct);
+  $('bizCostRatioNote').textContent=(c.budget_gmv_ratio_pct!=null?`Kế hoạch ${bizPct(c.budget_gmv_ratio_pct)}`:'Chưa có kế hoạch')+` · runrate ${bizPct(c.projected_gmv_ratio_pct)}`;
+  $('bizCostNmvRatio').textContent=bizPct(c.nmv_ratio_pct);
+  $('bizCostNmvNote').textContent='Tổng chi phí / NMV từ đầu tháng';
+  const srcLabel={auto:'Tự động','auto+manual':'Tự động + nhập tay',manual:'Nhập tay'};
+  $('bizCostRows').innerHTML=d.costs.map(r=>{
+    const used=r.used_pct==null?'<span class="muted">-</span>':`<div class="reason-bar budget-bar${r.used_pct>100?' over':''}"><i style="width:${Math.min(100,Math.max(2,r.used_pct))}%"></i><span>${escapeHtml(percent(r.used_pct))}</span></div>`;
+    const sub=r.key==='ads'?`<span class="cancel-raw">Product ${escapeHtml(money(d.ads_breakdown.product))} · Livestream ${escapeHtml(money(d.ads_breakdown.livestream))}</span>`:'';
+    return `<tr><td><b>${escapeHtml(r.label)}</b>${sub}${r.manual&&r.auto?`<span class="cancel-raw">Tự động ${escapeHtml(money(r.auto))} + nhập tay ${escapeHtml(money(r.manual))}</span>`:''}</td><td>${escapeHtml(srcLabel[r.source]||r.source)}</td><td class="right">${r.budget!=null?money(r.budget):'<span class="muted">-</span>'}</td><td class="right"><b>${money(r.actual)}</b></td><td>${used}</td><td class="right">${money(r.projected)}</td><td class="right">${bizPct(r.projected_pct)}</td><td class="right">${bizPct(r.gmv_ratio_pct)}</td><td>${r.budget!=null?bizBadge(r.status,'cost'):'<span class="muted">-</span>'}</td></tr>`;
+  }).join('')+`<tr class="biz-total"><td><b>Tổng chi phí</b></td><td></td><td class="right"><b>${c.budget!=null?money(c.budget):'-'}</b></td><td class="right"><b>${money(c.actual)}</b></td><td>${bizPct(c.used_pct)}</td><td class="right"><b>${money(c.projected)}</b></td><td class="right">${bizPct(c.projected_pct)}</td><td class="right">${bizPct(c.gmv_ratio_pct)}</td><td>${c.budget!=null?bizBadge(c.status,'cost'):''}</td></tr>`;
+  $('bizFootnote').textContent=`Phí sàn và Xu Shop chỉ tính trên đơn đã lấy được Income (độ phủ ${d.income_coverage_pct==null?'-':percent(d.income_coverage_pct)} đơn COMPLETED), nên có thể thấp hơn thực tế khi độ phủ chưa đủ. Xu Marketing lấy từ file đã tải lên ở tab Marketing. Nhóm chỉ nhập tay dùng runrate = max(đã ghi nhận, ngân sách).`;
+  renderBizChart(d.series,p.phase==='current'?g.projected:null,p);
+  // Bộ chỉnh sửa (Admin)
+  $('bizEditor').classList.toggle('hidden',!currentUser?.is_admin);
+  $('bizEditorMonth').textContent=bizMonthLabel(d.month)+' · '+($('shop').value==='all'?'Tất cả shop':shopNameText());
+  renderBizBudgetFields(d.categories,t?.cost_budgets||{});
+  $('bizGmvTarget').value=t?.gmv_target??'';$('bizNmvTarget').value=t?.nmv_target??'';$('bizNote').value=t?.note||'';
+  const firstDay=`${d.month}-01`,today=todayVN();
+  $('bizCostDate').min=firstDay;$('bizCostDate').max=monthBounds_(d.month).to;
+  if(!$('bizCostDate').value||!$('bizCostDate').value.startsWith(d.month))$('bizCostDate').value=today.startsWith(d.month)?today:firstDay;
+  const catLabel=new Map(d.categories.map(x=>[x.key,x.label]));
+  $('bizManualRows').innerHTML=(d.manual_costs||[]).map(m=>`<tr><td>${escapeHtml(vnDateLabel(String(m.cost_date).slice(0,10)))}</td><td>${escapeHtml(catLabel.get(m.category)||m.category)}</td><td class="right">${moneyExact(m.amount)}</td><td>${escapeHtml(m.note||'')}</td><td>${escapeHtml(m.created_by||'-')}</td><td>${currentUser?.is_admin?`<button type="button" class="ghost" data-biz-del="${Number(m.id)}">Xóa</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Chưa có chi phí nhập tay.</td></tr>';
+  updateMoneyHints();
+}
+function monthBounds_(m){const [y,mm]=m.split('-').map(Number);return {from:`${m}-01`,to:isoDate(new Date(Date.UTC(y,mm,0)))};}
+async function loadBusinessMonthly(){
+  const shop=bizShopParam();
+  if(shop==='all'&&!currentUser?.is_admin){$('bizNotice').textContent='Hãy chọn một shop cụ thể.';return null;}
+  if(!$('bizMonth').value)$('bizMonth').value=bizMonthDefault();
+  const token=++bizLoadToken;
+  $('bizNotice').className='notice';$('bizNotice').textContent='Đang tính runrate...';
+  try{
+    const data=await api('/api/business/monthly?'+new URLSearchParams({month:$('bizMonth').value,shop_id:shop}).toString());
+    if(token===bizLoadToken)renderBizMonthly(data);
+    return data;
+  }catch(e){if(token===bizLoadToken){$('bizNotice').className='notice warn-note';$('bizNotice').textContent='Không tải được mục tiêu tháng: '+e.message;}return null;}
+}
+function bizMessage(id,text,ok){const el=$(id);el.className='conversion-admin-message '+(ok?'ok':'error');el.textContent=text;}
+async function saveBusinessTarget(){
+  const budgets={};document.querySelectorAll('[data-budget]').forEach(inp=>{if(inp.value!=='')budgets[inp.dataset.budget]=Number(inp.value);});
+  try{
+    await api('/api/admin/business/target/save',{method:'POST',body:{month:$('bizMonth').value,shop_id:bizShopParam(),gmv_target:$('bizGmvTarget').value,nmv_target:$('bizNmvTarget').value,cost_budgets:budgets,note:$('bizNote').value}});
+    bizMessage('bizTargetMessage','Đã lưu mục tiêu tháng '+bizMonthLabel($('bizMonth').value)+'.',true);await loadBusinessMonthly();
+  }catch(e){bizMessage('bizTargetMessage',e.message,false);}
+}
+async function copyPrevBusinessTarget(){
+  try{
+    const prev=await api('/api/business/monthly?'+new URLSearchParams({month:bizPrevMonth($('bizMonth').value),shop_id:bizShopParam()}).toString());
+    if(!prev.target){bizMessage('bizTargetMessage','Tháng trước chưa có mục tiêu để sao chép.',false);return;}
+    $('bizGmvTarget').value=prev.target.gmv_target??'';$('bizNmvTarget').value=prev.target.nmv_target??'';
+    document.querySelectorAll('[data-budget]').forEach(inp=>{inp.value=prev.target.cost_budgets?.[inp.dataset.budget]??'';});
+    updateMoneyHints();bizMessage('bizTargetMessage','Đã điền số của tháng '+bizMonthLabel(bizPrevMonth($('bizMonth').value))+'. Kiểm tra lại rồi bấm “Lưu mục tiêu”.',true);
+  }catch(e){bizMessage('bizTargetMessage',e.message,false);}
+}
+async function addBusinessCost(){
+  try{
+    await api('/api/admin/business/cost/add',{method:'POST',body:{shop_id:bizShopParam(),cost_date:$('bizCostDate').value,category:$('bizCostCategory').value,amount:$('bizCostAmount').value,note:$('bizCostNote').value}});
+    $('bizCostAmount').value='';$('bizCostNote').value='';bizMessage('bizCostMessage','Đã thêm chi phí.',true);await loadBusinessMonthly();
+  }catch(e){bizMessage('bizCostMessage',e.message,false);}
+}
+async function deleteBusinessCost(id){
+  if(!confirm('Xóa khoản chi phí nhập tay này?'))return;
+  try{await api('/api/admin/business/cost/delete',{method:'POST',body:{id}});bizMessage('bizCostMessage','Đã xóa.',true);await loadBusinessMonthly();}
+  catch(e){bizMessage('bizCostMessage',e.message,false);}
+}
+function initBusinessUI(){
+  $('bizMonth').value=bizMonthDefault();
+  $('bizMonth').addEventListener('change',loadBusinessMonthly);
+  $('bizReloadBtn').addEventListener('click',loadBusinessMonthly);
+  $('bizSaveTargetBtn').addEventListener('click',saveBusinessTarget);
+  $('bizCopyPrevBtn').addEventListener('click',copyPrevBusinessTarget);
+  $('bizAddCostBtn').addEventListener('click',addBusinessCost);
+  $('bizManualRows').addEventListener('click',e=>{const b=e.target.closest('[data-biz-del]');if(b)deleteBusinessCost(Number(b.dataset.bizDel));});
+  $('bizPanel').addEventListener('input',e=>{if(e.target.matches('input[type=number]'))updateMoneyHints();});
+  window.addEventListener('resize',()=>{if(bizData&&!$('bizPanel').classList.contains('sub-hidden'))renderBizChart(bizData.series,bizData.period.phase==='current'?bizData.gmv.projected:null,bizData.period);});
+}
+
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
   if(!canOpenTab(tab)){tab=firstAllowedTab();if(!tab)return;}
   document.querySelectorAll('.tabbtn').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab===tab));
   document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden', panel.id !== 'tab-'+tab));
   updateRoleUI(tab);
-  if(tab==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; });
+  updatePageHeader(tab);
+  document.querySelectorAll('.page-subnav [data-admin-only]').forEach(btn=>btn.classList.toggle('sub-hidden',!currentUser?.is_admin));
+  activateSubnav(tab);
   if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); });
   if(tab==='marketing') loadMarketing();
   if(tab==='warehouse'){
@@ -2938,6 +3716,7 @@ async function initAuthenticatedApp(){
   applyCurrentUserUi();
   if(!authenticatedAppInitialized){
     initWorkspaceUI();
+    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
     $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
@@ -2963,7 +3742,7 @@ async function initAuthenticatedApp(){
     $('warehouseSalesNextBtn').addEventListener('click',()=>warehouseSalesNext().catch(()=>{}));
     $('warehouseComponentSalesPrevBtn').addEventListener('click',()=>warehouseComponentSalesPrev().catch(()=>{}));
     $('warehouseComponentSalesNextBtn').addEventListener('click',()=>warehouseComponentSalesNext().catch(()=>{}));
-    $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});$('walletProbeBtn').addEventListener('click',probeWalletTransactions);window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
+    $('ordersReloadBtn').addEventListener('click',()=>loadOrders(true));$('orderStatus').addEventListener('change',()=>loadOrders(true));$('orderLimit').addEventListener('change',()=>loadOrders(true));$('orderSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadOrders(true)});$('ordersPrevBtn').addEventListener('click',()=>{orderOffset=Math.max(0,orderOffset-Number($('orderLimit').value||50));loadOrders(false)});$('ordersNextBtn').addEventListener('click',()=>{orderOffset+=Number($('orderLimit').value||50);loadOrders(false)});$('walletProbeBtn').addEventListener('click',probeWalletTransactions);$('walletReportReloadBtn').addEventListener('click',()=>loadWalletReport(true));$('walletReportStatus').addEventListener('change',()=>loadWalletReport(true));$('walletReportLimit').addEventListener('change',()=>loadWalletReport(true));$('walletReportPrevBtn').addEventListener('click',()=>{walletReportOffset=Math.max(0,walletReportOffset-Number($('walletReportLimit').value||50));loadWalletReport(false)});$('walletReportNextBtn').addEventListener('click',()=>{walletReportOffset+=Number($('walletReportLimit').value||50);loadWalletReport(false)});$('walletReportSyncBtn').addEventListener('click',syncWalletReport);$('walletReportStopBtn').addEventListener('click',()=>{walletSyncStop=true;$('walletReportProgress').textContent='Đang dừng sau lượt hiện tại...'});window.addEventListener('resize',()=>{if(currentTab()==='gmv'&&chartState.payload)renderMainChart();});
     authenticatedAppInitialized=true;
   }
   await loadShops();
