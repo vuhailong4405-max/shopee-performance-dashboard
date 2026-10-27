@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.20</title>
+  <title>Gooby BI Dashboard · V70.21</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -373,6 +373,8 @@
     .budget-bar i{background:linear-gradient(90deg,#53b1fd,#2e90fa)}.budget-bar.over i{background:linear-gradient(90deg,#f97066,#f04438)}
     tr.biz-total td{background:#f9fafb;border-top:2px solid var(--line)}
     tr.biz-ref td{background:#fcfcfd;font-style:italic}
+    .listing-table td{vertical-align:top}.listing-name{min-width:280px;max-width:380px;white-space:normal!important}.listing-name a{color:var(--text);text-decoration:none}.listing-name a:hover{text-decoration:underline}.listing-alerts{white-space:normal!important;min-width:180px}.listing-alerts .badge{margin:0 4px 4px 0}
+    .ld-chart{display:flex;align-items:flex-end;gap:3px;height:150px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fff}.ld-day{flex:1;position:relative;height:100%;display:flex;align-items:flex-end;gap:1px;min-width:6px}.ld-day i{flex:1;border-radius:3px 3px 0 0}.ld-gmv{background:#ff8a4c}.ld-views{background:#53b1fd}.ld-day span{position:absolute;bottom:-16px;left:0;right:0;text-align:center;font-size:9px;color:var(--muted)}.ld-chart{margin-bottom:16px}
     .probe-table td{vertical-align:top;white-space:normal}.probe-samples{font-family:ui-monospace,Consolas,monospace;font-size:10.5px}.probe-fields{max-height:220px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:#475467}
     .biz-editor{margin-top:16px;border:1px solid #b2ddff;border-radius:13px;background:#f5faff;padding:0 14px 14px}
     .biz-editor>summary{cursor:pointer;padding:14px 0;color:#175cd3;font-weight:900}
@@ -679,7 +681,37 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-performance">
-    <section class="card" style="margin-top:16px">
+    <nav class="page-subnav" data-tab="performance" aria-label="Mục trong trang"><button type="button" data-sub="listings">Hiệu suất link sản phẩm <span class="subcount" id="subCountListings"></span></button><button type="button" data-sub="health">Sức khỏe shop (AccountHealth)</button></nav>
+
+    <section class="card" data-subpanel="performance:listings" id="listingPanel">
+      <div class="section-title">
+        <div><h2>Hiệu suất link sản phẩm</h2><p>Mỗi link Shopee là một dòng. Lượt bán, lượt xem, lượt thích, điểm đánh giá, giá và tồn kho được chụp lại mỗi ngày; lượt xem trong kỳ là chênh lệch giữa hai lần chụp. Đơn, số lượng, GMV lấy từ đơn hàng theo ngày tạo đơn ở bộ lọc trên cùng, so với kỳ liền trước cùng độ dài. Tỷ lệ chuyển đổi = số đơn tạo trong đúng khoảng giữa hai lần chụp ÷ lượt xem của khoảng đó. Ads lấy từ chiến dịch quảng cáo sản phẩm, chia đều cho các link trong cùng chiến dịch.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="listingReloadBtn">↻ Tải lại</button><button id="listingSyncBtn" class="hidden">Đồng bộ chỉ số link ngay</button></div>
+      </div>
+      <div id="listingNotice" class="notice">Chọn một shop và khoảng ngày rồi bấm Tải lại.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>Link đang bán</span><b id="listingKpiCount">-</b><small id="listingKpiCountNote">-</small></div>
+        <div class="ops-kpi"><span>GMV các link trong kỳ</span><b id="listingKpiGmv">-</b><small id="listingKpiGmvNote">-</small></div>
+        <div class="ops-kpi"><span>Lượt xem trong kỳ</span><b id="listingKpiViews">-</b><small id="listingKpiViewsNote">-</small></div>
+        <div class="ops-kpi"><span>Tỷ lệ chuyển đổi</span><b id="listingKpiCr">-</b><small>Đơn ÷ lượt xem trong cùng khoảng đo</small></div>
+        <div class="ops-kpi"><span>Chi phí Ads theo link</span><b id="listingKpiAds">-</b><small id="listingKpiAdsNote">-</small></div>
+        <div class="ops-kpi danger"><span>Link cần chú ý</span><b id="listingKpiAlerts">-</b><small id="listingKpiAlertsNote">-</small></div>
+        <div class="ops-kpi warn"><span>Hết hàng khi đang bán</span><b id="listingKpiOos">-</b><small>Trạng thái đang bán, tồn kho = 0</small></div>
+        <div class="ops-kpi muted-kpi"><span>Dữ liệu chụp</span><b id="listingKpiSnap">-</b><small id="listingKpiSnapNote">-</small></div>
+      </div>
+      <div class="ship-filter-bar">
+        <div class="field"><label for="listingSearch">Tìm link</label><input id="listingSearch" type="search" placeholder="Tên, SKU hoặc mã link (item_id)"></div>
+        <div class="field"><label for="listingStatus">Trạng thái</label><select id="listingStatus"><option value="">Tất cả</option><option value="NORMAL">Đang bán</option><option value="hidden">Ẩn / bị khóa / khác</option><option value="oos">Hết hàng</option><option value="has_orders">Có đơn trong kỳ</option></select></div>
+        <div class="field"><label for="listingAlert">Cảnh báo</label><select id="listingAlert"><option value="">Tất cả link</option><option value="any">Chỉ link có cảnh báo</option><option value="out_of_stock">Hết hàng</option><option value="low_stock">Sắp hết hàng</option><option value="model_out">Phân loại hết hàng</option><option value="gmv_drop">GMV giảm mạnh</option><option value="cr_drop">Chuyển đổi giảm</option><option value="views_no_orders">Có xem, không có đơn</option><option value="low_rating">Đánh giá thấp</option><option value="low_roas">ROAS Ads thấp</option><option value="ads_on_oos">Ads chạy cho link hết hàng</option><option value="not_visible">Link ẩn / bị khóa</option></select></div>
+        <div class="field"><label for="listingSort">Xếp hạng theo</label><select id="listingSort"><option value="gmv">GMV</option><option value="units">Số lượng bán</option><option value="orders">Số đơn</option><option value="views">Lượt xem</option><option value="cr">Tỷ lệ chuyển đổi</option><option value="growth">Tăng trưởng GMV</option><option value="decline">GMV giảm nhiều nhất</option><option value="ads_expense">Chi phí Ads</option><option value="roas">ROAS Ads</option><option value="stock_days">Tồn kho ít ngày nhất</option><option value="rating">Điểm đánh giá thấp nhất</option></select></div>
+        <div class="field"><label for="listingLimit">Hiển thị</label><select id="listingLimit"><option>20</option><option selected>50</option><option>100</option><option value="1000">Tất cả</option></select></div>
+      </div>
+      <div class="muted ship-meta" id="listingMeta">Chưa tải.</div>
+      <div class="table-wrap"><table class="listing-table"><thead><tr><th class="right">#</th><th>Link sản phẩm</th><th>Trạng thái</th><th class="right">Giá</th><th class="right">Tồn kho</th><th class="right">Lượt xem</th><th class="right">Đơn</th><th class="right">SL bán</th><th class="right">GMV</th><th class="right">Tỷ trọng</th><th class="right">Chuyển đổi</th><th class="right">Đánh giá</th><th class="right">Ads</th><th>Cảnh báo</th><th></th></tr></thead><tbody id="listingRows"><tr><td colspan="15" class="empty">Chưa tải.</td></tr></tbody></table></div>
+      <div id="listingDetailBox" class="order-detail hidden"></div>
+    </section>
+
+    <section class="card" style="margin-top:16px" data-subpanel="performance:health">
       <div class="section-title"><div><h2>Hiệu quả hoạt động shop</h2><p>Dữ liệu chính thức từ Shopee AccountHealth API: xếp loại shop, điểm phạt, tỷ lệ hủy/hoàn trả/giao trễ, sản phẩm có vấn đề, đơn muộn, hình phạt. Nếu API không trả trường nào, web sẽ để trống.</p></div><div class="mini-actions"><button class="ghost" id="perfBtn">Tải hiệu quả shop</button><button id="perfSyncBtn">Đồng bộ AccountHealth</button></div></div>
       <div id="perfSummary" class="notice">Chọn 1 shop ở bộ lọc phía trên rồi bấm “Đồng bộ AccountHealth”. Dữ liệu sẽ lưu vào Supabase để lần sau mở web chỉ đọc snapshot.</div>
       <div class="perf-grid">
@@ -3303,14 +3335,16 @@ function initWorkspaceUI(){
 const PAGE_META={
   gmv:{title:'Tổng quan kinh doanh',desc:'GMV, NMV, đơn hàng và tỷ lệ hủy của kỳ đang chọn; cảnh báo vận hành cần xử lý.'},
   orders:{title:'Đơn hàng & vận hành',desc:'Cảnh báo hạn bàn giao, lý do hủy, danh sách đơn, đối soát tiền về ví và phân bổ khu vực.'},
-  performance:{title:'Hiệu quả hoạt động shop',desc:'Chỉ số AccountHealth chính thức từ Shopee: điểm phạt, đơn muộn, sản phẩm vi phạm.'},
+  performance:{title:'Hiệu quả',desc:'Hiệu suất từng link sản phẩm (xem, bán, chuyển đổi, tồn kho, Ads) và sức khỏe shop từ AccountHealth.'},
   marketing:{title:'Marketing',desc:'Traffic toàn shop, chi phí quảng cáo, chi phí Xu Shop và Xu Marketing.'},
   warehouse:{title:'Kho hàng & danh mục',desc:'Combo, cấu tạo SKU, danh mục sản phẩm và số barcode đã bán.'},
   system:{title:'Hệ thống',desc:'Tài khoản, quét tự động 24/7, chẩn đoán số liệu và kết nối shop.'},
 };
-const SUB_DEFAULT={gmv:'overview',orders:'deadlines',marketing:'traffic',warehouse:'combos',system:'sync'};
+const SUB_DEFAULT={performance:'listings',gmv:'overview',orders:'deadlines',marketing:'traffic',warehouse:'combos',system:'sync'};
 const SUB_LOADERS={
   'gmv:targets':()=>loadBusinessMonthly(),
+  'performance:listings':()=>loadListingPerformance(),
+  'performance:health':()=>loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }),
   'marketing:vouchers':()=>loadShopVouchers(),
   'orders:deadlines':()=>loadShipDeadlines(),
   'orders:cancel':()=>loadCancelReasons(),
@@ -3769,6 +3803,116 @@ async function runProductProbe(){
 }
 function initProductProbeUI(){ $('productProbeBtn').addEventListener('click',runProductProbe); }
 
+// ===== V70.21: hiệu suất link sản phẩm =====
+let listingData=null,listingLoadToken=0,listingSyncRunning=false;
+const LISTING_STATUS_VI={NORMAL:['good','Đang bán'],UNLIST:['warn','Đang ẩn'],BANNED:['bad','Bị khóa'],REVIEWING:['warn','Đang duyệt'],SELLER_DELETE:['bad','Đã xóa'],SHOPEE_DELETE:['bad','Shopee xóa']};
+function listingStatusBadge(s){const [tone,label]=LISTING_STATUS_VI[String(s||'').toUpperCase()]||['warn',s||'Chưa chụp'];return `<span class="badge ${tone}">${escapeHtml(label)}</span>`;}
+function viPct(v){return v===null||v===undefined?'-':percent(v);}
+function deltaBadge(v){if(v===null||v===undefined)return '';const cls=v>0?'up':v<0?'down':'neutral';return `<span class="delta ${cls}">${v>0?'+':''}${escapeHtml(percent(v))}</span>`;}
+function listingPriceText(r){if(r.min_price===null||r.min_price===undefined)return '<span class="muted">-</span>';const p=r.min_price===r.max_price||r.max_price===null?money(r.min_price):`${money(r.min_price)}–${money(r.max_price)}`;return p+(r.discount_pct>0?`<span class="cancel-raw">giảm ${escapeHtml(percent(r.discount_pct))}</span>`:'');}
+function sortListingRows(rows,key){
+  const v=(r,f,def=-Infinity)=>r[f]===null||r[f]===undefined?def:Number(r[f]);
+  const by={gmv:r=>v(r,'gmv'),units:r=>v(r,'units'),orders:r=>v(r,'orders'),views:r=>v(r,'views'),cr:r=>v(r,'conversion_rate'),growth:r=>v(r,'gmv_growth_pct'),decline:r=>-v(r,'gmv_growth_pct',Infinity),ads_expense:r=>v(r,'ads_expense'),roas:r=>v(r,'ads_roas'),stock_days:r=>-v(r,'stock_days',Infinity),rating:r=>-v(r,'rating_star',Infinity)}[key]||(r=>v(r,'gmv'));
+  return rows.slice().sort((a,b)=>by(b)-by(a)||Number(b.gmv)-Number(a.gmv));
+}
+function renderListingPerformance(){
+  const d=listingData;if(!d)return;
+  const s=d.summary||{};
+  $('listingKpiCount').textContent=num(s.listings_normal);
+  $('listingKpiCountNote').textContent=`${num(s.listings_with_orders)} link có đơn trong kỳ · ${num(s.listings)} link tổng`;
+  $('listingKpiGmv').textContent=money(s.gmv);$('listingKpiGmvNote').textContent=`${num(s.units)} sản phẩm đã bán`;
+  $('listingKpiViews').textContent=s.views===null?'Đang thu thập':num(s.views);
+  $('listingKpiViewsNote').textContent=s.views===null?'Cần ít nhất 2 lần chụp (2 ngày)':`đo được trên ${num(s.listings_with_views)} link`;
+  $('listingKpiCr').textContent=viPct(s.conversion_rate);
+  $('listingKpiAds').textContent=money(s.ads_expense);
+  $('listingKpiAdsNote').textContent=`GMV từ Ads ${money(s.ads_gmv)} · ROAS ${s.ads_expense>0?String(Math.round(s.ads_gmv/s.ads_expense*100)/100).replace('.',','):'-'}`+(d.ads_unlinked?.expense>0?` · ${money(d.ads_unlinked.expense)} Ads không gắn link`:'');
+  $('listingKpiAlerts').textContent=num(s.listings_with_alerts);$('listingKpiAlertsNote').textContent=`${num(s.alert_count)} cảnh báo`;
+  $('listingKpiOos').textContent=num(s.out_of_stock);
+  const subCount=$('subCountListings');if(subCount)subCount.textContent=s.listings_with_alerts?String(s.listings_with_alerts):'';
+  const snaps=d.snapshot_dates||[];
+  $('listingKpiSnap').textContent=snaps.length?vnDateLabel(String(snaps.at(-1)).slice(0,10)):'Chưa có';
+  $('listingKpiSnapNote').textContent=snaps.length?`${num(snaps.length)} ngày chụp trong kỳ`+(d.sync?` · hôm nay: ${d.sync.phase==='done'?'đã xong':'đang chụp ('+d.sync.phase+')'}`:''):'Bấm “Đồng bộ chỉ số link ngay” hoặc chờ Cron';
+  const q=$('listingSearch').value.trim().toLowerCase(),st=$('listingStatus').value,al=$('listingAlert').value;
+  let rows=(d.rows||[]).filter(r=>{
+    if(q&&!(`${r.item_name||''} ${r.item_sku||''} ${r.item_id}`.toLowerCase().includes(q)))return false;
+    const status=String(r.item_status||'').toUpperCase();
+    if(st==='NORMAL'&&status!=='NORMAL')return false;
+    if(st==='hidden'&&(!status||status==='NORMAL'))return false;
+    if(st==='oos'&&Number(r.total_stock)!==0)return false;
+    if(st==='has_orders'&&!(Number(r.orders)>0))return false;
+    if(al==='any'&&!r.alerts.length)return false;
+    if(al&&al!=='any'&&!r.alerts.some(x=>x.code===al))return false;
+    return true;
+  });
+  rows=sortListingRows(rows,$('listingSort').value);
+  const limit=Number($('listingLimit').value||50),shown=rows.slice(0,limit);
+  $('listingRows').innerHTML=shown.map((r,i)=>{
+    const name=escapeHtml(r.item_name||'(chưa có tên)');
+    const link=r.shopee_url?`<a href="${escapeHtml(r.shopee_url)}" target="_blank" rel="noopener noreferrer">${name}</a>`:name;
+    const views=r.views===null?'<span class="muted">đang thu thập</span>':`${num(r.views)}<span class="cancel-raw">${num(r.views_per_day)}/ngày · ${escapeHtml(String(r.views_days).replace('.',','))} ngày</span>`;
+    const stock=r.total_stock===null||r.total_stock===undefined?'<span class="muted">-</span>':`${num(r.total_stock)}${r.stock_days!==null?`<span class="cancel-raw">đủ ~${escapeHtml(String(r.stock_days).replace('.',','))} ngày</span>`:''}`;
+    const rating=r.rating_star===null||r.rating_star===undefined?'-':`★ ${Number(r.rating_star).toFixed(2).replace('.',',')}<span class="cancel-raw">${num(r.comment_count)} đánh giá · ${num(r.likes)} thích</span>`;
+    const ads=Number(r.ads_expense)>0?`${money(r.ads_expense)}<span class="cancel-raw">ROAS ${escapeHtml(String(r.ads_roas??'-').replace('.',','))}${r.ads_shared_campaign?' · chiến dịch chung':''}</span>`:(Number(r.ads_active_campaigns)>0?'<span class="muted">đang chạy, 0đ</span>':'<span class="muted">-</span>');
+    const alerts=r.alerts.map(a=>`<span class="badge ${a.level}" title="${escapeHtml(a.text)}">${escapeHtml(a.text)}</span>`).join(' ');
+    return `<tr><td class="right">${i+1}</td><td class="listing-name"><b>${link}</b><span class="cancel-raw">ID ${escapeHtml(r.item_id)}${r.item_sku?' · SKU '+escapeHtml(r.item_sku):''}</span></td><td>${listingStatusBadge(r.item_status)}</td><td class="right">${listingPriceText(r)}</td><td class="right">${stock}</td><td class="right">${views}</td><td class="right">${num(r.orders)}</td><td class="right">${num(r.units)}</td><td class="right"><b>${money(r.gmv)}</b><br>${deltaBadge(r.gmv_growth_pct)}</td><td class="right">${escapeHtml(percent(r.gmv_share_pct))}</td><td class="right">${viPct(r.conversion_rate)}${r.prev_conversion_rate!==null?`<span class="cancel-raw">kỳ trước ${escapeHtml(viPct(r.prev_conversion_rate))}</span>`:''}</td><td class="right">${rating}</td><td class="right">${ads}</td><td class="listing-alerts">${alerts||'<span class="muted">-</span>'}</td><td><button type="button" class="ghost" data-listing-item="${escapeHtml(r.item_id)}">Theo ngày</button></td></tr>`;
+  }).join('')||'<tr><td colspan="15" class="empty">Không có link khớp bộ lọc.</td></tr>';
+  $('listingMeta').textContent=`${num(shown.length)} / ${num(rows.length)} link khớp lọc · kỳ ${rangeLabel({from:d.date_from,to:d.date_to})}, so với kỳ liền trước cùng độ dài`+(d.sync?.errors?.length?` · lỗi đồng bộ gần nhất: ${d.sync.errors.at(-1)}`:'');
+}
+async function loadListingPerformance(){
+  const shop=$('shop').value||'all';
+  $('listingSyncBtn').classList.toggle('hidden',!hasFeature('system')||shop==='all');
+  if(shop==='all'&&!currentUser?.is_admin){$('listingNotice').textContent='Hãy chọn một shop cụ thể.';return null;}
+  const r=getRange(),token=++listingLoadToken;
+  $('listingNotice').className='notice';$('listingNotice').textContent='Đang tổng hợp hiệu suất từng link...';
+  try{
+    const d=await api('/api/products/listings?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString());
+    if(token!==listingLoadToken)return d;
+    listingData=d;renderListingPerformance();
+    const noSnap=!(d.snapshot_dates||[]).length;
+    $('listingNotice').className=noSnap?'notice warn-note':'notice';
+    $('listingNotice').textContent=noSnap?'Chưa có ảnh chụp chỉ số link nào trong kỳ. Đơn và GMV vẫn hiện từ đơn hàng; lượt xem và tỷ lệ chuyển đổi sẽ có sau ít nhất 2 ngày chụp liên tiếp.':`Đã có ${num(d.snapshot_dates.length)} ngày chụp trong kỳ. Lượt xem/chuyển đổi chỉ tính trên khoảng giữa các lần chụp.`;
+    return d;
+  }catch(e){if(token===listingLoadToken){$('listingNotice').className='notice warn-note';$('listingNotice').textContent='Không tải được hiệu suất link: '+e.message;}return null;}
+}
+async function syncListingsNow(){
+  const shop=$('shop').value||'all';if(shop==='all'||listingSyncRunning)return;
+  listingSyncRunning=true;const btn=$('listingSyncBtn');btn.disabled=true;
+  try{
+    for(let i=0;i<60;i++){
+      const res=await api('/api/products/listings/sync',{method:'POST',body:{shop_id:shop}});
+      $('listingNotice').className='notice';$('listingNotice').textContent=`Đang chụp chỉ số link: bước ${i+1} · giai đoạn ${res.phase} · ${num(res.items)} link${res.errors?` · ${num(res.errors)} lỗi nhỏ`:''}`;
+      if(res.ok===false){$('listingNotice').className='notice warn-note';$('listingNotice').textContent='Đồng bộ dừng: '+(res.error||'lỗi');break;}
+      if(res.done||res.phase==='done')break;
+    }
+    await loadListingPerformance();
+  }catch(e){$('listingNotice').className='notice warn-note';$('listingNotice').textContent='Không đồng bộ được: '+e.message;}
+  finally{listingSyncRunning=false;btn.disabled=false;}
+}
+async function loadListingDaily(itemId){
+  const box=$('listingDetailBox'),shop=$('shop').value||'all',r=getRange();
+  const row=(listingData?.rows||[]).find(x=>String(x.item_id)===String(itemId));
+  const shopId=shop==='all'?row?.shop_id:shop;
+  box.classList.remove('hidden');box.innerHTML='<div class="empty">Đang tải diễn biến theo ngày...</div>';
+  try{
+    const d=await api('/api/products/listings/daily?'+new URLSearchParams({shop_id:shopId,item_id:itemId,date_from:r.from,date_to:r.to}).toString());
+    const days=d.days||[];
+    const maxG=Math.max(1,...days.map(x=>Number(x.gmv)||0)),maxV=Math.max(1,...days.map(x=>Number(x.views)||0));
+    const bars=days.map(x=>`<div class="ld-day" title="${escapeHtml(vnDateLabel(String(x.date).slice(0,10)))}: GMV ${escapeHtml(money(x.gmv))}, ${num(x.orders)} đơn, ${x.views===null?'chưa đo':num(x.views)+' lượt xem'}"><i class="ld-gmv" style="height:${Math.round((Number(x.gmv)||0)/maxG*100)}%"></i><i class="ld-views" style="height:${x.views===null?0:Math.round((Number(x.views)||0)/maxV*100)}%"></i><span>${Number(String(x.date).slice(8,10))}</span></div>`).join('');
+    box.innerHTML=`<div class="section-title"><div><h2>${escapeHtml(row?.item_name||('Link '+itemId))}</h2><p>Theo ngày trong kỳ đang chọn. Cột cam: GMV; cột xanh: lượt xem (chênh lệch giữa 2 lần chụp liên tiếp).</p></div><button class="ghost" id="listingDetailClose">Đóng</button></div>
+      <div class="ld-chart">${bars}</div>
+      <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Ngày</th><th class="right">Lượt xem</th><th class="right">Đơn</th><th class="right">SL</th><th class="right">GMV</th><th class="right">Chuyển đổi</th><th class="right">Giá</th><th class="right">Tồn kho</th><th class="right">Chi phí Ads</th><th class="right">GMV từ Ads</th></tr></thead><tbody>${days.map(x=>`<tr><td>${escapeHtml(vnDateLabel(String(x.date).slice(0,10)))}</td><td class="right">${x.views===null?'<span class="muted">-</span>':num(x.views)}</td><td class="right">${num(x.orders)}</td><td class="right">${num(x.units)}</td><td class="right">${money(x.gmv)}</td><td class="right">${x.views>0?escapeHtml(percent(Math.round(x.orders/x.views*10000)/100)):'-'}</td><td class="right">${x.price===null?'-':money(x.price)}</td><td class="right">${x.stock===null?'-':num(x.stock)}</td><td class="right">${money(x.ads_expense)}</td><td class="right">${money(x.ads_gmv)}</td></tr>`).join('')}</tbody></table></div>`;
+    $('listingDetailClose').addEventListener('click',()=>box.classList.add('hidden'));
+    box.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){box.innerHTML='<div class="empty">Không tải được: '+escapeHtml(e.message)+'</div>';}
+}
+function initListingUI(){
+  $('listingReloadBtn').addEventListener('click',loadListingPerformance);
+  $('listingSyncBtn').addEventListener('click',syncListingsNow);
+  $('listingSearch').addEventListener('input',renderListingPerformance);
+  ['listingStatus','listingAlert','listingSort','listingLimit'].forEach(id=>$(id).addEventListener('change',renderListingPerformance));
+  $('listingRows').addEventListener('click',e=>{const b=e.target.closest('[data-listing-item]');if(b)loadListingDaily(b.dataset.listingItem);});
+}
+
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
   if(!canOpenTab(tab)){tab=firstAllowedTab();if(!tab)return;}
@@ -3778,7 +3922,7 @@ function setTab(tab){
   updatePageHeader(tab);
   document.querySelectorAll('.page-subnav [data-admin-only]').forEach(btn=>btn.classList.toggle('sub-hidden',!currentUser?.is_admin));
   activateSubnav(tab);
-  if(tab==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); });
+
   if(tab==='marketing') loadMarketing();
   if(tab==='warehouse'){
     loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); });
@@ -3806,7 +3950,7 @@ async function initAuthenticatedApp(){
   applyCurrentUserUi();
   if(!authenticatedAppInitialized){
     initWorkspaceUI();
-    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();
+    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();initListingUI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
     $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
