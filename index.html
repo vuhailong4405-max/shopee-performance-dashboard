@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.18</title>
+  <title>Gooby BI Dashboard · V70.19</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -372,6 +372,7 @@
     .biz-chart-wrap{height:300px}
     .budget-bar i{background:linear-gradient(90deg,#53b1fd,#2e90fa)}.budget-bar.over i{background:linear-gradient(90deg,#f97066,#f04438)}
     tr.biz-total td{background:#f9fafb;border-top:2px solid var(--line)}
+    tr.biz-ref td{background:#fcfcfd;font-style:italic}
     .biz-editor{margin-top:16px;border:1px solid #b2ddff;border-radius:13px;background:#f5faff;padding:0 14px 14px}
     .biz-editor>summary{cursor:pointer;padding:14px 0;color:#175cd3;font-weight:900}
     .biz-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -710,7 +711,7 @@
 
     <section class="tab-panel hidden" id="tab-marketing">
 
-    <nav class="page-subnav" data-tab="marketing" aria-label="Mục trong trang"><button type="button" data-sub="traffic">Traffic toàn shop</button><button type="button" data-sub="ads">Quảng cáo</button><button type="button" data-sub="coin">Xu Shop</button><button type="button" data-sub="mktcoin">Xu Marketing</button></nav>
+    <nav class="page-subnav" data-tab="marketing" aria-label="Mục trong trang"><button type="button" data-sub="traffic">Traffic toàn shop</button><button type="button" data-sub="ads">Quảng cáo</button><button type="button" data-sub="coin">Xu Shop</button><button type="button" data-sub="mktcoin">Xu Marketing</button><button type="button" data-sub="vouchers">Voucher shop</button></nav>
     <section data-subpanel="marketing:traffic" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Traffic toàn shop · tất cả nguồn</h2><p>Tổng hợp traffic tự nhiên và trả phí từ báo cáo Phân tích bán hàng/Business Insights: Tìm kiếm, Đề xuất, Trang shop, Shopee Live, Quảng cáo, nguồn ngoài… nếu file Shopee có cột nguồn. Phần này độc lập với Ads bên dưới để không đếm nhầm click quảng cáo thành toàn shop.</p></div></div>
       <div id="shopTrafficSummary" class="notice">Chọn một shop, xuất báo cáo Traffic theo ngày từ Kênh Người Bán rồi tải file Excel/CSV lên. Nếu file có cột “Nguồn truy cập”, dashboard sẽ tự tách từng nguồn.</div>
@@ -786,6 +787,23 @@
       </div>
       <div class="table-wrap"><table><thead><tr><th>Phân loại (đầy đủ)</th><th class="right">Số dòng</th><th class="right">Tổng Xu đã chi</th></tr></thead><tbody id="mktCoinCategoryRows"><tr><td colspan="3" class="empty">Chưa có dữ liệu.</td></tr></tbody></table></div>
       <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Chương trình</th><th class="right">Xu</th></tr></thead><tbody id="mktCoinRows"><tr><td colspan="4" class="empty">Chưa có dữ liệu — hãy tải file lên.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="card" style="margin-top:16px" data-subpanel="marketing:vouchers" id="voucherPanel">
+      <div class="section-title"><div><h2>Voucher shop theo từng mã</h2><p>Số tiền shop chịu cho mỗi mã voucher, lấy từ voucher_from_seller trong Income Shopee của từng đơn. Khoảng ngày theo ngày tạo đơn ở bộ lọc trên cùng; chỉ tính đơn đã hoàn tất và đã lấy được Income (mỗi đơn áp tối đa 1 mã voucher shop). Voucher Shopee dùng kèm trên cùng đơn và giảm giá sản phẩm chỉ để tham khảo, không cộng vào chi phí.</p></div><div class="mini-actions" style="margin-top:0"><button class="ghost" id="voucherReloadBtn">↻ Tải lại</button></div></div>
+      <div class="ops-kpis">
+        <div class="ops-kpi warn"><span>Voucher shop chịu</span><b id="voucherKpiCost">-</b><small id="voucherKpiCostNote">-</small></div>
+        <div class="ops-kpi"><span>Chi phí voucher / GMV</span><b id="voucherKpiRatio">-</b><small id="voucherKpiRatioNote">GMV các đơn đã có Income</small></div>
+        <div class="ops-kpi"><span>Đơn có dùng mã voucher</span><b id="voucherKpiOrders">-</b><small id="voucherKpiOrdersNote">-</small></div>
+        <div class="ops-kpi muted-kpi"><span>Tham khảo (không tính chi phí)</span><b id="voucherKpiShopee">-</b><small id="voucherKpiRef">-</small></div>
+      </div>
+      <div class="ship-filter-bar">
+        <div class="field"><label for="voucherSearch">Tìm mã voucher</label><input id="voucherSearch" type="search" placeholder="VD: GOOB20LK"></div>
+        <div class="field"><label for="voucherFunded">Shop có chịu tiền?</label><select id="voucherFunded"><option value="">Tất cả mã</option><option value="shop">Shop có chịu tiền</option><option value="shopee">Shop không chịu (0đ)</option></select></div>
+        <div class="field"><label for="voucherSort">Sắp xếp</label><select id="voucherSort"><option value="cost">Shop chịu nhiều nhất</option><option value="orders">Nhiều đơn nhất</option><option value="ratio">% chi phí/GMV cao nhất</option><option value="avg">Chi phí/đơn cao nhất</option></select></div>
+      </div>
+      <div class="muted ship-meta" id="voucherMeta">Chưa tải.</div>
+      <div class="table-wrap"><table class="voucher-table"><thead><tr><th>Mã voucher</th><th>Shop chịu?</th><th class="right">Số đơn</th><th class="right">Shop chịu</th><th>Tỷ trọng</th><th class="right">TB / đơn</th><th class="right">GMV đơn dùng mã</th><th class="right">% chi phí / GMV</th><th class="right">AOV</th><th class="right" title="Voucher riêng của Shopee dùng kèm trên cùng các đơn, không phải phần Shopee tài trợ cho mã này">Voucher Shopee cùng đơn (tham khảo)</th></tr></thead><tbody id="voucherRows"><tr><td colspan="10" class="empty">Chưa tải.</td></tr></tbody></table></div>
     </section>
 
     </section>
@@ -3285,6 +3303,7 @@ const PAGE_META={
 const SUB_DEFAULT={gmv:'overview',orders:'deadlines',marketing:'traffic',warehouse:'combos',system:'sync'};
 const SUB_LOADERS={
   'gmv:targets':()=>loadBusinessMonthly(),
+  'marketing:vouchers':()=>loadShopVouchers(),
   'orders:deadlines':()=>loadShipDeadlines(),
   'orders:cancel':()=>loadCancelReasons(),
   'orders:list':()=>loadOrders(true).catch(err=>{$('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>';}),
@@ -3610,9 +3629,9 @@ function renderBizMonthly(d){
   $('bizCostRows').innerHTML=d.costs.map(r=>{
     const used=r.used_pct==null?'<span class="muted">-</span>':`<div class="reason-bar budget-bar${r.used_pct>100?' over':''}"><i style="width:${Math.min(100,Math.max(2,r.used_pct))}%"></i><span>${escapeHtml(percent(r.used_pct))}</span></div>`;
     const sub=r.key==='ads'?`<span class="cancel-raw">Product ${escapeHtml(money(d.ads_breakdown.product))} · Livestream ${escapeHtml(money(d.ads_breakdown.livestream))}</span>`:'';
-    return `<tr><td><b>${escapeHtml(r.label)}</b>${sub}${r.manual&&r.auto?`<span class="cancel-raw">Tự động ${escapeHtml(money(r.auto))} + nhập tay ${escapeHtml(money(r.manual))}</span>`:''}</td><td>${escapeHtml(srcLabel[r.source]||r.source)}</td><td class="right">${r.budget!=null?money(r.budget):'<span class="muted">-</span>'}</td><td class="right"><b>${money(r.actual)}</b></td><td>${used}</td><td class="right">${money(r.projected)}</td><td class="right">${bizPct(r.projected_pct)}</td><td class="right">${bizPct(r.gmv_ratio_pct)}</td><td>${r.budget!=null?bizBadge(r.status,'cost'):'<span class="muted">-</span>'}</td></tr>`;
-  }).join('')+`<tr class="biz-total"><td><b>Tổng chi phí</b></td><td></td><td class="right"><b>${c.budget!=null?money(c.budget):'-'}</b></td><td class="right"><b>${money(c.actual)}</b></td><td>${bizPct(c.used_pct)}</td><td class="right"><b>${money(c.projected)}</b></td><td class="right">${bizPct(c.projected_pct)}</td><td class="right">${bizPct(c.gmv_ratio_pct)}</td><td>${c.budget!=null?bizBadge(c.status,'cost'):''}</td></tr>`;
-  $('bizFootnote').textContent=`Phí sàn và Xu Shop chỉ tính trên đơn đã lấy được Income (độ phủ ${d.income_coverage_pct==null?'-':percent(d.income_coverage_pct)} đơn COMPLETED), nên có thể thấp hơn thực tế khi độ phủ chưa đủ. Xu Marketing lấy từ file đã tải lên ở tab Marketing. Nhóm chỉ nhập tay dùng runrate = max(đã ghi nhận, ngân sách).`;
+    return `<tr><td><b>${escapeHtml(r.label)}</b>${sub}${r.manual&&r.auto?`<span class="cancel-raw">Tự động ${escapeHtml(money(r.auto))} + nhập tay ${escapeHtml(money(r.manual))}</span>`:''}${r.pending_estimate>0?`<span class="cancel-raw">+ ước tính ${escapeHtml(money(r.pending_estimate))} cho đơn chưa hoàn tất (chỉ tính vào runrate)</span>`:''}${r.key==='shop_voucher'?`<button type="button" class="more-toggle" data-jump-sub="marketing:vouchers">Xem chi tiết theo mã →</button>`:''}</td><td>${escapeHtml(srcLabel[r.source]||r.source)}</td><td class="right">${r.budget!=null?money(r.budget):'<span class="muted">-</span>'}</td><td class="right"><b>${money(r.actual)}</b></td><td>${used}</td><td class="right">${money(r.projected)}</td><td class="right">${bizPct(r.projected_pct)}</td><td class="right">${bizPct(r.gmv_ratio_pct)}</td><td>${r.budget!=null?bizBadge(r.status,'cost'):'<span class="muted">-</span>'}</td></tr>`;
+  }).join('')+`<tr class="biz-total"><td><b>Tổng chi phí</b></td><td></td><td class="right"><b>${c.budget!=null?money(c.budget):'-'}</b></td><td class="right"><b>${money(c.actual)}</b></td><td>${bizPct(c.used_pct)}</td><td class="right"><b>${money(c.projected)}</b></td><td class="right">${bizPct(c.projected_pct)}</td><td class="right">${bizPct(c.gmv_ratio_pct)}</td><td>${c.budget!=null?bizBadge(c.status,'cost'):''}</td></tr>`+(d.promo_reference?`<tr class="biz-ref"><td><span class="muted">Giảm giá sản phẩm của shop</span><span class="cancel-raw">Tham khảo, không cộng vào tổng chi phí</span></td><td class="muted">Tham khảo</td><td></td><td class="right muted">${money(d.promo_reference.seller_discount)}</td><td></td><td></td><td></td><td class="right muted">${bizPct(d.gmv.actual>0?Math.round(d.promo_reference.seller_discount/d.gmv.actual*10000)/100:null)}</td><td></td></tr>`:'');
+  $('bizFootnote').textContent=`Phí sàn, Voucher shop và Xu Shop lấy từ Income Shopee nên chỉ ghi nhận khi đơn đã hoàn tất (độ phủ ${d.income_coverage_pct==null?'-':percent(d.income_coverage_pct)} đơn hoàn tất). Phần đơn hợp lệ chưa hoàn tất (GMV ${money(d.promo_reference?.pending_gmv||0)}) được ước tính theo tỷ lệ của các đơn đã có Income và chỉ cộng vào runrate. Giảm giá sản phẩm chỉ để tham khảo, không cộng vào tổng chi phí. Xu Marketing lấy từ file đã tải lên ở tab Marketing. Nhóm chỉ nhập tay dùng runrate = max(đã ghi nhận, ngân sách).`;
   renderBizChart(d.series,p.phase==='current'?g.projected:null,p);
   // Bộ chỉnh sửa (Admin)
   $('bizEditor').classList.toggle('hidden',!currentUser?.is_admin);
@@ -3674,9 +3693,50 @@ function initBusinessUI(){
   $('bizSaveTargetBtn').addEventListener('click',saveBusinessTarget);
   $('bizCopyPrevBtn').addEventListener('click',copyPrevBusinessTarget);
   $('bizAddCostBtn').addEventListener('click',addBusinessCost);
+  $('bizCostRows').addEventListener('click',e=>{const b=e.target.closest('[data-jump-sub]');if(!b)return;const [tab,sub]=b.dataset.jumpSub.split(':');writeWorkspacePrefs({subTabs:{...(readWorkspacePrefs().subTabs||{}),[tab]:sub}});setTab(tab);});
   $('bizManualRows').addEventListener('click',e=>{const b=e.target.closest('[data-biz-del]');if(b)deleteBusinessCost(Number(b.dataset.bizDel));});
   $('bizPanel').addEventListener('input',e=>{if(e.target.matches('input[type=number]'))updateMoneyHints();});
   window.addEventListener('resize',()=>{if(bizData&&!$('bizPanel').classList.contains('sub-hidden'))renderBizChart(bizData.series,bizData.period.phase==='current'?bizData.gmv.projected:null,bizData.period);});
+}
+
+// ===== V70.19: voucher shop theo từng mã =====
+let voucherData=null,voucherLoadToken=0;
+const VOUCHER_FUNDED={shop:['bad','Shop chịu'],shopee:['good','Shop 0đ'],none:['','Không mã']};
+function renderVoucherReport(){
+  const d=voucherData;if(!d)return;
+  const s=d.summary||{};
+  $('voucherKpiCost').textContent=money(s.voucher_shop);
+  $('voucherKpiCostNote').textContent=`${num(s.orders_with_cost)} đơn có chi phí · TB ${money(s.avg_voucher_per_cost_order)}/đơn`;
+  $('voucherKpiRatio').textContent=s.cost_gmv_pct==null?'-':percent(s.cost_gmv_pct);
+  $('voucherKpiRatioNote').textContent=`trên GMV ${money(s.gmv)} của các đơn đã có Income`;
+  $('voucherKpiOrders').textContent=num(s.orders_with_code);
+  $('voucherKpiOrdersNote').textContent=`trên ${num(s.orders_with_income)} đơn có Income · độ phủ ${s.income_coverage_pct==null?'-':percent(s.income_coverage_pct)} đơn hoàn tất`;
+  $('voucherKpiShopee').textContent=money(s.voucher_shopee);
+  $('voucherKpiRef').textContent=`Voucher Shopee chịu · giảm giá SP của shop ${money(s.seller_discount)}`;
+  const q=$('voucherSearch').value.trim().toUpperCase(),funded=$('voucherFunded').value,sort=$('voucherSort').value;
+  let rows=(d.codes||[]).filter(c=>c.code&&(!q||c.code.toUpperCase().includes(q))&&(!funded||c.funded_by===funded));
+  const key={cost:c=>c.voucher_shop,orders:c=>c.orders,ratio:c=>c.cost_gmv_pct||0,avg:c=>c.avg_voucher_per_order}[sort]||(c=>c.voucher_shop);
+  rows.sort((a,b)=>key(b)-key(a));
+  const maxShare=Math.max(1,...rows.map(c=>c.share_pct||0));
+  $('voucherRows').innerHTML=rows.slice(0,300).map(c=>{const [tone,label]=VOUCHER_FUNDED[c.funded_by]||VOUCHER_FUNDED.none;return `<tr><td><b class="combo-code">${escapeHtml(c.code)}</b></td><td>${tone?`<span class="badge ${tone}">${escapeHtml(label)}</span>`:escapeHtml(label)}</td><td class="right">${num(c.orders)}</td><td class="right"><b>${moneyExact(c.voucher_shop)}</b></td><td>${c.share_pct?`<div class="reason-bar budget-bar"><i style="width:${Math.max(2,c.share_pct/maxShare*100)}%"></i><span>${escapeHtml(percent(c.share_pct))}</span></div>`:'<span class="muted">-</span>'}</td><td class="right">${money(c.avg_voucher_per_order)}</td><td class="right">${money(c.gmv)}</td><td class="right">${c.cost_gmv_pct==null?'-':percent(c.cost_gmv_pct)}</td><td class="right">${money(c.aov)}</td><td class="right muted">${money(c.voucher_shopee)}</td></tr>`;}).join('')||'<tr><td colspan="10" class="empty">Không có mã voucher khớp bộ lọc.</td></tr>';
+  const noCode=(d.codes||[]).find(c=>!c.code);
+  $('voucherMeta').textContent=`${num(rows.length)} mã khớp lọc / ${num((d.codes||[]).filter(c=>c.code).length)} mã trong kỳ ${rangeLabel({from:d.date_from,to:d.date_to})}`+(noCode?` · ${num(noCode.orders)} đơn không dùng mã voucher shop`:'')+(rows.length>300?' · hiển thị 300 mã đầu':'');
+}
+async function loadShopVouchers(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'&&!currentUser?.is_admin){$('voucherRows').innerHTML='<tr><td colspan="10" class="empty">Hãy chọn một shop cụ thể.</td></tr>';return null;}
+  const r=getRange(),token=++voucherLoadToken;
+  $('voucherMeta').textContent='Đang tổng hợp voucher theo mã...';
+  try{
+    const data=await api('/api/business/vouchers?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to}).toString());
+    if(token===voucherLoadToken){voucherData=data;renderVoucherReport();}
+    return data;
+  }catch(e){if(token===voucherLoadToken){$('voucherMeta').textContent='Không tải được báo cáo voucher: '+e.message;$('voucherRows').innerHTML='<tr><td colspan="10" class="empty">'+escapeHtml(e.message)+'</td></tr>';}return null;}
+}
+function initVoucherUI(){
+  $('voucherReloadBtn').addEventListener('click',loadShopVouchers);
+  $('voucherSearch').addEventListener('input',renderVoucherReport);
+  ['voucherFunded','voucherSort'].forEach(id=>$(id).addEventListener('change',renderVoucherReport));
 }
 
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
@@ -3716,7 +3776,7 @@ async function initAuthenticatedApp(){
   applyCurrentUserUi();
   if(!authenticatedAppInitialized){
     initWorkspaceUI();
-    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();
+    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
     $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
