@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.19</title>
+  <title>Gooby BI Dashboard · V70.20</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -373,6 +373,7 @@
     .budget-bar i{background:linear-gradient(90deg,#53b1fd,#2e90fa)}.budget-bar.over i{background:linear-gradient(90deg,#f97066,#f04438)}
     tr.biz-total td{background:#f9fafb;border-top:2px solid var(--line)}
     tr.biz-ref td{background:#fcfcfd;font-style:italic}
+    .probe-table td{vertical-align:top;white-space:normal}.probe-samples{font-family:ui-monospace,Consolas,monospace;font-size:10.5px}.probe-fields{max-height:220px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:#475467}
     .biz-editor{margin-top:16px;border:1px solid #b2ddff;border-radius:13px;background:#f5faff;padding:0 14px 14px}
     .biz-editor>summary{cursor:pointer;padding:14px 0;color:#175cd3;font-weight:900}
     .biz-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -1094,6 +1095,13 @@
       </details>
       <div class="table-wrap" style="margin-top:14px"><table class="log-table"><thead><tr><th>Khu vực</th><th>Nội dung lỗi/cảnh báo</th></tr></thead><tbody id="diagLogRows"></tbody></table></div>
     </section>
+
+    <section class="card" style="margin-top:16px" data-subpanel="system:diagnostics" id="productProbePanel">
+      <div class="section-title"><div><h2>Thử quyền API Sản phẩm &amp; Ads theo link sản phẩm</h2><p>Chỉ đọc: gọi thử các API Shopee về sản phẩm (danh sách link, thông tin, lượt bán/xem/thích/sao, giá &amp; tồn kho phân loại, đánh giá, khuyến mãi) và Ads theo từng chiến dịch/sản phẩm cho shop đang chọn. Không ghi database, không sửa sản phẩm hay chiến dịch; chỉ hiện tên trường và vài số mẫu.</p></div><div class="mini-actions" style="margin-top:0"><button id="productProbeBtn">Thử quyền API</button></div></div>
+      <div id="productProbeSummary" class="notice">Chọn một shop cụ thể ở bộ lọc trên rồi bấm “Thử quyền API”.</div>
+      <div class="table-wrap" style="margin-top:12px"><table class="probe-table"><thead><tr><th>Nhóm</th><th>Chức năng</th><th>Kết quả</th><th>Lỗi Shopee</th><th>Số mẫu</th><th>Trường dữ liệu trả về</th></tr></thead><tbody id="productProbeRows"><tr><td colspan="6" class="empty">Chưa thử.</td></tr></tbody></table></div>
+    </section>
+
 
     <section data-subpanel="system:connect" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Cài đặt kỹ thuật / kết nối shop</h2><p>Cấu hình địa chỉ Worker backend và tạo link ủy quyền OAuth cho shop mới.</p></div></div>
@@ -3739,6 +3747,28 @@ function initVoucherUI(){
   ['voucherFunded','voucherSort'].forEach(id=>$(id).addEventListener('change',renderVoucherReport));
 }
 
+// ===== V70.20: thử quyền API Sản phẩm + Ads theo link sản phẩm =====
+const PROBE_CLASS={OK:['good','Lấy được'],NO_PERMISSION:['bad','Chưa có quyền'],AUTH_ERROR:['bad','Lỗi xác thực'],PARAM_ERROR:['warn','Sai tham số'],OTHER_ERROR:['warn','Lỗi khác'],NETWORK_ERROR:['bad','Lỗi mạng']};
+let productProbeData=null;
+async function runProductProbe(){
+  const shop=$('shop').value||'all';
+  if(shop==='all'){$('productProbeSummary').textContent='Hãy chọn một shop cụ thể ở bộ lọc trên.';return null;}
+  const btn=$('productProbeBtn');btn.disabled=true;
+  $('productProbeSummary').textContent='Đang gọi thử khoảng 10 API Shopee, mất vài giây...';
+  try{
+    const d=await api('/api/diagnostics/product-api-probe?'+new URLSearchParams({shop_id:shop}).toString());
+    productProbeData=d;
+    $('productProbeSummary').innerHTML=`Shop <b>${escapeHtml(shopNameText())}</b>: <b>${num(d.summary.ok)}/${num(d.summary.total)}</b> API lấy được. Link sản phẩm thử: ${escapeHtml((d.tested_item_ids||[]).join(', ')||'-')} · chiến dịch Ads thử: ${escapeHtml((d.tested_campaign_ids||[]).join(', ')||'không có')} · Ads ${escapeHtml(vnDateLabel(d.ads_date_range.from))} → ${escapeHtml(vnDateLabel(d.ads_date_range.to))}.`;
+    $('productProbeRows').innerHTML=d.results.map(r=>{const [tone,label]=PROBE_CLASS[r.classification]||['warn',r.classification];
+      const samples=Object.entries(r.samples||{}).map(([k,v])=>`${escapeHtml(k)}=${escapeHtml(typeof v==='object'?JSON.stringify(v):String(v))}`).join('<br>')||'<span class="muted">-</span>';
+      const fields=(r.fields||[]).length?`<details><summary>${num(r.fields.length)} trường</summary><div class="probe-fields">${r.fields.map(escapeHtml).join('<br>')}</div></details>`:'<span class="muted">-</span>';
+      return `<tr><td>${r.group==='ads'?'Ads':'Sản phẩm'}</td><td><b>${escapeHtml(r.label)}</b><span class="cancel-raw">${escapeHtml(r.endpoint)}</span></td><td><span class="badge ${tone}">${escapeHtml(label)}</span></td><td>${r.ok?'<span class="muted">-</span>':escapeHtml([r.shopee_error,r.message].filter(Boolean).join(': ')||('HTTP '+(r.http_status??'-')))}</td><td class="probe-samples">${samples}</td><td>${fields}</td></tr>`;}).join('');
+    return d;
+  }catch(e){$('productProbeSummary').textContent='Không thử được: '+e.message;return null;}
+  finally{btn.disabled=false;}
+}
+function initProductProbeUI(){ $('productProbeBtn').addEventListener('click',runProductProbe); }
+
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
   if(!canOpenTab(tab)){tab=firstAllowedTab();if(!tab)return;}
@@ -3776,7 +3806,7 @@ async function initAuthenticatedApp(){
   applyCurrentUserUi();
   if(!authenticatedAppInitialized){
     initWorkspaceUI();
-    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();
+    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
     $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
