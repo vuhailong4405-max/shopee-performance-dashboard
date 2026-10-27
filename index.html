@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.21</title>
+  <title>Gooby BI Dashboard · V70.22</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -3825,7 +3825,7 @@ function renderListingPerformance(){
   $('listingKpiViewsNote').textContent=s.views===null?'Cần ít nhất 2 lần chụp (2 ngày)':`đo được trên ${num(s.listings_with_views)} link`;
   $('listingKpiCr').textContent=viPct(s.conversion_rate);
   $('listingKpiAds').textContent=money(s.ads_expense);
-  $('listingKpiAdsNote').textContent=`GMV từ Ads ${money(s.ads_gmv)} · ROAS ${s.ads_expense>0?String(Math.round(s.ads_gmv/s.ads_expense*100)/100).replace('.',','):'-'}`+(d.ads_unlinked?.expense>0?` · ${money(d.ads_unlinked.expense)} Ads không gắn link`:'');
+  $('listingKpiAdsNote').textContent=`GMV từ Ads ${money(s.ads_gmv)} · ROAS ${s.ads_expense>0?String(Math.round(s.ads_gmv/s.ads_expense*100)/100).replace('.',','):'-'}`+(d.ads_unattributed?` · chưa gắn link ${money(d.ads_unattributed.expense)} (${viPct(d.ads_unattributed.pct_of_shop)} tổng Ads shop)`:'');
   $('listingKpiAlerts').textContent=num(s.listings_with_alerts);$('listingKpiAlertsNote').textContent=`${num(s.alert_count)} cảnh báo`;
   $('listingKpiOos').textContent=num(s.out_of_stock);
   const subCount=$('subCountListings');if(subCount)subCount.textContent=s.listings_with_alerts?String(s.listings_with_alerts):'';
@@ -3855,7 +3855,7 @@ function renderListingPerformance(){
     const ads=Number(r.ads_expense)>0?`${money(r.ads_expense)}<span class="cancel-raw">ROAS ${escapeHtml(String(r.ads_roas??'-').replace('.',','))}${r.ads_shared_campaign?' · chiến dịch chung':''}</span>`:(Number(r.ads_active_campaigns)>0?'<span class="muted">đang chạy, 0đ</span>':'<span class="muted">-</span>');
     const alerts=r.alerts.map(a=>`<span class="badge ${a.level}" title="${escapeHtml(a.text)}">${escapeHtml(a.text)}</span>`).join(' ');
     return `<tr><td class="right">${i+1}</td><td class="listing-name"><b>${link}</b><span class="cancel-raw">ID ${escapeHtml(r.item_id)}${r.item_sku?' · SKU '+escapeHtml(r.item_sku):''}</span></td><td>${listingStatusBadge(r.item_status)}</td><td class="right">${listingPriceText(r)}</td><td class="right">${stock}</td><td class="right">${views}</td><td class="right">${num(r.orders)}</td><td class="right">${num(r.units)}</td><td class="right"><b>${money(r.gmv)}</b><br>${deltaBadge(r.gmv_growth_pct)}</td><td class="right">${escapeHtml(percent(r.gmv_share_pct))}</td><td class="right">${viPct(r.conversion_rate)}${r.prev_conversion_rate!==null?`<span class="cancel-raw">kỳ trước ${escapeHtml(viPct(r.prev_conversion_rate))}</span>`:''}</td><td class="right">${rating}</td><td class="right">${ads}</td><td class="listing-alerts">${alerts||'<span class="muted">-</span>'}</td><td><button type="button" class="ghost" data-listing-item="${escapeHtml(r.item_id)}">Theo ngày</button></td></tr>`;
-  }).join('')||'<tr><td colspan="15" class="empty">Không có link khớp bộ lọc.</td></tr>';
+  }).join('')+(()=>{const u=d.ads_unattributed;if(!u||!(u.shop_expense>0))return '';const types=(u.by_type||[]).map(t=>`${escapeHtml(t.ad_type)}: ${escapeHtml(money(t.expense))}`).join(' · ');return `<tr class="biz-ref"><td></td><td class="listing-name"><b>Ads chưa gắn được link</b><span class="cancel-raw">= tổng Ads cả shop ${escapeHtml(money(u.shop_expense))} − Ads đã gắn link ${escapeHtml(money(u.linked_expense))}${types?' · đã gắn theo loại chiến dịch: '+types:''}${u.shop_days!==u.linked_days?` · dữ liệu Ads shop ${u.shop_days} ngày, theo link ${u.linked_days} ngày`:''}</span></td><td colspan="10" class="muted">Gồm các loại quảng cáo Shopee không trả danh sách sản phẩm (không chia được cho từng link).</td><td class="right"><b>${money(u.expense)}</b><span class="cancel-raw">${escapeHtml(viPct(u.pct_of_shop))} tổng Ads · GMV ${escapeHtml(money(u.gmv))}</span></td><td></td><td></td></tr>`;})()||'<tr><td colspan="15" class="empty">Không có link khớp bộ lọc.</td></tr>';
   $('listingMeta').textContent=`${num(shown.length)} / ${num(rows.length)} link khớp lọc · kỳ ${rangeLabel({from:d.date_from,to:d.date_to})}, so với kỳ liền trước cùng độ dài`+(d.sync?.errors?.length?` · lỗi đồng bộ gần nhất: ${d.sync.errors.at(-1)}`:'');
 }
 async function loadListingPerformance(){
