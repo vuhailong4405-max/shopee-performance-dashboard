@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Gooby BI Dashboard · V70.23.2</title>
+  <title>Gooby BI Dashboard · V70.25</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -328,6 +328,38 @@
 
     /* Thẻ cảnh báo vận hành */
     .ops-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 14px}
+    /* V70.25: tìm nhanh, khoảng ngày nhanh, banner thiếu số liệu, công cụ bảng */
+    .metrics{grid-template-columns:repeat(8,minmax(0,1fr))}
+    @media(max-width:1500px){.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media(max-width:920px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:680px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .topbar{flex-wrap:wrap}
+    .quick-range{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:2px;flex:1 0 100%;padding-top:10px;border-top:1px dashed var(--line)}
+    .quick-range button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer}
+    .quick-range button:hover{border-color:var(--brand);color:var(--brand)}
+    .quick-range .qsearch{margin-left:auto;background:var(--ink);color:#fff;border-color:var(--ink)}
+    .quick-range .qsearch kbd{font:inherit;font-size:10px;opacity:.75;margin-left:6px;border:1px solid rgba(255,255,255,.35);border-radius:5px;padding:0 4px}
+    .data-health{margin:10px 0 0;padding:10px 14px;border-radius:12px;border:1px solid #fcd34d;background:#fffbeb;color:#78350f;font-size:13px;line-height:1.5}
+    .data-health.bad{border-color:#fca5a5;background:#fef2f2;color:#7f1d1d}
+    .data-health b{font-weight:800}
+    .table-tools{display:flex;gap:8px;align-items:center;margin:8px 0 6px;flex-wrap:wrap}
+    .table-tools input{flex:1 1 180px;max-width:280px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;background:var(--surface);color:var(--text)}
+    .table-tools button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink)}
+    .table-tools small{color:var(--muted);font-size:11px}
+    .cmdk-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:10vh 16px 16px;z-index:9999}
+    .cmdk-backdrop.hidden{display:none}
+    .cmdk{width:min(640px,100%);background:var(--surface);border-radius:16px;box-shadow:0 30px 80px rgba(15,23,42,.35);overflow:hidden;border:1px solid var(--line)}
+    .cmdk input{width:100%;border:0;border-bottom:1px solid var(--line);padding:16px 18px;font-size:16px;outline:none;background:var(--surface);color:var(--text)}
+    .cmdk ul{list-style:none;margin:0;padding:6px;max-height:min(60vh,460px);overflow:auto}
+    .cmdk li{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--text)}
+    .cmdk li small{margin-left:auto;color:var(--muted);font-size:11px;white-space:nowrap}
+    .cmdk li.active{background:#fff1ea;color:var(--brand)}
+    .cmdk .cmdk-empty{padding:16px;color:var(--muted);font-size:13px}
+    .cmdk .cmdk-hint{padding:8px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}
+    .flash-target{outline:3px solid var(--brand);outline-offset:4px;border-radius:14px;transition:outline-color 1.2s}
+    .cost-input{width:110px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:12px;text-align:right}
+    .v25-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    @media (max-width:900px){.v25-two{grid-template-columns:1fr}.quick-range .qsearch{margin-left:0}}
     .ops-kpi{height:auto;min-height:92px;padding:13px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;border:1px solid var(--line);border-left:4px solid #98a2b3;border-radius:12px;background:#fff;color:var(--text);box-shadow:none;font-weight:500}
     button.ops-kpi:hover{border-color:#d0d5dd;box-shadow:var(--shadow)}
     .ops-kpi span{color:#475467;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
@@ -485,21 +517,29 @@
         <div class="field"><label>So sánh</label><select id="compare"><option value="previous_period">So với kỳ liền trước</option></select></div>
       </div>
       <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
+      <div class="quick-range" id="quickRange" aria-label="Chọn nhanh khoảng ngày">
+        <button type="button" data-qr="today">Hôm nay</button><button type="button" data-qr="yesterday">Hôm qua</button>
+        <button type="button" data-qr="7d">7 ngày</button><button type="button" data-qr="30d">30 ngày</button>
+        <button type="button" data-qr="month">Tháng này</button><button type="button" data-qr="prevmonth">Tháng trước</button>
+        <button type="button" class="qsearch" id="cmdkOpenBtn" title="Tìm mục, chỉ số, mã đơn hoặc thao tác">🔍 Tìm nhanh<kbd>Ctrl K</kbd></button>
+      </div>
     </section>
+    <div id="dataHealthBanner" class="data-health hidden" role="status"></div>
 
     <section class="tab-panel active" id="tab-gmv">
       
-    <nav class="page-subnav" data-tab="gmv" aria-label="Mục trong trang"><button type="button" data-sub="overview">Tổng quan</button><button type="button" data-sub="products">Sản phẩm & quy đổi</button><button type="button" data-sub="targets">Mục tiêu & runrate</button></nav>
+    <nav class="page-subnav" data-tab="gmv" aria-label="Mục trong trang"><button type="button" data-sub="overview">Tổng quan</button><button type="button" data-sub="products">Sản phẩm & quy đổi</button><button type="button" data-sub="targets">Mục tiêu & runrate</button><button type="button" data-sub="profit">Lãi & giá vốn</button><button type="button" data-sub="customers">Khách hàng</button></nav>
 <div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V62 giữ luồng sync riêng từng shop và thêm AccountHealth chính thức cho tab hiệu quả hoạt động.</p></div></div>
 
     <section class="metrics" data-subpanel="gmv:overview">
       <div class="card metric" data-icon="↗" data-tone="brand" data-primary><div class="label">GMV</div><div class="value" id="mGmv">-</div><div class="subline"><span id="dGmv" class="delta neutral">-</span><span id="cGmv">so sánh</span></div><div class="formula">Doanh số đã đặt · Data Center</div></div>
-      <div class="card metric" data-icon="₫" data-tone="teal"><div class="label">NMV</div><div class="value" id="mNmv">-</div><div class="subline"><span id="dNmv" class="delta neutral">-</span><span id="cNmv">so sánh</span></div><div class="formula">(GMV − GMV hủy) / 1,08</div></div>
+      <div class="card metric" data-icon="₫" data-tone="teal"><div class="label">NMV</div><div class="value" id="mNmv">-</div><div class="subline"><span id="dNmv" class="delta neutral">-</span><span id="cNmv">so sánh</span></div><div class="formula" id="nmvFormula">(GMV − GMV hủy − GMV hoàn trả) / 1,08</div></div>
       <div class="card metric" data-icon="▣" data-tone="violet"><div class="label">Đơn đã đặt</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
       <div class="card metric" data-icon="✓" data-tone="green"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
       <div class="card metric" data-icon="×" data-tone="red"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
       <div class="card metric" data-icon="%" data-tone="orange"><div class="label">Tỷ lệ hủy</div><div class="value" id="mCancelRate">-</div><div class="subline"><span id="dCancelRate" class="delta neutral">-</span><span id="cCancelRate">so sánh</span></div><div class="formula">GMV hủy / GMV</div></div>
       <div class="card metric" data-icon="◇" data-tone="blue"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div><div class="formula">GMV / đơn đã đặt</div></div>
+      <div class="card metric" data-icon="↩" data-tone="red"><div class="label">GMV hoàn trả</div><div class="value" id="mReturn">-</div><div class="subline"><span id="dReturn" class="delta neutral">-</span><span id="cReturn">so sánh</span></div><div class="formula" id="returnFormula">Phiếu trả hàng đã hoàn tiền · theo ngày tạo đơn</div></div>
     </section>
 
     <section class="grid2" data-subpanel="gmv:overview">
@@ -621,6 +661,41 @@
     </section>
 
 
+    <section class="card" data-subpanel="gmv:profit" id="profitPanel">
+      <div class="section-title"><div><h2>Lãi gộp theo SKU</h2><p>Doanh thu hàng = giá × số lượng của đơn không hủy trong kỳ đang chọn. Lãi gộp = doanh thu hàng − giá vốn (số lượng × giá vốn áp dụng ở ngày tạo đơn). SKU chưa có giá vốn hiện ô để nhập ngay.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="profitReloadBtn">↻ Tải lại</button><label class="muted" style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="profitMissingOnly"> Chỉ SKU chưa có giá vốn</label></div></div>
+      <div id="profitNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>Doanh thu hàng</span><b id="profitRevenue">-</b><small id="profitRevenueNote">-</small></div>
+        <div class="ops-kpi"><span>Giá vốn</span><b id="profitCogs">-</b><small id="profitCogsNote">-</small></div>
+        <div class="ops-kpi"><span>Lãi gộp (SKU có giá vốn)</span><b id="profitGross">-</b><small id="profitGrossNote">-</small></div>
+        <div class="ops-kpi"><span>Độ phủ giá vốn</span><b id="profitCoverage">-</b><small id="profitCoverageNote">-</small></div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Sản phẩm</th><th class="right">SL</th><th class="right">Hoàn</th><th class="right">Doanh thu</th><th class="right">Giá vốn</th><th class="right">Lãi gộp</th><th class="right">Biên</th><th data-admin-cell>Giá vốn / sp</th></tr></thead><tbody id="profitRows"><tr><td colspan="9" class="empty">Chưa tải.</td></tr></tbody></table></div>
+      <div class="mini-actions" data-admin-block><button class="primary" id="profitSaveInlineBtn">Lưu giá vốn đã nhập</button><span class="muted" style="font-size:12px">Giá áp dụng cho:</span><select id="profitCostScope"><option value="all">Tất cả shop</option><option value="shop">Chỉ shop đang chọn</option></select></div>
+      <details data-admin-block style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">Dán giá vốn từ Excel (nhiều SKU một lần)</summary>
+        <p class="muted" style="font-size:12px">Mỗi dòng: <b>SKU</b> ⟶ <b>Giá vốn</b> ⟶ <b>Áp dụng từ ngày</b> (không bắt buộc, dạng 2026-10-01 hoặc 01/10/2026). Cột cách nhau bằng Tab (copy thẳng từ Excel) hoặc dấu chấm phẩy.</p>
+        <textarea id="profitPaste" rows="6" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:8px;font-family:monospace;font-size:12px" placeholder="SKU-A	45000&#10;SKU-B	32000	2026-10-01"></textarea>
+        <div class="mini-actions"><button class="primary" id="profitPasteBtn">Lưu các dòng đã dán</button></div>
+      </details>
+    </section>
+
+    <section class="card" data-subpanel="gmv:customers" id="customerPanel">
+      <div class="section-title"><div><h2>Khách mới &amp; khách quay lại</h2><p>Khách mới = đơn hợp lệ đầu tiên của khách tại shop rơi vào kỳ đang chọn. Khách quay lại = đã từng mua trước kỳ. Bỏ đơn hủy. Doanh thu theo tổng tiền đơn.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="customerReloadBtn">↻ Tải lại</button></div></div>
+      <div id="customerNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>Khách mua trong kỳ</span><b id="custBuyers">-</b><small id="custBuyersNote">-</small></div>
+        <div class="ops-kpi"><span>Khách mới</span><b id="custNew">-</b><small id="custNewNote">-</small></div>
+        <div class="ops-kpi"><span>Khách quay lại</span><b id="custReturning">-</b><small id="custReturningNote">-</small></div>
+        <div class="ops-kpi"><span>Mua ≥ 2 lần trong kỳ</span><b id="custRepeat">-</b><small id="custRepeatNote">-</small></div>
+      </div>
+      <div class="v25-two">
+        <div><h3 class="biz-subhead">Số đơn mỗi khách trong kỳ</h3><div class="table-wrap"><table><thead><tr><th>Số đơn</th><th class="right">Số khách</th><th class="right">Tỷ trọng</th></tr></thead><tbody id="custBucketRows"></tbody></table></div></div>
+        <div><h3 class="biz-subhead">Theo ngày</h3><div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Khách mới</th><th class="right">Khách quay lại</th></tr></thead><tbody id="custDailyRows"></tbody></table></div></div>
+      </div>
+    </section>
+
     <section class="card" data-subpanel="gmv:targets" id="bizPanel">
       <div class="section-title">
         <div><h2>Mục tiêu tháng &amp; runrate</h2><p>Runrate = thực tế từ đầu tháng đến hiện tại ÷ số ngày đã qua × số ngày trong tháng (giờ Việt Nam, tính cả phần đã qua của hôm nay). Chi phí tự động lấy từ Quảng cáo, phí sàn và Xu Shop trong Income, Xu Marketing đã tải lên; chi phí nhập tay được cộng thêm và không bị nhân theo runrate.</p></div>
@@ -636,6 +711,10 @@
         <div class="ops-kpi" id="bizCostCard"><span>Tổng chi phí từ đầu tháng</span><b id="bizCostActual">-</b><small id="bizCostNote">-</small></div>
         <div class="ops-kpi"><span>Chi phí / GMV</span><b id="bizCostRatio">-</b><small id="bizCostRatioNote">-</small></div>
         <div class="ops-kpi"><span>Chi phí / NMV</span><b id="bizCostNmvRatio">-</b><small id="bizCostNmvNote">-</small></div>
+        <div class="ops-kpi"><span>Hoàn trả (đã trừ vào NMV)</span><b id="bizReturnGmv">-</b><small id="bizReturnNote">-</small></div>
+        <div class="ops-kpi"><span>Giá vốn hàng bán</span><b id="bizCogs">-</b><small id="bizCogsNote">-</small></div>
+        <div class="ops-kpi"><span>Lãi gộp (NMV − giá vốn)</span><b id="bizGross">-</b><small id="bizGrossNote">-</small></div>
+        <div class="ops-kpi"><span>Lãi ước tính sau chi phí</span><b id="bizNet">-</b><small id="bizNetNote">-</small></div>
       </div>
       <div class="section-title" style="margin-top:6px"><div><h2 style="font-size:14px">GMV lũy kế so với kế hoạch</h2></div><div class="legend"><span><i class="sw" style="background:#ff6b35"></i>Thực tế lũy kế</span><span><i class="sw" style="background:#98a2b3"></i>Kế hoạch tuyến tính</span><span><i class="sw" style="background:#2563eb"></i>Runrate dự phóng</span></div></div>
       <div class="chart-wrap biz-chart-wrap"><svg id="bizChart" class="chart" role="img" aria-label="GMV lũy kế so với kế hoạch"></svg></div>
@@ -921,7 +1000,27 @@
 
     <section class="tab-panel hidden" id="tab-orders">
 
-    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="returns">Hàng trả</button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+
+    <section class="card" data-subpanel="orders:returns" id="returnsPanel">
+      <div class="section-title"><div><h2>Hàng trả &amp; hoàn tiền</h2><p>Lấy tự động từ Shopee (Returns API) mỗi 10 phút. Ngày theo ngày tạo đơn. Chỉ phiếu đã hoàn tiền mới được trừ vào NMV; đơn đã hủy không bị trừ lần 2.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="returnsReloadBtn">↻ Tải lại</button><button class="primary" id="returnsSyncBtn" data-admin-block>Đồng bộ ngay</button></div></div>
+      <div id="returnsNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>GMV hoàn trả (trừ vào NMV)</span><b id="retGmv">-</b><small id="retGmvNote">-</small></div>
+        <div class="ops-kpi"><span>Đơn hoàn tiền</span><b id="retOrders">-</b><small id="retOrdersNote">-</small></div>
+        <div class="ops-kpi"><span>Yêu cầu đang mở</span><b id="retOpen">-</b><small>Cần xử lý trên Kênh Người Bán</small></div>
+        <div class="ops-kpi"><span>Tổng phiếu trong kỳ</span><b id="retAll">-</b><small id="retAllNote">-</small></div>
+      </div>
+      <div class="v25-two">
+        <div><h3 class="biz-subhead">Theo lý do</h3><div class="table-wrap"><table><thead><tr><th>Lý do</th><th class="right">Phiếu</th><th class="right">Giá trị</th></tr></thead><tbody id="retReasonRows"></tbody></table></div></div>
+        <div><h3 class="biz-subhead">Sản phẩm bị trả nhiều</h3><div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th class="right">Phiếu</th><th class="right">SL</th></tr></thead><tbody id="retItemRows"></tbody></table></div></div>
+      </div>
+      <div class="v25-two" style="margin-top:12px">
+        <div><h3 class="biz-subhead">Theo trạng thái</h3><div class="table-wrap"><table><thead><tr><th>Trạng thái</th><th class="right">Phiếu</th><th class="right">Giá trị</th></tr></thead><tbody id="retStatusRows"></tbody></table></div></div>
+        <div><h3 class="biz-subhead">Đồng bộ theo shop</h3><div class="table-wrap"><table><thead><tr><th>Shop</th><th>Lần chạy</th><th>Tình trạng</th></tr></thead><tbody id="retSyncRows"></tbody></table></div></div>
+      </div>
+    </section>
 
     <section class="card ops-card" data-subpanel="orders:deadlines" id="shipDeadlinePanel">
       <div class="section-title">
@@ -1745,7 +1844,7 @@ $('conversionMappingRows').addEventListener('click',event=>{
   if(button.dataset.mappingAction==='delete')deleteConversionMapping(button.dataset.orderSku||'');
 });
 function loadOverviewModules(){const token=++overviewLoadToken;const tasks=[loadProductLineConversion(token),loadOverviewOps(),loadHomeListings()];if(hasFeature('marketing'))tasks.push(loadOverviewMarketing(token));if(hasFeature('warehouse'))tasks.push(loadOverviewInventory(token));Promise.allSettled(tasks);}
-function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); setMetric('mNmv','dNmv','cNmv',s.nmv,d.nmv,'money'); chartState.payload=payload; chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
+function render(payload){ const s=payload.data?.summary||{}; const d=payload.deltas||{}; setMetric('mGmv','dGmv','cGmv',s.gmv,d.gmv,'money'); setMetric('mOrders','dOrders','cOrders',s.total_orders,d.total_orders,'num'); setMetric('mValid','dValid','cValid',s.valid_orders,d.valid_orders,'num'); setMetric('mCancelGmv','dCancelGmv','cCancelGmv',s.cancel_gmv,d.cancel_gmv,'money',true); setMetric('mAov','dAov','cAov',s.aov,d.aov,'money'); setMetric('mCancelRate','dCancelRate','cCancelRate',s.cancel_rate,d.cancel_rate,'percent',true); setMetric('mNmv','dNmv','cNmv',s.nmv,d.nmv,'money'); chartState.payload=payload; renderV7025Extras(payload); chartState.drillDate=null; renderMainChart(); renderProducts(payload.data?.top_products||[]); renderStatus(payload); renderOverviewOrders(payload); loadOverviewModules(); $('lastLoaded').textContent='Tải lúc '+new Date().toLocaleTimeString('vi-VN'); $('snapshotText').textContent='Đang xem '+rangeLabel({from:payload.date_from,to:payload.date_to}); $('heroRange').textContent=rangeLabel({from:payload.date_from,to:payload.date_to}); }
 
 function shortMoney(n){ return money(n||0); }
 function issueClass(level){ return level==='error'?'issue error':level==='warn'?'issue warn':'issue ok'; }
@@ -3359,6 +3458,9 @@ const PAGE_META={
 const SUB_DEFAULT={performance:'listings',gmv:'overview',orders:'deadlines',marketing:'traffic',warehouse:'combos',system:'sync'};
 const SUB_LOADERS={
   'gmv:targets':()=>loadBusinessMonthly(),
+  'gmv:profit':()=>loadSkuProfit(),
+  'gmv:customers':()=>loadCustomers(),
+  'orders:returns':()=>loadReturns(),
   'performance:listings':()=>loadListingPerformance(),
   'performance:health':()=>loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }),
   'marketing:vouchers':()=>loadShopVouchers(),
@@ -3712,7 +3814,7 @@ async function loadBusinessMonthly(){
   $('bizNotice').className='notice';$('bizNotice').textContent='Đang tính runrate...';
   try{
     const data=await api('/api/business/monthly?'+new URLSearchParams({month:$('bizMonth').value,shop_id:shop}).toString());
-    if(token===bizLoadToken)renderBizMonthly(data);
+    if(token===bizLoadToken){renderBizMonthly(data);renderBizProfit(data);}
     return data;
   }catch(e){if(token===bizLoadToken){$('bizNotice').className='notice warn-note';$('bizNotice').textContent='Không tải được mục tiêu tháng: '+e.message;}return null;}
 }
@@ -4084,7 +4186,7 @@ async function initAuthenticatedApp(){
   applyCurrentUserUi();
   if(!authenticatedAppInitialized){
     initWorkspaceUI();
-    initSubnav();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();initListingUI();initListingV7023UI();
+    initSubnav();initV7025UI();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();initListingUI();initListingV7023UI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
     $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
@@ -4129,6 +4231,225 @@ $('shopTrafficReloadBtn').addEventListener('click',()=>loadShopTraffic().catch(e
 $('shopTrafficDeleteBtn').addEventListener('click',deleteShopTraffic);
 $('orderRegionsReloadBtn').addEventListener('click',()=>loadOrderRegions().catch(e=>{$('orderRegionsSummary').textContent='⚠️ '+e.message;}));
 init();
+</script>
+<div class="cmdk-backdrop hidden" id="cmdk" role="dialog" aria-modal="true" aria-label="Tìm nhanh">
+  <div class="cmdk"><input id="cmdkInput" type="search" autocomplete="off" placeholder="Gõ để tìm: NMV, hàng trả, giá vốn, đơn quá hạn, mã đơn…">
+    <ul id="cmdkList"></ul><div class="cmdk-hint">↑ ↓ để chọn · Enter để mở · Esc để đóng · Dán mã đơn Shopee để mở chi tiết đơn</div></div>
+</div>
+<script>
+/* ===== V70.25: lãi & giá vốn, khách hàng, hàng trả, banner thiếu số liệu, tìm nhanh, khoảng ngày nhanh, công cụ bảng ===== */
+function v25Range(){const r=getRange();return {from:r.from,to:r.to,shop:$('shop').value||'all'};}
+function v25Qs(extra){const r=v25Range();return new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:r.shop,...(extra||{})}).toString();}
+function v25NeedShop(noticeId){if(($('shop').value||'all')==='all'&&!currentUser?.is_admin){$(noticeId).textContent='Hãy chọn một shop cụ thể ở bộ lọc phía trên.';return true;}return false;}
+function v25Fold(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();}
+function v25Pct(v){return v===null||v===undefined?'-':percent(v);}
+function v25Ddmm(d){return d?String(d).slice(8,10)+'/'+String(d).slice(5,7):'-';}
+
+// --- Banner thiếu số liệu: hiện cho MỌI tài khoản, không chỉ người có quyền Hệ thống ---
+function renderDataHealth(payload){
+  const box=$('dataHealthBanner');if(!box)return;
+  const parts=[];let bad=false;
+  for(const e of payload?.load_errors||[]){parts.push('⚠️ '+escapeHtml(e.message||e.area||'Lỗi đọc dữ liệu'));if(/dashboard/.test(e.area||''))bad=true;}
+  const cov=payload?.data?.coverage;const today=todayVN();
+  const missing=(cov?.missing_dates||[]).filter(d=>d<today);
+  if(missing.length){parts.push(`<b>Thiếu số liệu ${missing.length}/${cov.days} ngày</b> (${missing.slice(0,8).map(v25Ddmm).join(', ')}${missing.length>8?'…':''}). Tổng của kỳ đang thấp hơn thực tế. Hệ thống tự dựng lại trong vài phút; nếu vẫn thiếu, báo Admin bấm "Tính lại snapshot".`);bad=true;}
+  box.innerHTML=parts.join('<br>');box.classList.toggle('hidden',!parts.length);box.classList.toggle('bad',bad);
+}
+function renderV7025Extras(payload){
+  const s=payload.data?.summary||{};const prev=payload.compare?.data?.summary||{};
+  const cur=Number(s.return_gmv||0),old=Number(prev.return_gmv||0);
+  const delta={percent:old?Math.round((cur-old)/old*1000)/10:(cur?null:0)};
+  setMetric('mReturn','dReturn','cReturn',cur,delta,'money',true);
+  if($('returnFormula'))$('returnFormula').textContent=s.return_gmv===undefined?'Chưa có dữ liệu hàng trả (cần chạy SQL V70.25)':`${num(s.return_orders||0)} đơn · ${percent(s.return_rate||0)} GMV · theo ngày tạo đơn`;
+  if($('nmvFormula'))$('nmvFormula').textContent=s.nmv_deducts_returns===false?'(GMV − GMV hủy) / 1,08 · chưa trừ hoàn trả':'(GMV − GMV hủy − GMV hoàn trả) / 1,08';
+  renderDataHealth(payload);
+}
+
+// --- Lãi & giá vốn ---
+let profitData=null;
+function renderProfit(){
+  const d=profitData;if(!d)return;const t=d.totals||{};
+  $('profitRevenue').textContent=money(t.revenue);$('profitRevenueNote').textContent=num(t.qty)+' sản phẩm · '+num(t.skus)+' SKU';
+  $('profitCogs').textContent=money(t.cogs);$('profitCogsNote').textContent='Chỉ SKU đã có giá vốn';
+  $('profitGross').textContent=money(t.gross_profit_with_cost);$('profitGrossNote').textContent='Biên '+v25Pct(t.gross_margin_pct);
+  $('profitCoverage').textContent=v25Pct(t.cost_coverage_pct);$('profitCoverageNote').textContent=num(t.skus_without_cost)+' SKU chưa có giá vốn';
+  const admin=!!currentUser?.is_admin;const onlyMissing=$('profitMissingOnly').checked;
+  const rows=(d.rows||[]).filter(r=>!onlyMissing||!r.has_cost);
+  $('profitRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${escapeHtml(r.sku_key)}</td><td>${escapeHtml(r.item_name||'-')}${r.model_name&&r.model_name!=='-'?'<br><small class="muted">'+escapeHtml(r.model_name)+'</small>':''}</td><td class="right">${num(r.qty)}</td><td class="right">${num(r.returned_qty)}</td><td class="right">${money(r.revenue)}</td><td class="right">${r.has_cost?money(r.cogs):'<span class="muted">chưa có</span>'}</td><td class="right">${r.gross_profit===null?'-':money(r.gross_profit)}</td><td class="right">${v25Pct(r.gross_margin_pct)}</td><td data-admin-cell>${admin?`<input class="cost-input" inputmode="numeric" data-sku="${escapeHtml(r.sku_key)}" placeholder="${r.has_cost?'đổi giá':'nhập giá'}">`:''}</td></tr>`).join(''):'<tr><td colspan="9" class="empty">Không có SKU nào.</td></tr>';
+  document.querySelectorAll('#profitPanel [data-admin-cell]').forEach(el=>el.classList.toggle('hidden',!admin));
+}
+async function loadSkuProfit(){
+  if(v25NeedShop('profitNotice'))return;
+  $('profitNotice').textContent='Đang tính lãi gộp...';
+  try{profitData=await api('/api/business/sku-profit?'+v25Qs(),{ttlMs:30000});renderProfit();
+    $('profitNotice').textContent=profitData.note+(profitData.totals?.skus_without_cost?' Còn '+num(profitData.totals.skus_without_cost)+' SKU chưa có giá vốn.':'');}
+  catch(e){$('profitNotice').textContent='⚠️ '+e.message;}
+}
+function v25ParseDate(t){t=String(t||'').trim();if(!t)return '';let m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];m=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'x';}
+async function saveSkuCostRows(rows,btn){
+  if(!rows.length){$('profitNotice').textContent='Chưa có giá vốn nào để lưu.';return;}
+  const scope=$('profitCostScope').value==='shop'?($('shop').value||'all'):'all';
+  if(btn)btn.disabled=true;
+  try{const r=await api('/api/admin/business/sku-costs/save',{method:'POST',body:{shop_id:scope,rows}});$('profitNotice').textContent='✅ Đã lưu '+num(r.saved)+' giá vốn.';await loadSkuProfit();}
+  catch(e){$('profitNotice').textContent='⚠️ '+e.message;}finally{if(btn)btn.disabled=false;}
+}
+function saveInlineCosts(){
+  const rows=[...document.querySelectorAll('#profitRows .cost-input')].filter(i=>i.value.trim()).map(i=>({sku_key:i.dataset.sku,unit_cost:i.value.trim()}));
+  saveSkuCostRows(rows,$('profitSaveInlineBtn'));
+}
+function savePastedCosts(){
+  const rows=[];const bad=[];
+  String($('profitPaste').value||'').split(/\r?\n/).forEach((line,i)=>{if(!line.trim())return;const c=line.split(/\t|;/).map(x=>x.trim());
+    const eff=v25ParseDate(c[2]);if(!c[0]||!c[1]||eff==='x'){bad.push(i+1);return;}rows.push({sku_key:c[0],unit_cost:c[1],...(eff?{effective_from:eff}:{})});});
+  if(bad.length){$('profitNotice').textContent='⚠️ Dòng '+bad.slice(0,10).join(', ')+' chưa đúng dạng SKU ⟶ Giá vốn ⟶ Ngày.';return;}
+  saveSkuCostRows(rows,$('profitPasteBtn')).then(()=>{if(!$('profitNotice').textContent.startsWith('⚠️'))$('profitPaste').value='';});
+}
+
+// --- Khách hàng ---
+async function loadCustomers(){
+  if(v25NeedShop('customerNotice'))return;
+  $('customerNotice').textContent='Đang tính khách mới / quay lại...';
+  try{const d=await api('/api/business/customers?'+v25Qs(),{ttlMs:30000});const t=d.totals||{};const rt=d.rates||{};
+    $('custBuyers').textContent=num(t.buyers);$('custBuyersNote').textContent=num(d.unknown_orders||0)+' đơn không xác định được khách';
+    $('custNew').textContent=num(t.new_buyers);$('custNewNote').textContent=v25Pct(rt.new_pct)+' · AOV '+(rt.aov_new?money(rt.aov_new):'-');
+    $('custReturning').textContent=num(t.returning_buyers);$('custReturningNote').textContent=v25Pct(rt.returning_pct)+' · AOV '+(rt.aov_returning?money(rt.aov_returning):'-');
+    $('custRepeat').textContent=num(t.repeat_in_period);$('custRepeatNote').textContent=v25Pct(rt.repeat_in_period_pct)+' số khách';
+    const total=(d.orders_per_buyer||[]).reduce((a,b)=>a+Number(b.buyers||0),0);
+    $('custBucketRows').innerHTML=(d.orders_per_buyer||[]).map(b=>`<tr><td>${Number(b.orders)>=5?'5+':num(b.orders)} đơn</td><td class="right">${num(b.buyers)}</td><td class="right">${total?percent(b.buyers/total*100):'-'}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">Không có dữ liệu.</td></tr>';
+    $('custDailyRows').innerHTML=(d.daily||[]).map(x=>`<tr><td>${v25Ddmm(x.date)}</td><td class="right">${num(x.new)}</td><td class="right">${num(x.returning)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">Không có dữ liệu.</td></tr>';
+    $('customerNotice').textContent=d.note;}
+  catch(e){$('customerNotice').textContent='⚠️ '+e.message;}
+}
+
+// --- Hàng trả ---
+const RETURN_REASON_VI={CHANGE_OF_MIND:'Khách đổi ý',WRONG_ORDER_INFO:'Đặt sai thông tin đơn',WRONG_ADDRESS:'Sai địa chỉ',DIFFERENT_DESCRIPTION:'Khác mô tả',NONRECEIPT:'Chưa nhận được hàng',WRONG_ITEM:'Giao sai hàng',ITEM_DAMAGED:'Hàng bị hư hỏng',DAMAGED:'Hàng bị hư hỏng',PHYSICAL_DMG:'Hàng bị hư hỏng',FUNCTIONAL_DMG:'Hàng lỗi chức năng',DIFF_DESCRIPTION:'Khác mô tả',ITEM_MISSING:'Thiếu hàng',MUTUAL_AGREE:'Hai bên thỏa thuận',CHANGE_MIND:'Khách đổi ý',ITEM_FAKE:'Nghi hàng giả',EXPECTATION_FAILED:'Không như mong đợi',OTHER:'Lý do khác'};
+const RETURN_STATUS_VI={REQUESTED:'Mới yêu cầu',ACCEPTED:'Đã hoàn tiền',CANCELLED:'Khách hủy yêu cầu',JUDGING:'Shopee đang xem xét',CLOSED:'Đã đóng',PROCESSING:'Đang xử lý',SELLER_DISPUTE:'Shop khiếu nại'};
+async function loadReturns(){
+  if(v25NeedShop('returnsNotice'))return;
+  $('returnsNotice').textContent='Đang tải hàng trả...';
+  try{const d=await api('/api/business/returns?'+v25Qs(),{ttlMs:20000});const t=d.totals||{};
+    const gmv=Number(chartState.payload?.data?.summary?.gmv||0);
+    $('retGmv').textContent=money(t.return_gmv);$('retGmvNote').textContent=gmv?percent(t.return_gmv/gmv*100)+' GMV kỳ đang xem':'-';
+    $('retOrders').textContent=num(t.return_orders);$('retOrdersNote').textContent='Hoàn khách '+money(t.refund_amount);
+    $('retOpen').textContent=num(t.open_requests);$('retAll').textContent=num(t.all_requests);$('retAllNote').textContent='Tính vào NMV: '+(d.counted_statuses||[]).map(x=>RETURN_STATUS_VI[x]||x).join(', ');
+    const rowsOf=(arr,label)=>arr.length?arr.map(x=>`<tr><td>${escapeHtml(label(x))}</td><td class="right">${num(x.requests)}</td><td class="right">${money(x.return_gmv)}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">Không có phiếu nào.</td></tr>';
+    $('retReasonRows').innerHTML=rowsOf(d.by_reason||[],x=>(RETURN_REASON_VI[x.reason]?RETURN_REASON_VI[x.reason]+' ('+x.reason+')':x.reason));
+    $('retStatusRows').innerHTML=rowsOf(d.by_status||[],x=>RETURN_STATUS_VI[x.status]||x.status);
+    $('retItemRows').innerHTML=(d.top_items||[]).map(x=>`<tr><td>${escapeHtml(x.name||('item '+x.item_id))}</td><td class="right">${num(x.requests)}</td><td class="right">${num(x.units)}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">Không có phiếu nào.</td></tr>';
+    $('retSyncRows').innerHTML=(d.sync||[]).map(x=>`<tr><td>${escapeHtml(x.shop_name||x.shop_id)}</td><td>${x.last_run_at?escapeHtml(new Date(x.last_run_at).toLocaleString('vi-VN')):'chưa chạy'}</td><td>${x.last_error?'⚠️ '+escapeHtml(x.last_error):(x.caught_up?'✅ Đã bắt kịp':'⏳ Đang lấy dữ liệu cũ')} · ${num(x.total_saved)} phiếu</td></tr>`).join('')||'<tr><td colspan="3" class="empty">-</td></tr>';
+    const err=(d.sync||[]).find(x=>x.last_error);
+    $('returnsNotice').textContent=err?'⚠️ Có shop chưa lấy được hàng trả. Nếu lỗi nói về quyền (permission), cần bật quyền Returns cho app trên Shopee Open Platform rồi kết nối lại shop.':d.note;}
+  catch(e){$('returnsNotice').textContent='⚠️ '+e.message;}
+}
+async function syncReturnsNow(){
+  const btn=$('returnsSyncBtn');btn.disabled=true;$('returnsNotice').textContent='Đang đồng bộ hàng trả từ Shopee...';
+  try{const r=await api('/api/admin/returns/sync?shop_id='+encodeURIComponent($('shop').value||'all'),{method:'POST'});$('returnsNotice').textContent='✅ Đã lấy '+num((r.results||[]).reduce((a,x)=>a+Number(x.saved||0),0))+' phiếu.';await loadReturns();}
+  catch(e){$('returnsNotice').textContent='⚠️ '+e.message;}finally{btn.disabled=false;}
+}
+
+// --- Mục tiêu tháng: hoàn trả + giá vốn + lãi ---
+function renderBizProfit(d){
+  if(!d||!$('bizReturnGmv'))return;const p=d.profit||{},r=d.returns||{};
+  $('bizReturnGmv').textContent=r.available?money(r.return_gmv):'-';$('bizReturnNote').textContent=r.available?num(r.return_orders)+' đơn hoàn tiền':'Chưa có dữ liệu hàng trả';
+  $('bizCogs').textContent=p.available?money(p.cogs):'-';$('bizCogsNote').textContent=p.available?('Độ phủ giá vốn '+v25Pct(p.cogs_coverage_pct)+(p.skus_without_cost?' · '+num(p.skus_without_cost)+' SKU thiếu':'')):'Chưa nhập giá vốn';
+  $('bizGross').textContent=p.available?money(p.gross_profit):'-';$('bizGrossNote').textContent='NMV '+money(p.nmv);
+  $('bizNet').textContent=p.available?money(p.net_profit):'-';$('bizNetNote').textContent=p.available?'Biên '+v25Pct(p.net_margin_pct)+' NMV':'-';
+}
+
+// --- Khoảng ngày nhanh ---
+function applyQuickRange(kind){
+  const t=todayVN();let from=t,to=t;
+  if(kind==='today'||kind==='yesterday'){const d=kind==='today'?t:addDaysISO(t,-1);$('period').value='day';$('dayDate').value=d;}
+  else if(kind==='month'){$('period').value='month';$('monthInput').value=t.slice(0,7);}
+  else if(kind==='prevmonth'){const r=prevMonthRange(t.slice(0,7));$('period').value='month';$('monthInput').value=r.from.slice(0,7);}
+  else{from=addDaysISO(t,kind==='7d'?-6:-29);$('period').value='custom';$('fromDate').value=from;$('toDate').value=to;}
+  updatePeriodFields();reloadCurrentView();
+}
+
+// --- Tìm nhanh (Ctrl+K) ---
+let cmdkItems=[],cmdkActive=0;
+function v25GoTo(tab,sub,el){
+  if(sub)writeWorkspacePrefs({subTabs:{...(readWorkspacePrefs().subTabs||{}),[tab]:sub}});
+  setTab(tab);
+  if(el)setTimeout(()=>{el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash-target');setTimeout(()=>el.classList.remove('flash-target'),1600);},250);
+}
+function buildCmdkIndex(){
+  const items=[];const tabName={};
+  document.querySelectorAll('.tabbtn').forEach(b=>{if(!canOpenTab(b.dataset.tab))return;tabName[b.dataset.tab]=[...b.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();items.push({label:tabName[b.dataset.tab],hint:'Trang',run:()=>v25GoTo(b.dataset.tab)});});
+  document.querySelectorAll('.page-subnav').forEach(nav=>{const tab=nav.dataset.tab;if(!tabName[tab])return;nav.querySelectorAll('[data-sub]').forEach(b=>{if(b.classList.contains('sub-hidden'))return;items.push({label:b.textContent.replace(/\s*\d+\s*$/,'').trim(),hint:tabName[tab],run:()=>v25GoTo(tab,b.dataset.sub)});});});
+  document.querySelectorAll('[data-subpanel]').forEach(panel=>{const [tab,sub]=panel.dataset.subpanel.split(':');if(!tabName[tab])return;
+    panel.querySelectorAll('h2,h3,.ops-kpi>span,.metric .label').forEach(h=>{const label=h.textContent.trim();if(label&&label.length<70)items.push({label,hint:tabName[tab]+' › '+(subnavFor(tab)?.querySelector(`[data-sub="${sub}"]`)?.textContent.replace(/\s*\d+\s*$/,'').trim()||''),run:()=>v25GoTo(tab,sub,h.closest('.ops-kpi,.metric,.card')||h)});});});
+  const acts=[['Hôm nay','today'],['Hôm qua','yesterday'],['7 ngày gần nhất','7d'],['30 ngày gần nhất','30d'],['Tháng này','month'],['Tháng trước','prevmonth']];
+  acts.forEach(([l,k])=>items.push({label:'Xem '+l.toLowerCase(),hint:'Khoảng ngày',run:()=>applyQuickRange(k)}));
+  items.push({label:'Làm mới số liệu',hint:'Thao tác',run:()=>reloadCurrentView()});
+  if(canOpenTab('gmv'))items.push({label:'Nhập giá vốn SKU',hint:'Thao tác',run:()=>v25GoTo('gmv','profit',$('profitPanel'))});
+  if(currentUser?.is_admin&&canOpenTab('orders'))items.push({label:'Đồng bộ hàng trả ngay',hint:'Thao tác',run:()=>{v25GoTo('orders','returns');setTimeout(syncReturnsNow,400);}});
+  const seen=new Set();cmdkItems=items.filter(i=>{const k=i.label+'|'+i.hint;if(seen.has(k))return false;seen.add(k);i.fold=v25Fold(i.label+' '+i.hint);return true;});
+}
+function renderCmdk(){
+  const q=v25Fold($('cmdkInput').value.trim());const raw=$('cmdkInput').value.trim();
+  const words=q.split(/\s+/).filter(Boolean);
+  const score=i=>{const l=v25Fold(i.label);return (l.includes(q)?0:4)+(l.startsWith(q)?0:2)+(words.every(w=>l.includes(w))?0:1)+(i.hint==='Trang'?0:0.5);};
+  let list=q?cmdkItems.filter(i=>words.every(w=>i.fold.includes(w))).map(i=>[score(i),i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]):cmdkItems.slice(0,12);
+  if(/^[0-9A-Z]{10,20}$/i.test(raw)&&canOpenTab('orders'))list=[{label:'Mở chi tiết đơn '+raw.toUpperCase(),hint:'Mã đơn',run:()=>{v25GoTo('orders','list');loadOrderDetail(raw.toUpperCase());}},...list];
+  list=list.slice(0,40);cmdkActive=Math.min(cmdkActive,Math.max(0,list.length-1));
+  $('cmdkList').innerHTML=list.length?list.map((i,n)=>`<li data-n="${n}" class="${n===cmdkActive?'active':''}">${escapeHtml(i.label)}<small>${escapeHtml(i.hint||'')}</small></li>`).join(''):'<div class="cmdk-empty">Không thấy mục nào. Thử từ khác, ví dụ "hủy", "ví", "ads".</div>';
+  $('cmdkList')._items=list;
+}
+function openCmdk(){buildCmdkIndex();$('cmdk').classList.remove('hidden');$('cmdkInput').value='';cmdkActive=0;renderCmdk();setTimeout(()=>$('cmdkInput').focus(),10);}
+function closeCmdk(){$('cmdk').classList.add('hidden');}
+function runCmdk(n){const it=($('cmdkList')._items||[])[n];if(!it)return;closeCmdk();it.run();}
+
+// --- Lọc + tải CSV cho mọi bảng ---
+function v25CsvCell(t){t=String(t??'').replace(/\s+/g,' ').trim();return /[",;\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;}
+function v25TableCsv(table,title){
+  const head=[...table.querySelectorAll('thead th')].map(th=>v25CsvCell(th.textContent));
+  const rows=[...table.querySelectorAll('tbody tr')].filter(tr=>!tr.hidden&&!tr.querySelector('.empty')).map(tr=>[...tr.children].map(td=>v25CsvCell(td.querySelector('input')?td.querySelector('input').value:td.textContent)).join(','));
+  const blob=new Blob(['\ufeff'+[head.join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(v25Fold(title||'bang').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'bang')+'-'+todayVN()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function v25ApplyFilter(table,q){
+  const words=v25Fold(q).split(/\s+/).filter(Boolean);let shown=0,total=0;
+  table.querySelectorAll('tbody tr').forEach(tr=>{if(tr.querySelector('.empty'))return;total++;const ok=!words.length||words.every(w=>v25Fold(tr.textContent).includes(w));tr.hidden=!ok;if(ok)shown++;});
+  return {shown,total};
+}
+function enhanceTables(root){
+  (root||document).querySelectorAll('.table-wrap').forEach(wrap=>{
+    if(wrap.dataset.v25tools)return;const table=wrap.querySelector('table');if(!table||!table.tBodies[0]||!table.tHead)return;
+    wrap.dataset.v25tools='1';
+    const title=wrap.closest('.card,section,div')?.querySelector('h2,h3')?.textContent||'bang';
+    const bar=document.createElement('div');bar.className='table-tools';
+    bar.innerHTML='<input type="search" placeholder="Lọc nhanh trong bảng…" aria-label="Lọc bảng"><button type="button">⇩ Tải CSV</button><small></small>';
+    const input=bar.querySelector('input'),info=bar.querySelector('small');
+    const apply=()=>{const r=v25ApplyFilter(table,input.value);info.textContent=input.value.trim()?`${r.shown}/${r.total} dòng`:'';};
+    input.addEventListener('input',apply);bar.querySelector('button').addEventListener('click',()=>v25TableCsv(table,title));
+    new MutationObserver(()=>{if(input.value.trim())apply();}).observe(table.tBodies[0],{childList:true});
+    wrap.parentNode.insertBefore(bar,wrap);
+  });
+}
+function initV7025UI(){
+  document.querySelectorAll('#quickRange [data-qr]').forEach(b=>b.addEventListener('click',()=>applyQuickRange(b.dataset.qr)));
+  $('cmdkOpenBtn').addEventListener('click',openCmdk);
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openCmdk();return;}
+    if($('cmdk').classList.contains('hidden'))return;
+    const n=($('cmdkList')._items||[]).length;
+    if(e.key==='Escape')closeCmdk();
+    else if(e.key==='ArrowDown'){e.preventDefault();cmdkActive=Math.min(n-1,cmdkActive+1);renderCmdk();}
+    else if(e.key==='ArrowUp'){e.preventDefault();cmdkActive=Math.max(0,cmdkActive-1);renderCmdk();}
+    else if(e.key==='Enter'){e.preventDefault();runCmdk(cmdkActive);}
+  });
+  $('cmdkInput').addEventListener('input',()=>{cmdkActive=0;renderCmdk();});
+  $('cmdkList').addEventListener('click',e=>{const li=e.target.closest('li[data-n]');if(li)runCmdk(Number(li.dataset.n));});
+  $('cmdk').addEventListener('click',e=>{if(e.target.id==='cmdk')closeCmdk();});
+  $('profitReloadBtn').addEventListener('click',loadSkuProfit);$('profitMissingOnly').addEventListener('change',renderProfit);
+  $('profitSaveInlineBtn').addEventListener('click',saveInlineCosts);$('profitPasteBtn').addEventListener('click',savePastedCosts);
+  $('customerReloadBtn').addEventListener('click',loadCustomers);
+  $('returnsReloadBtn').addEventListener('click',loadReturns);$('returnsSyncBtn').addEventListener('click',syncReturnsNow);
+  const admin=!!currentUser?.is_admin;document.querySelectorAll('[data-admin-block]').forEach(el=>el.classList.toggle('hidden',!admin));
+  enhanceTables();
+  let t=null;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(()=>enhanceTables(),300);}).observe(document.body,{childList:true,subtree:true});
+}
 </script>
 </body>
 </html>
