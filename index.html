@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.27</title>
+  <title>Gooby BI Dashboard · V70.28</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -554,6 +554,44 @@
     .quick-range .qsearch{background:var(--ink);border-color:var(--ink);color:#fff}
 
     button:not(.tabbtn):not(.primary):not(.qsearch){box-shadow:none!important}
+    /* V70.28 (design-critique): một màu nhấn cho mọi trang, nút phẳng, chữ phụ đủ tương phản */
+    #tab-gmv,#tab-orders,#tab-performance,#tab-marketing,#tab-warehouse,#tab-system{--accent:var(--brand);--accent2:var(--brand)}
+    :root{--muted2:#6b7480}
+    button{background-image:none;background-color:var(--accent,var(--brand))}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .metric .formula,.brief-goal-note{color:var(--muted)}
+    .data-health{border-color:#fcd9a8;background:#fffaf0;color:#7a4b0c}
+    .data-health.bad{border-color:#fca5a5;background:#fef2f2;color:#7f1d1d}
+    #filterToggle{display:none}
+    /* V70.28: trang Hệ thống/Kho không dùng số liệu GMV nên không cần dải thiếu số liệu; Hệ thống không cần nút chọn nhanh ngày */
+    body[data-tab="system"] #dataHealthBanner,body[data-tab="warehouse"] #dataHealthBanner,body[data-tab="system"] .quick-range>button:not(.qsearch){display:none!important}
+    body[data-tab="system"] .quick-range{border-top:0;padding-top:0}
+    .v28-drop{position:relative;display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 16px;border:1.5px dashed #d0d5dd;border-radius:12px;background:#fafbfc;color:var(--muted);font-size:13px;cursor:pointer;transition:border-color .18s ease,background-color .18s ease}
+    .v28-drop:hover,.v28-drop.over{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-ink)}
+    .v28-drop input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+    .v28-drop .ic{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:#fff;border:1px solid var(--line);font-size:16px;color:var(--brand)}
+    .v28-drop b{display:block;color:var(--text);font-weight:600;font-size:13px}
+    .v28-drop.has-file{border-style:solid;border-color:#a6f4c5;background:#f6fef9}
+    .v28-drop.has-file .ic{color:var(--good)}
+    .v28-drop,.v28-drop *{text-transform:none!important;letter-spacing:0!important}
+    .v28-drop small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+    .field .v28-drop{min-width:280px}
+    @media(max-width:760px){
+      .hero p{display:none}
+      .hero .heroRight{display:flex;flex-wrap:nowrap;gap:6px;width:100%}
+      .hero .heroRight .pill,.hero .heroRight .range-note{display:none}
+      .hero .heroRight .header-action{flex:1;justify-content:center;height:36px;padding:0 8px}
+      #filterToggle{display:flex;width:100%;height:42px;align-items:center;justify-content:space-between;gap:8px;background:#fff!important;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font-weight:600;font-size:13px}
+      #filterToggle span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+      .topbar.v28-collapsed .filters,.topbar.v28-collapsed>.status{display:none!important}
+      .topbar{padding:10px}
+      .quick-range{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;min-width:0;max-width:100%}
+      .quick-range::-webkit-scrollbar{display:none}
+      .quick-range button{flex:none}
+      .quick-range .qsearch{margin-left:0}
+      .ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      .section-title p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    }
     .brief-link{background:none!important;border:0!important;height:auto;padding:0}
     @media(max-width:1260px){.tabs{background:#fff;border-bottom:1px solid var(--line)}.tabbtn.active:before{display:none}}
   </style>
@@ -1092,7 +1130,7 @@
     <nav class="page-subnav" data-tab="warehouse" aria-label="Mục trong trang"><button type="button" data-sub="combos">Combo & cấu tạo</button><button type="button" data-sub="skus">Danh mục SKU</button><button type="button" data-sub="sales">Combo đã bán</button></nav>
       <section data-subpanel="warehouse:combos" class="card" style="margin-top:16px">
         <div class="section-title">
-          <div><h2>Danh mục combo & cấu tạo SKU</h2><p>Đồng bộ từ combo-list-api và product-list-api. Trang này chỉ quản lý mã combo, thành phần và phân loại sản phẩm; không còn dữ liệu tồn kho.</p></div>
+          <div><h2>Danh mục combo & cấu tạo SKU</h2><p>Danh sách combo, các sản phẩm bên trong mỗi combo và nhóm sản phẩm. Bấm "Đồng bộ toàn bộ danh mục" khi kho thêm hoặc đổi combo.</p></div>
           <div class="mini-actions"><button class="ghost" id="warehouseBtn">Tải lại</button><button id="warehouseSyncBtn">Đồng bộ toàn bộ danh mục</button></div>
         </div>
         <div id="warehouseSummary" class="notice">Bấm “Đồng bộ toàn bộ danh mục” ở lần đầu, sau đó mở từng combo để xem cấu tạo.</div>
@@ -1126,7 +1164,7 @@
       </section>
 
       <section data-subpanel="warehouse:sales" class="card" style="margin-top:16px">
-        <div class="section-title"><div><h2>Combo đã bán & barcode thành phần</h2><p>Đối chiếu chính xác SKU trong ledger với mã combo, sau đó nhân số combo đã bán với số lượng từng barcode con. Không tính đơn UNPAID, CANCELLED hoặc IN_CANCEL.</p></div></div>
+        <div class="section-title"><div><h2>Combo đã bán & barcode thành phần</h2><p>Số combo đã bán trong kỳ và số lượng từng sản phẩm con cần xuất kho tương ứng. Không tính đơn chưa thanh toán hoặc đã hủy.</p></div></div>
         <div id="warehouseSalesSummary" class="notice">Chọn khoảng ngày/shop phía trên rồi bấm “Tải số đã bán”.</div>
         <div class="warehouse-kpis">
           <div class="warehouse-kpi"><span>SKU combo có bán</span><b id="warehouseSalesComboSkuCount">-</b><small>Số mã combo khớp chính xác</small></div>
@@ -1308,7 +1346,7 @@
 
     <section class="card hidden" id="adminAccountsPanel" data-subpanel="system:accounts" style="margin-top:16px">
       <div class="section-title">
-        <div><h2>Tài khoản & phân quyền</h2><p>Admin tạo tài khoản, chọn shop được xem và bật đúng nhóm tính năng cần sử dụng. Quyền được kiểm tra lại ở Worker trước khi dữ liệu được trả về.</p></div>
+        <div><h2>Tài khoản & phân quyền</h2><p>Tạo tài khoản cho nhân viên, chọn shop và các trang mỗi người được xem.</p></div>
         <button type="button" class="ghost" id="adminReloadBtn">Tải lại</button>
       </div>
       <form class="account-form" id="accountForm">
@@ -1345,7 +1383,7 @@
       <div class="section-title">
         <div>
           <h2>Quét tự động 24/7</h2>
-          <p>Chạy bằng Cloudflare Cron ở backend, không cần mở dashboard. V70.8 dùng 2 làn Realtime + Coverage như V70.7, và thêm lớp Cooperative Repair: Auto24 quét đủ theo thời gian, còn T1/T2/T3 chỉ kiểm tra nhanh các ngày đã full time; nếu Shopee trả chậm làm thiếu order_sn thì hệ thống mới fetch detail để vá.</p>
+          <p>Hệ thống tự lấy đơn, Ads, Income và hàng trả từ Shopee suốt ngày đêm, không cần mở trang này. Bật/tắt và theo dõi tiến độ từng shop ở đây.</p>
         </div>
         <div class="mini-actions" style="margin-top:0">
           <button class="ghost" id="auto24ReloadBtn">Làm mới trạng thái</button>
@@ -1359,15 +1397,12 @@
           <tbody id="auto24Rows"><tr><td colspan="6" class="empty">Đang tải...</td></tr></tbody>
         </table>
       </div>
-      <p class="muted" style="margin-top:10px">
-        Realtime và Coverage được hiển thị riêng. Coverage vẫn tự co giãn 10→20→30→60 và hạ 10→5→2→1 khi quá tải. T-1/T-2/T-3 được cooperative repair nhiều lượt: clean thì lướt nhanh, thiếu thì tự vá và kiểm lại cho tới khi ngày đó sạch hẳn.
-        Nút <b>Quét bù đơn thiếu</b> bên dưới vẫn được giữ để bạn chủ động lấy lại một ngày/khoảng ngày khi cần.
-      </p>
+      <p class="muted" style="margin-top:10px">Khi một ngày bị thiếu đơn, dùng nút <b>Quét bù đơn thiếu</b> bên dưới để lấy lại ngày đó.</p>
     </section>
 
     <section class="card" id="systemGlobalSettings" data-subpanel="system:diagnostics" style="margin-top:16px">
       <div class="section-title">
-        <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết lỗi nằm ở đâu: đồng bộ, snapshot, số đơn ledger thiếu, công thức GMV hoặc nguồn tiền total_amount/item_subtotal.</p></div>
+        <div><h2>Báo lỗi & kiểm tra số liệu</h2><p>Cho biết số liệu đang lệch ở đâu (thiếu đơn, chưa tổng hợp, lỗi đồng bộ) và gợi ý cách sửa.</p></div>
         <div class="mini-actions" style="margin-top:0">
           <button class="ghost" id="diagBtn">Kiểm tra lỗi</button>
           <button class="ghost" id="diagClearOldBtn">Ẩn lỗi cũ</button>
@@ -1402,7 +1437,7 @@
 
 
     <section data-subpanel="system:connect" class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Cài đặt kỹ thuật / kết nối shop</h2><p>Cấu hình địa chỉ Worker backend và tạo link ủy quyền OAuth cho shop mới.</p></div></div>
+      <div class="section-title"><div><h2>Cài đặt kỹ thuật / kết nối shop</h2><p>Địa chỉ máy chủ dữ liệu và link kết nối thêm shop mới vào hệ thống.</p></div></div>
       <div class="settings-panel">
         <div class="filters">
           <div class="field" style="flex:1;min-width:300px"><label>Worker URL</label><input id="workerUrl" placeholder="https://shopee-ledger-sync.xxx.workers.dev"></div>
@@ -4306,6 +4341,7 @@ function initListingV7023UI(){
 function currentTab(){ return document.querySelector('.tabbtn.active')?.dataset.tab || 'gmv'; }
 function setTab(tab){
   if(!canOpenTab(tab)){tab=firstAllowedTab();if(!tab)return;}
+  document.body.dataset.tab=tab;
   document.querySelectorAll('.tabbtn').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab===tab));
   document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden', panel.id !== 'tab-'+tab));
   updateRoleUI(tab);
@@ -4340,7 +4376,7 @@ async function initAuthenticatedApp(){
   applyCurrentUserUi();
   if(!authenticatedAppInitialized){
     initWorkspaceUI();
-    initSubnav();initV7025UI();initV7026UI();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();initListingUI();initListingV7023UI();
+    initSubnav();initV7025UI();initV7026UI();initV7028UI();initShipDeadlineUI();initCancelReasonUI();initBusinessUI();initVoucherUI();initProductProbeUI();initListingUI();initListingV7023UI();
     document.querySelectorAll('.tabbtn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop','compare'].forEach(id=>$(id).addEventListener('change',reloadCurrentView));
     $('saveWorkerBtn').addEventListener('click',saveWorker);$('oauthBtn').addEventListener('click',connectShop);$('auto24ReloadBtn').addEventListener('click',loadAuto24Status);$('auto24ToggleBtn').addEventListener('click',toggleAuto24);$('diagBtn').addEventListener('click',loadDiagnostics);$('diagClearOldBtn').addEventListener('click',acknowledgeOldDiagnosticErrors);$('catchupBtn').addEventListener('click',catchupMissingOrders);$('recomputeBtn').addEventListener('click',recomputeFromLedger);$('gmvIntegrityBtn').addEventListener('click',repairGmvIntegrity);$('perfBtn').addEventListener('click',loadPerformance);$('perfSyncBtn').addEventListener('click',syncAccountHealth);$('adsBtn').addEventListener('click',loadAdsCost);$('adsSyncBtn').addEventListener('click',syncAdsCost);$('liveAdsReadBtn').addEventListener('click',readLivestreamAdsFile);$('liveAdsSaveBtn').addEventListener('click',saveLivestreamAdsRows);$('coinBtn').addEventListener('click',loadCoinCost);$('coinSyncBtn').addEventListener('click',syncCoinCost);$('mktCoinReadBtn').addEventListener('click',readMarketingCoinFile);$('mktCoinSaveBtn').addEventListener('click',saveMarketingCoinRows);$('mktCoinDeleteBtn').addEventListener('click',deleteMarketingCoinData);$('mktCoinReloadBtn').addEventListener('click',()=>loadMarketingCoinSummary().catch(e=>{$('mktCoinSummary').innerHTML='⚠️ '+escapeHtml(e.message);}));
@@ -4404,9 +4440,10 @@ function renderDataHealth(payload){
   const box=$('dataHealthBanner');if(!box)return;
   const parts=[];let bad=false;
   for(const e of payload?.load_errors||[]){parts.push('⚠️ '+escapeHtml(e.message||e.area||'Lỗi đọc dữ liệu'));if(/dashboard/.test(e.area||''))bad=true;}
+  // V70.28: thiếu ngày là cảnh báo (vàng), không phải lỗi (đỏ); nói ngắn gọn.
   const cov=payload?.data?.coverage;const today=todayVN();
   const missing=(cov?.missing_dates||[]).filter(d=>d<today);
-  if(missing.length){parts.push(`<b>Thiếu số liệu ${missing.length}/${cov.days} ngày</b> (${missing.slice(0,8).map(v25Ddmm).join(', ')}${missing.length>8?'…':''}). Tổng của kỳ đang thấp hơn thực tế. Hệ thống tự dựng lại trong vài phút; nếu vẫn thiếu, báo Admin bấm "Tính lại snapshot".`);bad=true;}
+  if(missing.length){parts.push(`<b>Thiếu số liệu ${missing.length}/${cov.days} ngày</b> (${missing.slice(0,6).map(v25Ddmm).join(', ')}${missing.length>6?'…':''}) · tổng kỳ này có thể thấp hơn thực tế, hệ thống đang tự bổ sung.`);}
   box.innerHTML=parts.join('<br>');box.classList.toggle('hidden',!parts.length);box.classList.toggle('bad',bad);
 }
 function renderV7025Extras(payload){
@@ -4511,7 +4548,7 @@ function renderBizProfit(d){
 }
 
 // --- Khoảng ngày nhanh ---
-function applyQuickRange(kind){
+function applyQuickRange(kind){setTimeout(()=>typeof v28FilterLabel==='function'&&v28FilterLabel(),0);
   const t=todayVN();let from=t,to=t;
   if(kind==='today'||kind==='yesterday'){const d=kind==='today'?t:addDaysISO(t,-1);$('period').value='day';$('dayDate').value=d;}
   else if(kind==='month'){$('period').value='month';$('monthInput').value=t.slice(0,7);}
@@ -4656,6 +4693,39 @@ function renderBrief(payload){
   $('briefTop').innerHTML=top.length?top.map((p,i)=>`<li><span title="${escapeHtml(p.item_name)}">${i+1}. ${escapeHtml(p.item_name)}</span><b>${money(p.gmv)}</b></li>`).join(''):'<li><span>Chưa có đơn trong kỳ</span></li>';
   renderBriefAttention();
   loadBriefTarget({from:payload.date_from,to:payload.date_to});
+}
+/* ===== V70.28: bộ lọc thu gọn trên điện thoại ===== */
+function v28FilterLabel(){
+  const b=$('filterToggle');if(!b)return;
+  const r=getRangeSafe?getRangeSafe():null;const shopSel=$('shop');
+  const shopText=shopSel?.selectedOptions?.[0]?.textContent||'Tất cả shop';
+  b.querySelector('span').textContent=(r?rangeLabel(r):'')+' · '+shopText.split('·')[0].trim();
+}
+// V70.28: ô chọn file mặc định của trình duyệt -> vùng kéo-thả. Giữ nguyên input gốc nên mọi xử lý cũ vẫn chạy.
+function v28Dropzones(){
+  document.querySelectorAll('input[type=file]').forEach(inp=>{
+    if(inp.closest('.v28-drop'))return;
+    const zone=document.createElement('label');zone.className='v28-drop';
+    zone.innerHTML='<span class="ic" aria-hidden="true">⇪</span><span><b>Kéo file vào đây hoặc bấm để chọn</b><small>Excel hoặc CSV tải từ Kênh Người Bán</small></span>';
+    inp.parentNode.insertBefore(zone,inp);zone.appendChild(inp);
+    const title=zone.querySelector('b'),sub=zone.querySelector('small');
+    const show=()=>{const fl=inp.files&&inp.files[0];zone.classList.toggle('has-file',!!fl);
+      title.textContent=fl?fl.name:'Kéo file vào đây hoặc bấm để chọn';
+      sub.textContent=fl?(Math.round(fl.size/1024).toLocaleString('vi-VN')+' KB · bấm để đổi file'):'Excel hoặc CSV tải từ Kênh Người Bán';};
+    inp.addEventListener('change',show);
+    ['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('over');}));
+    ['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,()=>zone.classList.remove('over')));
+    zone.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer?.files?.length){inp.files=e.dataTransfer.files;inp.dispatchEvent(new Event('change',{bubbles:true}));}});
+  });
+}
+function initV7028UI(){
+  v28Dropzones();
+  const top=document.querySelector('.topbar');if(!top||$('filterToggle'))return;
+  top.insertAdjacentHTML('afterbegin','<button type="button" id="filterToggle" aria-expanded="false"><span>Bộ lọc</span><b aria-hidden="true">▾ Bộ lọc</b></button>');
+  top.classList.add('v28-collapsed');
+  $('filterToggle').addEventListener('click',()=>{const open=top.classList.toggle('v28-collapsed')===false;$('filterToggle').setAttribute('aria-expanded',String(open));$('filterToggle').querySelector('b').textContent=open?'▴ Thu gọn':'▾ Bộ lọc';});
+  ['period','dayDate','weekInput','monthInput','fromDate','toDate','shop'].forEach(id=>$(id)?.addEventListener('change',v28FilterLabel));
+  v28FilterLabel();
 }
 function initV7026UI(){
   if(!$('v26Progress'))document.body.insertAdjacentHTML('afterbegin','<div id="v26Progress" aria-hidden="true"><i></i></div>');
