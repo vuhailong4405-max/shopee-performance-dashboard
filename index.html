@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.31</title>
+  <title>Gooby BI Dashboard · V70.32</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -1183,6 +1183,19 @@
       </div>
       <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Ngày</th><th class="right">Số đơn</th><th class="right">Chi phí Xu Shop</th><th class="right">Phí sàn</th></tr></thead><tbody id="coinRows"><tr><td colspan="4" class="empty">Chưa tải</td></tr></tbody></table></div>
       <details class="settings v27-raw" style="margin-top:14px"><summary>Raw dữ liệu Xu Shop</summary><pre id="coinRaw" class="diag-raw">Chưa tải</pre></details>
+    </section>
+
+    <section data-subpanel="marketing:mktcoin" class="card" id="coinWalletPanel" style="margin-top:16px">
+      <div class="section-title"><div><h2>Tổng xu đã trừ · tự động từ ví Xu</h2><p>Lấy từ ví Xu Của Shop qua tiện ích Chrome Gooby, cập nhật khi có người mở Kênh Người Bán trên máy đã cài tiện ích.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="coinWalletReload">↻ Tải lại</button></div></div>
+      <div id="coinWalletNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>Tổng xu đã trừ</span><b id="cwSpent">-</b><small id="cwSpentNote">-</small></div>
+        <div class="ops-kpi"><span>Xu nhận / nạp vào</span><b id="cwReceived">-</b><small>Trong kỳ đang xem</small></div>
+        <div class="ops-kpi"><span>Số dư ví Xu</span><b id="cwBalance">-</b><small id="cwBalanceNote">-</small></div>
+        <div class="ops-kpi"><span>Đồng bộ gần nhất</span><b id="cwSync">-</b><small id="cwSyncNote">-</small></div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Xu đã trừ</th><th class="right">Xu nhận</th><th class="right">Số giao dịch</th></tr></thead><tbody id="cwRows"><tr><td colspan="4" class="empty">Chưa tải.</td></tr></tbody></table></div>
     </section>
 
     <section data-subpanel="marketing:mktcoin" class="card" style="margin-top:16px">
@@ -3744,6 +3757,7 @@ const SUB_DEFAULT={performance:'listings',gmv:'overview',orders:'deadlines',mark
 const SUB_LOADERS={
   'gmv:targets':()=>loadBusinessMonthly(),
   'gmv:profit':()=>loadSkuProfit(),
+  'marketing:mktcoin':()=>loadCoinWallet(),
   'gmv:customers':()=>loadCustomers(),
   'orders:returns':()=>loadReturns(),
   'performance:listings':()=>loadListingPerformance(),
@@ -4901,7 +4915,28 @@ function initV7029UI(){
   let t=null;addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(v29Indicators,120);});
   setTimeout(v29Indicators,300);
 }
+/* ===== V70.32: tổng xu đã trừ từ ví Xu (tiện ích Chrome) ===== */
+function v32Ago(iso){if(!iso)return 'chưa có';const m=Math.round((Date.now()-Date.parse(iso))/60000);return m<1?'vừa xong':m<60?m+' phút trước':m<1440?Math.round(m/60)+' giờ trước':Math.round(m/1440)+' ngày trước';}
+async function loadCoinWallet(){
+  if(!$('coinWalletPanel'))return;
+  if(v25NeedShop('coinWalletNotice'))return;
+  $('coinWalletNotice').textContent='Đang tải tổng xu...';
+  try{const d=await api('/api/marketing/coin-wallet?'+v25Qs(),{ttlMs:20000});const t=d.totals||{};
+    v26Animate($('cwSpent'),Number(t.spent||0),v=>num(Math.round(v))+' xu');
+    $('cwSpentNote').textContent=num(t.tx_count||0)+' giao dịch · '+num(d.days_with_data)+'/'+num(d.days_in_range)+' ngày có số liệu';
+    $('cwReceived').textContent=num(t.received||0)+' xu';
+    const bal=(d.sync||[]).filter(x=>x.balance!=null);
+    $('cwBalance').textContent=bal.length?num(bal.reduce((a,x)=>a+Number(x.balance),0))+' xu':'-';
+    $('cwBalanceNote').textContent=bal.length?'Tại lần đồng bộ gần nhất':'Chưa có dữ liệu';
+    const last=(d.sync||[]).map(x=>x.synced_at).filter(Boolean).sort().pop();
+    $('cwSync').textContent=v32Ago(last);
+    $('cwSyncNote').textContent=(d.sync||[]).map(x=>(x.shop_name||x.shop_id)+': '+v32Ago(x.synced_at)).join(' · ')||'-';
+    $('cwRows').innerHTML=(d.daily||[]).slice().reverse().map(x=>`<tr><td>${v25Ddmm(x.date)}</td><td class="right"><b>${num(Math.round(x.spent))}</b></td><td class="right">${num(Math.round(x.received))}</td><td class="right">${num(x.tx_count)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Chưa có số liệu. Cài tiện ích Chrome Gooby rồi mở Kênh Người Bán.</td></tr>';
+    $('coinWalletNotice').textContent=last?d.note:'Chưa nhận được dữ liệu từ tiện ích. Cài tiện ích Chrome Gooby theo hướng dẫn rồi mở Kênh Người Bán.';}
+  catch(e){$('coinWalletNotice').textContent='⚠️ '+e.message;}
+}
 function initV7028UI(){
+  $('coinWalletReload')?.addEventListener('click',loadCoinWallet);
   v28Dropzones();
   const top=document.querySelector('.topbar');if(!top||$('filterToggle'))return;
   top.insertAdjacentHTML('afterbegin','<button type="button" id="filterToggle" aria-expanded="false"><span>Bộ lọc</span><b aria-hidden="true">▾ Bộ lọc</b></button>');
