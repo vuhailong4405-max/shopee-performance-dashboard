@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.32</title>
+  <title>Gooby BI Dashboard · V70.33</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -802,7 +802,7 @@
 
     <section class="tab-panel active" id="tab-gmv">
       
-    <nav class="page-subnav" data-tab="gmv" aria-label="Mục trong trang"><button type="button" data-sub="overview">Tổng quan</button><button type="button" data-sub="products">Sản phẩm & quy đổi</button><button type="button" data-sub="targets">Mục tiêu & runrate</button><button type="button" data-sub="profit">Lãi & giá vốn</button><button type="button" data-sub="customers">Khách hàng</button></nav>
+    <nav class="page-subnav" data-tab="gmv" aria-label="Mục trong trang"><button type="button" data-sub="overview">Tổng quan</button><button type="button" data-sub="products">Sản phẩm & quy đổi</button><button type="button" data-sub="targets">Mục tiêu & runrate</button><button type="button" data-sub="profit">Lãi & giá vốn</button><button type="button" data-sub="fees">Chi phí sàn</button><button type="button" data-sub="customers">Khách hàng</button></nav>
 <div class="tab-title"><div><h2>GMV tổng quan</h2><p>Chọn shop ở bộ lọc phía trên để xem từng shop hoặc tất cả shop. Tab này chỉ đọc snapshot đã lưu trong Supabase. V62 giữ luồng sync riêng từng shop và thêm AccountHealth chính thức cho tab hiệu quả hoạt động.</p></div></div>
 
     <section class="card brief-panel" data-subpanel="gmv:overview" id="briefPanel" aria-label="Báo cáo gọn">
@@ -968,6 +968,21 @@
       </details>
     </section>
 
+    <section data-subpanel="gmv:fees" class="card" id="platformFeePanel">
+      <div class="section-title"><div><h2>Chi phí sàn</h2><p>Hoa hồng, phí dịch vụ, phí giao dịch và hoa hồng Affiliate Shopee thu trên từng đơn, lấy từ Income (đối soát escrow). Chỉ tính đơn <b>đã hoàn tất</b>; tự đồng bộ khoảng 100 đơn mỗi 10 phút, bấm "Quét bù" cho ngày cũ.</p></div><div class="mini-actions"><button class="ghost" id="coinBtn">↻ Tải lại</button><button id="coinSyncBtn">Quét bù Income</button></div></div>
+      <div id="coinSummary" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi warn"><span>Tổng chi phí sàn</span><b id="coinCost">-</b><small id="coinCostNote">-</small></div>
+        <div class="ops-kpi"><span>Hoa hồng</span><b id="coinCommission">-</b><small>commission_fee</small></div>
+        <div class="ops-kpi"><span>Phí dịch vụ</span><b id="coinService">-</b><small>service_fee</small></div>
+        <div class="ops-kpi"><span>Phí giao dịch</span><b id="coinTxn">-</b><small>seller_transaction_fee</small></div>
+        <div class="ops-kpi"><span>Hoa hồng Affiliate</span><b id="coinAffiliate">-</b><small>ams_commission_fee</small></div>
+        <div class="ops-kpi"><span>Độ phủ dữ liệu</span><b id="coinCoverage">-</b><small id="coinCoverageNote">Đơn đã có Income / đơn hoàn tất</small></div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Số đơn</th><th class="right">Hoa hồng</th><th class="right">Phí dịch vụ</th><th class="right">Phí giao dịch</th><th class="right">Affiliate</th><th class="right">Tổng chi phí sàn</th></tr></thead><tbody id="coinRows"><tr><td colspan="7" class="empty">Chưa tải</td></tr></tbody></table></div>
+      <details class="settings v27-raw" style="margin-top:14px"><summary>Raw dữ liệu chi phí sàn</summary><pre id="coinRaw" class="diag-raw">Chưa tải</pre></details>
+    </section>
+
     <section class="card" data-subpanel="gmv:customers" id="customerPanel">
       <div class="section-title"><div><h2>Khách mới &amp; khách quay lại</h2><p>Khách mới = đơn hợp lệ đầu tiên của khách tại shop rơi vào kỳ đang chọn. Khách quay lại = đã từng mua trước kỳ. Bỏ đơn hủy. Doanh thu theo tổng tiền đơn.</p></div>
         <div class="mini-actions" style="margin-top:0"><button class="ghost" id="customerReloadBtn">↻ Tải lại</button></div></div>
@@ -986,7 +1001,7 @@
 
     <section class="card" data-subpanel="gmv:targets" id="bizPanel">
       <div class="section-title">
-        <div><h2>Mục tiêu tháng &amp; runrate</h2><p>Runrate = thực tế từ đầu tháng đến hiện tại ÷ số ngày đã qua × số ngày trong tháng (giờ Việt Nam, tính cả phần đã qua của hôm nay). Chi phí tự động lấy từ Quảng cáo, phí sàn và Xu Shop trong Income, Xu Marketing đã tải lên; chi phí nhập tay được cộng thêm và không bị nhân theo runrate.</p></div>
+        <div><h2>Mục tiêu tháng &amp; runrate</h2><p>Runrate = thực tế từ đầu tháng đến hiện tại ÷ số ngày đã qua × số ngày trong tháng (giờ Việt Nam, tính cả phần đã qua của hôm nay). Chi phí tự động lấy từ Quảng cáo, chi phí sàn (gồm hoa hồng Affiliate) và voucher shop trong Income, Xu Marketing từ ví Xu Của Shop; chi phí nhập tay được cộng thêm và không bị nhân theo runrate.</p></div>
         <div class="mini-actions" style="margin-top:0"><div class="field"><label for="bizMonth">Tháng</label><input type="month" id="bizMonth"></div><button class="ghost" id="bizReloadBtn">↻ Tải lại</button></div>
       </div>
       <div id="bizNotice" class="notice">Chọn tháng để xem mục tiêu và runrate.</div>
@@ -1127,7 +1142,7 @@
 
     <section class="tab-panel hidden" id="tab-marketing">
 
-    <nav class="page-subnav" data-tab="marketing" aria-label="Mục trong trang"><button type="button" data-sub="traffic">Traffic toàn shop</button><button type="button" data-sub="ads">Quảng cáo</button><button type="button" data-sub="coin">Xu Shop</button><button type="button" data-sub="mktcoin">Xu Marketing</button><button type="button" data-sub="vouchers">Voucher shop</button></nav>
+    <nav class="page-subnav" data-tab="marketing" aria-label="Mục trong trang"><button type="button" data-sub="traffic">Traffic toàn shop</button><button type="button" data-sub="ads">Quảng cáo</button><button type="button" data-sub="mktcoin">Xu Marketing</button><button type="button" data-sub="vouchers">Voucher shop</button></nav>
     <section data-subpanel="marketing:traffic" class="card" style="margin-top:16px">
       <div class="section-title"><div><h2>Traffic toàn shop · tất cả nguồn</h2><p>Tổng hợp traffic tự nhiên và trả phí từ báo cáo Phân tích bán hàng/Business Insights: Tìm kiếm, Đề xuất, Trang shop, Shopee Live, Quảng cáo, nguồn ngoài… nếu file Shopee có cột nguồn. Phần này độc lập với Ads bên dưới để không đếm nhầm click quảng cáo thành toàn shop.</p></div></div>
       <div id="shopTrafficSummary" class="notice">Chọn một shop, xuất báo cáo Traffic theo ngày từ Kênh Người Bán rồi tải file Excel/CSV lên. Nếu file có cột “Nguồn truy cập”, dashboard sẽ tự tách từng nguồn.</div>
@@ -1172,25 +1187,12 @@
       <details class="settings v27-raw" style="margin-top:14px"><summary>Raw dữ liệu Ads</summary><pre id="adsRaw" class="diag-raw">Chưa tải</pre></details>
     </section>
 
-    <section data-subpanel="marketing:coin" class="card" style="margin-top:16px">
-      <div class="section-title"><div><h2>Chi phí Xu Shop (Shopee Coins)</h2><p>Lấy từ đối soát escrow từng đơn (get_escrow_detail_batch, tối đa 50 đơn/lần gọi) — chỉ tính đơn <b>COMPLETED</b> vì escrow mới ổn định. Đồng bộ tự động ~100 đơn mỗi 10 phút cho hôm nay; bấm nút để quét bù ngày cũ.</p></div><div class="mini-actions"><button class="ghost" id="coinBtn">Tải chi phí Xu Shop</button><button id="coinSyncBtn">Đồng bộ Xu Shop</button></div></div>
-      <div id="coinSummary" class="notice">Chọn 1 shop cụ thể rồi bấm "Đồng bộ Xu Shop" để quét đơn COMPLETED trong khoảng đang chọn.</div>
-      <div class="perf-grid">
-        <div class="perf-card"><div class="k">Chi phí Xu Shop</div><div class="v" id="coinCost">-</div><div class="muted">seller_coin_cash_back</div></div>
-        <div class="perf-card"><div class="k">Phí sàn (hoa hồng)</div><div class="v" id="coinCommission">-</div><div class="muted">commission_fee</div></div>
-        <div class="perf-card"><div class="k">Phí dịch vụ</div><div class="v" id="coinService">-</div><div class="muted">service_fee</div></div>
-        <div class="perf-card"><div class="k">Độ phủ dữ liệu</div><div class="v" id="coinCoverage">-</div><div class="muted" id="coinCoverageNote">Đơn đã đồng bộ / tổng đơn COMPLETED</div></div>
-      </div>
-      <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Ngày</th><th class="right">Số đơn</th><th class="right">Chi phí Xu Shop</th><th class="right">Phí sàn</th></tr></thead><tbody id="coinRows"><tr><td colspan="4" class="empty">Chưa tải</td></tr></tbody></table></div>
-      <details class="settings v27-raw" style="margin-top:14px"><summary>Raw dữ liệu Xu Shop</summary><pre id="coinRaw" class="diag-raw">Chưa tải</pre></details>
-    </section>
-
     <section data-subpanel="marketing:mktcoin" class="card" id="coinWalletPanel" style="margin-top:16px">
-      <div class="section-title"><div><h2>Tổng xu đã trừ · tự động từ ví Xu</h2><p>Lấy từ ví Xu Của Shop qua tiện ích Chrome Gooby, cập nhật khi có người mở Kênh Người Bán trên máy đã cài tiện ích.</p></div>
+      <div class="section-title"><div><h2>Xu Marketing · tự động từ ví Xu Của Shop</h2><p>Mọi khoản xu đã trừ trong ví (livestream, chương trình sale, vòng quay, xu thưởng đánh giá) qua tiện ích Chrome Gooby. Đây là số dùng cho chi phí Xu Marketing ở Mục tiêu & runrate.</p></div>
         <div class="mini-actions" style="margin-top:0"><button class="ghost" id="coinWalletReload">↻ Tải lại</button></div></div>
       <div id="coinWalletNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
       <div class="ops-kpis">
-        <div class="ops-kpi"><span>Tổng xu đã trừ</span><b id="cwSpent">-</b><small id="cwSpentNote">-</small></div>
+        <div class="ops-kpi"><span>Xu Marketing đã trừ</span><b id="cwSpent">-</b><small id="cwSpentNote">-</small></div>
         <div class="ops-kpi"><span>Xu nhận / nạp vào</span><b id="cwReceived">-</b><small>Trong kỳ đang xem</small></div>
         <div class="ops-kpi"><span>Số dư ví Xu</span><b id="cwBalance">-</b><small id="cwBalanceNote">-</small></div>
         <div class="ops-kpi"><span>Đồng bộ gần nhất</span><b id="cwSync">-</b><small id="cwSyncNote">-</small></div>
@@ -1199,6 +1201,7 @@
     </section>
 
     <section data-subpanel="marketing:mktcoin" class="card" style="margin-top:16px">
+      <details class="settings"><summary>Dự phòng: tải file Xu xuất từ Shopee (chỉ dùng khi tiện ích không chạy)</summary>
       <div class="section-title"><div><h2>Xu Marketing (Xu Của Shop)</h2><p>Xu dùng cho Livestream, Giải thưởng của Shop, Xu thưởng đánh giá — <b>Shopee không có API công khai cho dữ liệu này</b>, chỉ xem được ở Kênh Marketing → Xu Của Shop trên Shopee. Bấm "Xuất dữ liệu" ở trang đó rồi tải file lên đây khi cần xem/lọc chi tiết; không upload thì các số dưới đây vẫn giữ nguyên lần tải gần nhất, không tự mất.</p></div></div>
       <div id="mktCoinSummary" class="notice">Chọn 1 shop cụ thể ở bộ lọc phía trên, sau đó tải file Excel/CSV đã xuất từ Shopee lên để xem.</div>
       <div class="orders-toolbar">
@@ -1216,6 +1219,7 @@
       </div>
       <div class="table-wrap"><table><thead><tr><th>Phân loại (đầy đủ)</th><th class="right">Số dòng</th><th class="right">Tổng Xu đã chi</th></tr></thead><tbody id="mktCoinCategoryRows"><tr><td colspan="3" class="empty">Chưa có dữ liệu.</td></tr></tbody></table></div>
       <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Chương trình</th><th class="right">Xu</th></tr></thead><tbody id="mktCoinRows"><tr><td colspan="4" class="empty">Chưa có dữ liệu — hãy tải file lên.</td></tr></tbody></table></div>
+      </details>
     </section>
 
     <section class="card" style="margin-top:16px" data-subpanel="marketing:vouchers" id="voucherPanel">
@@ -2460,31 +2464,34 @@ async function loadCoinCost(){
   const autoKey=shop+'_'+r.from+'_'+r.to;
   if(!(data.summary?.orders_counted) && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !coinAutoSynced.has(autoKey)){
     coinAutoSynced.add(autoKey);
-    $('coinSummary').innerHTML='⏳ Chưa có dữ liệu Xu Shop cho shop/khoảng này — đang tự động quét đơn COMPLETED...';
+    $('coinSummary').innerHTML='⏳ Chưa có Income cho shop/khoảng này — đang tự động quét đơn đã hoàn tất...';
     try{
       await api('/api/marketing/coin/sync?'+new URLSearchParams({shop_id:shop,date_from:r.from,date_to:r.to,max_orders:'150'}).toString(),{method:'POST'});
       data=await api('/api/marketing/coin/dashboard?'+qs.toString());
-  }catch(e){ $('coinSummary').textContent='⚠️ Tự động đồng bộ Xu Shop lỗi: '+e.message+' — bấm "Đồng bộ Xu Shop" để thử lại.'; }
+  }catch(e){ $('coinSummary').textContent='⚠️ Tự động quét Income lỗi: '+e.message+' — bấm "Quét bù Income" để thử lại.'; }
   }
   const s=data.summary||{};
-  $('coinCost').textContent=money(s.seller_coin_cash_back||0);
+  $('coinCost').textContent=money(s.platform_cost||0);
+  $('coinCostNote').textContent=`${num(s.orders_counted||0)} đơn đã có Income`;
   $('coinCommission').textContent=money(s.commission_fee||0);
   $('coinService').textContent=money(s.service_fee||0);
+  $('coinTxn').textContent=money(s.seller_transaction_fee||0);
+  $('coinAffiliate').textContent=money(s.affiliate_fee||0);
   $('coinCoverage').textContent=data.coverage_percent==null?'-':roundedPercent(data.coverage_percent);
-  $('coinCoverageNote').textContent=`${num(s.orders_counted||0)} / ${num(data.total_completed_orders||0)} đơn COMPLETED`;
+  $('coinCoverageNote').textContent=`${num(s.orders_counted||0)} / ${num(data.total_completed_orders||0)} đơn hoàn tất`;
   if(!(s.orders_counted)){
     $('coinSummary').innerHTML = shop==='all'
-      ? 'ℹ️ Chưa có dữ liệu Xu Shop đã lưu cho khoảng này. Chọn 1 shop cụ thể để web tự đồng bộ, hoặc bấm "Đồng bộ Xu Shop".'
-      : (data.total_completed_orders ? '⚠️ Có '+num(data.total_completed_orders)+' đơn COMPLETED nhưng chưa đồng bộ hết — bấm "Đồng bộ Xu Shop" để quét tiếp (đã giới hạn 150 đơn/lượt).' : 'ℹ️ Không có đơn COMPLETED nào trong khoảng đang chọn.');
+      ? 'ℹ️ Chưa có Income đã lưu cho khoảng này. Chọn 1 shop cụ thể để web tự quét, hoặc bấm "Quét bù Income".'
+      : (data.total_completed_orders ? '⚠️ Có '+num(data.total_completed_orders)+' đơn hoàn tất nhưng chưa quét hết Income — bấm "Quét bù Income" để quét tiếp (150 đơn/lượt).' : 'ℹ️ Không có đơn hoàn tất nào trong khoảng đang chọn.');
   } else {
-    $('coinSummary').innerHTML = `✅ Đã đồng bộ <b>${num(s.orders_counted)}</b> đơn COMPLETED (${roundedPercent(data.coverage_percent)} tổng số đơn COMPLETED trong khoảng) · ${rangeLabel(r)}.`;
+    $('coinSummary').innerHTML = `✅ Chi phí sàn của <b>${num(s.orders_counted)}</b> đơn đã hoàn tất (${roundedPercent(data.coverage_percent)} số đơn hoàn tất trong khoảng) · ${rangeLabel(r)}.`;
   }
-  $('coinRows').innerHTML=(data.daily||[]).map(d=>`<tr><td>${vnDateLabel(d.date)}</td><td class="right">${num(d.orders)}</td><td class="right"><b>${money(d.seller_coin_cash_back)}</b></td><td class="right">${money(d.commission_fee)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Chưa có dữ liệu.</td></tr>';
+  $('coinRows').innerHTML=(data.daily||[]).map(d=>`<tr><td>${vnDateLabel(d.date)}</td><td class="right">${num(d.orders)}</td><td class="right">${money(d.commission_fee)}</td><td class="right">${money(d.service_fee)}</td><td class="right">${money(d.seller_transaction_fee||0)}</td><td class="right">${money(d.affiliate_fee||0)}</td><td class="right"><b>${money(d.platform_cost??(d.commission_fee+d.service_fee))}</b></td></tr>`).join('') || '<tr><td colspan="7" class="empty">Chưa có dữ liệu.</td></tr>';
   $('coinRaw').textContent=JSON.stringify(data,null,2);
 }
 async function syncCoinCost(){
   const shop=$('shop').value||'all';
-  if(shop==='all'){ $('coinSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể rồi mới đồng bộ Xu Shop.'; return; }
+  if(shop==='all'){ $('coinSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể rồi mới quét bù Income.'; return; }
   const r=getRange();
   if(daysInclusive(r.from,r.to)>31){ alert('Chỉ đồng bộ tối đa 31 ngày/lần. Hãy chọn khoảng ngắn hơn.'); return; }
   $('coinSummary').innerHTML='⏳ Đang quét đơn COMPLETED và gọi Shopee escrow API (tối đa 150 đơn/lượt)...';
@@ -2493,13 +2500,12 @@ async function syncCoinCost(){
     const data=await api('/api/marketing/coin/sync?'+qs.toString(),{method:'POST'});
     if(data.remaining>0) $('coinSummary').innerHTML=`⏳ Đã đồng bộ thêm ${num(data.newly_synced)} đơn, còn ${num(data.remaining)} đơn chưa quét — bấm lại nút để quét tiếp.`;
     await loadCoinCost();
-  }catch(e){ $('coinSummary').textContent='⚠️ Đồng bộ Xu Shop lỗi: '+e.message; }
+  }catch(e){ $('coinSummary').textContent='⚠️ Quét Income lỗi: '+e.message; }
 }
 async function loadMarketing(){
   await Promise.all([
     loadShopTraffic().catch(e=>{ $('shopTrafficSummary').textContent='⚠️ Không tải được Traffic toàn shop: '+e.message; }),
     loadAdsCost().catch(e=>{ $('adsSummary').textContent='⚠️ Không tải được chi phí Ads: '+e.message; }),
-    loadCoinCost().catch(e=>{ $('coinSummary').textContent='⚠️ Không tải được chi phí Xu Shop: '+e.message; }),
     loadMarketingCoinSummary().catch(e=>{ $('mktCoinSummary').textContent='⚠️ Không tải được Xu Marketing: '+e.message; }),
   ]);
 }
@@ -3749,7 +3755,7 @@ const PAGE_META={
   gmv:{title:'Tổng quan kinh doanh',desc:'GMV, NMV, đơn hàng và tỷ lệ hủy của kỳ đang chọn; cảnh báo vận hành cần xử lý.'},
   orders:{title:'Đơn hàng & vận hành',desc:'Cảnh báo hạn bàn giao, lý do hủy, danh sách đơn, đối soát tiền về ví và phân bổ khu vực.'},
   performance:{title:'Hiệu quả',desc:'Hiệu suất từng link sản phẩm (xem, bán, chuyển đổi, tồn kho, Ads) và sức khỏe shop từ AccountHealth.'},
-  marketing:{title:'Marketing',desc:'Traffic toàn shop, chi phí quảng cáo, chi phí Xu Shop và Xu Marketing.'},
+  marketing:{title:'Marketing',desc:'Traffic toàn shop, chi phí quảng cáo, Xu Marketing và voucher shop.'},
   warehouse:{title:'Kho hàng & danh mục',desc:'Combo, cấu tạo SKU, danh mục sản phẩm và số barcode đã bán.'},
   system:{title:'Hệ thống',desc:'Tài khoản, quét tự động 24/7, chẩn đoán số liệu và kết nối shop.'},
 };
@@ -3757,6 +3763,7 @@ const SUB_DEFAULT={performance:'listings',gmv:'overview',orders:'deadlines',mark
 const SUB_LOADERS={
   'gmv:targets':()=>loadBusinessMonthly(),
   'gmv:profit':()=>loadSkuProfit(),
+  'gmv:fees':()=>loadCoinCost().catch(e=>{ $('coinSummary').textContent='⚠️ Không tải được chi phí sàn: '+e.message; }),
   'marketing:mktcoin':()=>loadCoinWallet(),
   'gmv:customers':()=>loadCustomers(),
   'orders:returns':()=>loadReturns(),
@@ -4093,7 +4100,7 @@ function renderBizMonthly(d){
     const sub=r.key==='ads'?`<span class="cancel-raw">Product ${escapeHtml(money(d.ads_breakdown.product))} · Livestream ${escapeHtml(money(d.ads_breakdown.livestream))}</span>`:'';
     return `<tr><td><b>${escapeHtml(r.label)}</b>${sub}${r.manual&&r.auto?`<span class="cancel-raw">Tự động ${escapeHtml(money(r.auto))} + nhập tay ${escapeHtml(money(r.manual))}</span>`:''}${r.pending_estimate>0?`<span class="cancel-raw">+ ước tính ${escapeHtml(money(r.pending_estimate))} cho đơn chưa hoàn tất (chỉ tính vào runrate)</span>`:''}${r.key==='shop_voucher'?`<button type="button" class="more-toggle" data-jump-sub="marketing:vouchers">Xem chi tiết theo mã →</button>`:''}</td><td>${escapeHtml(srcLabel[r.source]||r.source)}</td><td class="right">${r.budget!=null?money(r.budget):'<span class="muted">-</span>'}</td><td class="right"><b>${money(r.actual)}</b></td><td>${used}</td><td class="right">${money(r.projected)}</td><td class="right">${bizPct(r.projected_pct)}</td><td class="right">${bizPct(r.gmv_ratio_pct)}</td><td>${r.budget!=null?bizBadge(r.status,'cost'):'<span class="muted">-</span>'}</td></tr>`;
   }).join('')+`<tr class="biz-total"><td><b>Tổng chi phí</b></td><td></td><td class="right"><b>${c.budget!=null?money(c.budget):'-'}</b></td><td class="right"><b>${money(c.actual)}</b></td><td>${bizPct(c.used_pct)}</td><td class="right"><b>${money(c.projected)}</b></td><td class="right">${bizPct(c.projected_pct)}</td><td class="right">${bizPct(c.gmv_ratio_pct)}</td><td>${c.budget!=null?bizBadge(c.status,'cost'):''}</td></tr>`+(d.promo_reference?`<tr class="biz-ref"><td><span class="muted">Giảm giá sản phẩm của shop</span><span class="cancel-raw">Tham khảo, không cộng vào tổng chi phí</span></td><td class="muted">Tham khảo</td><td></td><td class="right muted">${money(d.promo_reference.seller_discount)}</td><td></td><td></td><td></td><td class="right muted">${bizPct(d.gmv.actual>0?Math.round(d.promo_reference.seller_discount/d.gmv.actual*10000)/100:null)}</td><td></td></tr>`:'');
-  $('bizFootnote').textContent=`Phí sàn, Voucher shop và Xu Shop lấy từ Income Shopee nên chỉ ghi nhận khi đơn đã hoàn tất (độ phủ ${d.income_coverage_pct==null?'-':percent(d.income_coverage_pct)} đơn hoàn tất). Phần đơn hợp lệ chưa hoàn tất (GMV ${money(d.promo_reference?.pending_gmv||0)}) được ước tính theo tỷ lệ của các đơn đã có Income và chỉ cộng vào runrate. Giảm giá sản phẩm chỉ để tham khảo, không cộng vào tổng chi phí. Xu Marketing lấy từ file đã tải lên ở tab Marketing. Nhóm chỉ nhập tay dùng runrate = max(đã ghi nhận, ngân sách).`;
+  $('bizFootnote').textContent=`Chi phí sàn (hoa hồng, dịch vụ, giao dịch, hoa hồng Affiliate) và Voucher shop lấy từ Income Shopee nên chỉ ghi nhận khi đơn đã hoàn tất (độ phủ ${d.income_coverage_pct==null?'-':percent(d.income_coverage_pct)} đơn hoàn tất). Phần đơn hợp lệ chưa hoàn tất (GMV ${money(d.promo_reference?.pending_gmv||0)}) được ước tính theo tỷ lệ của các đơn đã có Income và chỉ cộng vào runrate. Giảm giá sản phẩm chỉ để tham khảo, không cộng vào tổng chi phí. Xu Marketing lấy từ ví Xu Của Shop (tiện ích Chrome); tháng chưa có số liệu ví thì dùng file đã tải lên. Nhóm chỉ nhập tay dùng runrate = max(đã ghi nhận, ngân sách).`;
   renderBizChart(d.series,p.phase==='current'?g.projected:null,p);
   // Bộ chỉnh sửa (Admin)
   $('bizEditor').classList.toggle('hidden',!currentUser?.is_admin);
