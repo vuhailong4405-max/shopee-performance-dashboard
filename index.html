@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.33</title>
+  <title>Gooby BI Dashboard · V70.33.1</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -977,6 +977,7 @@
         <div class="ops-kpi"><span>Phí dịch vụ</span><b id="coinService">-</b><small>service_fee</small></div>
         <div class="ops-kpi"><span>Phí giao dịch</span><b id="coinTxn">-</b><small>seller_transaction_fee</small></div>
         <div class="ops-kpi"><span>Hoa hồng Affiliate</span><b id="coinAffiliate">-</b><small>ams_commission_fee</small></div>
+        <div class="ops-kpi"><span>Chi phí sàn chưa VAT</span><b id="coinExVat">-</b><small>(3 khoản phí ÷ 1,08) + Affiliate · dùng để so với NMV</small></div>
         <div class="ops-kpi"><span>Độ phủ dữ liệu</span><b id="coinCoverage">-</b><small id="coinCoverageNote">Đơn đã có Income / đơn hoàn tất</small></div>
       </div>
       <div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Số đơn</th><th class="right">Hoa hồng</th><th class="right">Phí dịch vụ</th><th class="right">Phí giao dịch</th><th class="right">Affiliate</th><th class="right">Tổng chi phí sàn</th></tr></thead><tbody id="coinRows"><tr><td colspan="7" class="empty">Chưa tải</td></tr></tbody></table></div>
@@ -2477,6 +2478,7 @@ async function loadCoinCost(){
   $('coinService').textContent=money(s.service_fee||0);
   $('coinTxn').textContent=money(s.seller_transaction_fee||0);
   $('coinAffiliate').textContent=money(s.affiliate_fee||0);
+  $('coinExVat').textContent=s.platform_cost_ex_vat==null?'-':money(s.platform_cost_ex_vat);
   $('coinCoverage').textContent=data.coverage_percent==null?'-':roundedPercent(data.coverage_percent);
   $('coinCoverageNote').textContent=`${num(s.orders_counted||0)} / ${num(data.total_completed_orders||0)} đơn hoàn tất`;
   if(!(s.orders_counted)){
