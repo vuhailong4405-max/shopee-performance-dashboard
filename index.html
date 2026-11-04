@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.34</title>
+  <title>Gooby BI Dashboard · V70.35</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -693,7 +693,9 @@
     }
     .brief-link{background:none!important;border:0!important;height:auto;padding:0}
     @media(max-width:1260px){.tabs{background:#fff;border-bottom:1px solid var(--line)}.tabbtn.active:before{display:none}}
-  </style>
+    #quickTable tr.quick-total td{background:var(--surface-2,#fff5ef);border-bottom:2px solid var(--line,#eadfd8)}
+  #quickTable td{white-space:nowrap}
+</style>
 </head>
 <body class="auth-pending">
 
@@ -727,6 +729,7 @@
       <strong>GOOBY <span>BI</span></strong>
     </div>
     <button class="tabbtn active" data-tab="gmv"><span class="ic">⌂</span>Tổng quan</button>
+    <button class="tabbtn" data-tab="quick"><span class="ic">▤</span>Báo cáo nhanh</button>
     <button class="tabbtn" data-tab="orders"><span class="ic">▣</span>Đơn hàng<span class="nav-badge" id="navBadgeOrders" title="Đơn quá hạn + sắp đến hạn bàn giao"></span></button>
     <button class="tabbtn" data-tab="performance"><span class="ic">◎</span>Hiệu quả</button>
     <button class="tabbtn" data-tab="marketing"><span class="ic">↗</span>Marketing</button>
@@ -1075,6 +1078,16 @@
     </details>
 
 
+    </section>
+
+    <section class="tab-panel hidden" id="tab-quick">
+      <section class="card" id="quickPanel">
+        <div class="section-title"><div><h2>Báo cáo nhanh theo ngày</h2><p>Mỗi dòng là một ngày của kỳ đang chọn ở bộ lọc phía trên. NMV = (GMV − hủy − hoàn trả) ÷ 1,08. Chi phí xu lấy từ ví Xu Của Shop, chi phí ads = Product Ads + Livestream Ads, giữ nguyên số Shopee ghi nhận. Runrate % chi phí = (xu + ads) ÷ NMV của chính ngày đó.</p></div>
+          <div class="mini-actions" style="margin-top:0"><button class="ghost" id="quickReload">↻ Tải lại</button></div></div>
+        <div id="quickNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+        <div class="table-wrap"><table id="quickTable"><thead><tr><th>Ngày</th><th class="right">GMV</th><th class="right">NMV</th><th class="right">Chi phí xu</th><th class="right">Chi phí ads</th><th class="right">Tổng chi phí</th><th class="right">Runrate % chi phí</th></tr></thead>
+          <tbody id="quickRows"><tr><td colspan="7" class="empty">Chưa tải.</td></tr></tbody></table></div>
+      </section>
     </section>
 
     <section class="tab-panel hidden" id="tab-performance">
@@ -1581,7 +1594,7 @@ let walletReportLoadToken = 0;
 let walletIncomeDetailToken = 0;
 let walletSyncStop = false;
 const AUTH_SESSION_KEY='gooby_bi_auth_session_v70';
-const TAB_FEATURE={gmv:'overview',orders:'orders',performance:'performance',marketing:'marketing',warehouse:'warehouse',system:'system'};
+const TAB_FEATURE={gmv:'overview',quick:'overview',orders:'orders',performance:'performance',marketing:'marketing',warehouse:'warehouse',system:'system'};
 const FEATURE_LABEL={overview:'Tổng quan',orders:'Đơn hàng',performance:'Hiệu quả',marketing:'Marketing',warehouse:'Kho hàng',system:'Hệ thống'};
 let authSession=null;
 let currentUser=null;
@@ -2504,6 +2517,35 @@ async function syncCoinCost(){
     await loadCoinCost();
   }catch(e){ $('coinSummary').textContent='⚠️ Quét Income lỗi: '+e.message; }
 }
+// ===== V70.35: Báo cáo nhanh theo ngày =====
+const QUICK_WEEKDAY=['CN','T2','T3','T4','T5','T6','T7'];
+let quickLoadToken=0;
+async function loadQuickReport(){
+  const token=++quickLoadToken;
+  const r=getRange(),shop=$('shop').value||'all';
+  if(daysInclusive(r.from,r.to)>92){$('quickNotice').textContent='Báo cáo nhanh xem tối đa 92 ngày một lần. Hãy chọn khoảng ngắn hơn.';$('quickRows').innerHTML='<tr><td colspan="7" class="empty">Khoảng quá dài.</td></tr>';return;}
+  $('quickNotice').textContent='Đang tải báo cáo nhanh…';
+  try{
+    const d=await api('/api/business/daily-quick?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}));
+    if(token!==quickLoadToken)return;
+    const missing='<span class="muted" title="Chưa có số liệu cho ngày này">–</span>';
+    const pct=v=>v==null?'–':percent(v);
+    const dayLabel=x=>QUICK_WEEKDAY[new Date(x+'T00:00:00Z').getUTCDay()]+' · '+vnDateLabel(x);
+    const row=(x,label,total)=>{const b=v=>total?'<b>'+v+'</b>':v;
+      return `<tr${total?' class="quick-total"':''}><td>${b(label)}</td><td class="right">${b(moneyExact(x.gmv))}</td><td class="right">${b(moneyExact(x.nmv))}</td>`+
+        `<td class="right">${total||x.has_coin?b(moneyExact(x.coin_cost)):missing}</td>`+
+        `<td class="right" title="Product Ads ${moneyExact(x.ads_product)} · Livestream Ads ${moneyExact(x.ads_live)}">${total||x.has_ads?b(moneyExact(x.ads_cost)):missing}</td>`+
+        `<td class="right">${b(moneyExact(x.cost_total))}</td><td class="right">${b(pct(x.cost_pct))}</td></tr>`;};
+    const rows=d.rows||[];
+    $('quickRows').innerHTML=rows.length?row(d.totals,'Tổng kỳ ('+num(rows.length)+' ngày)',true)+rows.map(x=>row(x,dayLabel(x.date),false)).join(''):'<tr><td colspan="7" class="empty">Không có ngày nào trong kỳ đang chọn.</td></tr>';
+    const notes=[];
+    if((d.days_missing_coin||[]).length)notes.push(`${num(d.days_missing_coin.length)} ngày chưa có số liệu xu (tiện ích Chrome chưa đồng bộ)`);
+    if((d.days_missing_ads||[]).length)notes.push(`${num(d.days_missing_ads.length)} ngày chưa có số liệu ads`);
+    if(d.nmv_deducts_returns&&!d.returns_available)notes.push('chưa đọc được hàng hoàn trả nên NMV chưa trừ hoàn trả');
+    $('quickNotice').innerHTML=`${notes.length?'⚠️ ':'✅ '}${escapeHtml(rangeLabel(r))} · % chi phí cả kỳ: <b>${pct(d.totals?.cost_pct)}</b> (chi phí ${money(d.totals?.cost_total)} / NMV ${money(d.totals?.nmv)}).${notes.length?' Lưu ý: '+escapeHtml(notes.join('; '))+'. Ô "–" là ngày chưa có số liệu, tính như 0.':''}`;
+  }catch(e){ if(token===quickLoadToken){$('quickNotice').textContent='⚠️ Không tải được báo cáo nhanh: '+e.message;} }
+}
+document.addEventListener('click',e=>{if(e.target.closest('#quickReload'))loadQuickReport();});
 async function loadMarketing(){
   await Promise.all([
     loadShopTraffic().catch(e=>{ $('shopTrafficSummary').textContent='⚠️ Không tải được Traffic toàn shop: '+e.message; }),
@@ -3754,6 +3796,7 @@ function initWorkspaceUI(){
 
 // ===== V70.17: tiêu đề trang, mục con trong từng tab, cảnh báo bàn giao, lý do hủy =====
 const PAGE_META={
+  quick:{title:'Báo cáo nhanh',desc:'GMV, NMV, chi phí xu, chi phí ads và % chi phí theo từng ngày của kỳ đang chọn.'},
   gmv:{title:'Tổng quan kinh doanh',desc:'GMV, NMV, đơn hàng và tỷ lệ hủy của kỳ đang chọn; cảnh báo vận hành cần xử lý.'},
   orders:{title:'Đơn hàng & vận hành',desc:'Cảnh báo hạn bàn giao, lý do hủy, danh sách đơn, đối soát tiền về ví và phân bổ khu vực.'},
   performance:{title:'Hiệu quả',desc:'Hiệu suất từng link sản phẩm (xem, bán, chuyển đổi, tồn kho, Ads) và sức khỏe shop từ AccountHealth.'},
@@ -4472,6 +4515,7 @@ function setTab(tab){
   activateSubnav(tab);
 
   if(tab==='marketing') loadMarketing();
+  if(tab==='quick') loadQuickReport();
   if(tab==='warehouse'){
     loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); });
     loadWarehouseSalesAll(true).catch(()=>{});
@@ -4480,7 +4524,7 @@ function setTab(tab){
 }
 let dashboardLoadToken=0;
 let dashboardAbortController=null;
-async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
+async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='quick') loadQuickReport(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=null;if(!hasFeature('overview'))return;timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){
   const channel=encodeURIComponent($('channel').value||'Shopee');
