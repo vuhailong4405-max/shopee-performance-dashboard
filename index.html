@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.36</title>
+  <title>Gooby BI Dashboard · V70.37</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -702,6 +702,12 @@
   .shop-multi-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;border-top:1px solid var(--line,#eadfd8);padding-top:8px}
   #shopMultiBtn.on{border-color:#ff6b35;color:#c2410c;background:rgba(255,107,53,.08)}
   #quickTable .quick-pct{display:inline-block;min-width:44px;margin-left:6px;font-size:11px;color:var(--muted,#667085);font-weight:500}
+  .biz-day-rows{display:grid;gap:8px;margin:6px 0 8px}
+  .biz-day-row{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr) 36px;gap:8px;align-items:center}
+  .biz-day-row input{min-width:0}
+  .biz-day-row .bd-del{padding:0;height:36px}
+  .biz-day-add{margin-bottom:6px}
+  @media (max-width:640px){.biz-day-row{grid-template-columns:1fr 1fr;}.biz-day-row .bd-date{grid-column:1/-1}}
 </style>
 </head>
 <body class="auth-pending">
@@ -1051,6 +1057,15 @@
             <div class="biz-form-grid">
               <div class="field"><label for="bizGmvTarget">Mục tiêu GMV (đ)</label><input id="bizGmvTarget" type="number" min="0" step="1000" inputmode="numeric"><small class="money-hint" data-for="bizGmvTarget"></small></div>
               <div class="field"><label for="bizNmvTarget">Mục tiêu NMV (đ)</label><input id="bizNmvTarget" type="number" min="0" step="1000" inputmode="numeric"><small class="money-hint" data-for="bizNmvTarget"></small></div>
+            </div>
+            <div id="bizDayPlan">
+              <h4 class="biz-subhead">① Ngày Mega sale <small class="muted">— mỗi ngày một mục tiêu riêng</small></h4>
+              <div class="biz-day-rows" id="bizMegaRows"></div>
+              <button type="button" class="ghost biz-day-add" data-add-day="mega">+ Thêm ngày Mega sale</button>
+              <h4 class="biz-subhead">② Ngày Mini sale <small class="muted">— mỗi ngày một mục tiêu riêng</small></h4>
+              <div class="biz-day-rows" id="bizMiniRows"></div>
+              <button type="button" class="ghost biz-day-add" data-add-day="mini">+ Thêm ngày Mini sale</button>
+              <div class="notice" id="bizDayPlanSummary" style="margin-top:10px">③ Phần còn lại của mục tiêu tháng sẽ chia đều cho các ngày thường.</div>
             </div>
             <h4 class="biz-subhead">Ngân sách chi phí (đ)</h4>
             <div class="biz-form-grid" id="bizBudgetFields"></div>
@@ -4217,6 +4232,8 @@ function renderBizMonthly(d){
   $('bizEditorMonth').textContent=bizMonthLabel(d.month)+' · '+($('shop').value==='all'?'Tất cả shop':shopNameText());
   renderBizBudgetFields(d.categories,t?.cost_budgets||{});
   $('bizGmvTarget').value=t?.gmv_target??'';$('bizNmvTarget').value=t?.nmv_target??'';$('bizNote').value=t?.note||'';
+  // Mục tiêu tổng nhiều shop không sửa trực tiếp được: chỉ hiện ngày sale khi mục tiêu thuộc đúng 1 dòng.
+  fillBizDayRows(String(t?.source||'').startsWith('sum_of')?[]:(t?.day_targets||[]));
   const firstDay=`${d.month}-01`,today=todayVN();
   $('bizCostDate').min=firstDay;$('bizCostDate').max=monthBounds_(d.month).to;
   if(!$('bizCostDate').value||!$('bizCostDate').value.startsWith(d.month))$('bizCostDate').value=today.startsWith(d.month)?today:firstDay;
@@ -4238,11 +4255,49 @@ async function loadBusinessMonthly(){
   }catch(e){if(token===bizLoadToken){$('bizNotice').className='notice warn-note';$('bizNotice').textContent='Không tải được mục tiêu tháng: '+e.message;}return null;}
 }
 function bizMessage(id,text,ok){const el=$(id);el.className='conversion-admin-message '+(ok?'ok':'error');el.textContent=text;}
+// ===== V70.37: mục tiêu theo ngày (Mega sale / Mini sale / ngày thường) =====
+function bizDayRowHtml(type,d){
+  const m=$('bizMonth').value||bizMonthDefault();const b=monthBounds_(m);
+  const v=x=>x===null||x===undefined?'':escapeHtml(String(x));
+  return `<div class="biz-day-row" data-type="${type}"><input type="date" class="bd-date" min="${b.from||m+'-01'}" max="${b.to}" value="${v(d?.date)}" aria-label="Ngày"><input type="number" class="bd-gmv" min="0" step="1000" inputmode="numeric" placeholder="Mục tiêu GMV ngày" value="${v(d?.gmv_target)}" aria-label="Mục tiêu GMV"><input type="number" class="bd-nmv" min="0" step="1000" inputmode="numeric" placeholder="Mục tiêu NMV ngày" value="${v(d?.nmv_target)}" aria-label="Mục tiêu NMV"><button type="button" class="ghost bd-del" title="Xóa ngày này" aria-label="Xóa ngày này">✕</button></div>`;
+}
+function fillBizDayRows(list){
+  const rows=Array.isArray(list)?list:[];
+  $('bizMegaRows').innerHTML=rows.filter(d=>d.type==='mega').map(d=>bizDayRowHtml('mega',d)).join('');
+  $('bizMiniRows').innerHTML=rows.filter(d=>d.type==='mini').map(d=>bizDayRowHtml('mini',d)).join('');
+  updateBizDayPlanSummary();
+}
+function readBizDayRows(){
+  return [...document.querySelectorAll('#bizDayPlan .biz-day-row')].map(r=>({type:r.dataset.type,date:r.querySelector('.bd-date').value,gmv_target:r.querySelector('.bd-gmv').value,nmv_target:r.querySelector('.bd-nmv').value}))
+    .filter(d=>d.date||d.gmv_target!==''||d.nmv_target!=='');
+}
+function updateBizDayPlanSummary(){
+  const box=$('bizDayPlanSummary');if(!box)return;
+  const m=$('bizMonth').value||bizMonthDefault();const days=Number(String(monthBounds_(m).to).slice(8,10))||30;
+  const rows=readBizDayRows();const dates=new Set(rows.map(d=>d.date).filter(Boolean));
+  const dup=rows.filter(d=>d.date).length!==dates.size;
+  const part=(key,total,label)=>{
+    if(total===''){return rows.some(d=>d[key]!=='')?`⚠️ Chưa có mục tiêu ${label} cả tháng.`:'';}
+    const sp=rows.filter(d=>d[key]!=='');const spSum=sp.reduce((a,d)=>a+Number(d[key]||0),0);
+    const normal=days-new Set(sp.map(d=>d.date).filter(Boolean)).size;const rest=Number(total)-spSum;
+    if(rest<0)return `⚠️ ${label}: tổng các ngày sale ${money(spSum)} lớn hơn mục tiêu tháng ${money(Number(total))}.`;
+    return `${label}: tháng ${money(Number(total))} − ngày sale ${money(spSum)} = ${money(rest)} chia đều ${num(normal)} ngày thường ≈ <b>${money(normal>0?rest/normal:0)}/ngày</b>.`;
+  };
+  const mega=rows.filter(d=>d.type==='mega').length,mini=rows.filter(d=>d.type==='mini').length;
+  const lines=[part('gmv_target',$('bizGmvTarget').value,'GMV'),part('nmv_target',$('bizNmvTarget').value,'NMV')].filter(Boolean);
+  box.innerHTML=`③ ${num(mega)} ngày Mega sale · ${num(mini)} ngày Mini sale · ${num(days-dates.size)} ngày thường.${dup?' ⚠️ Có ngày bị chọn 2 lần.':''}<br>${lines.join('<br>')||'Điền mục tiêu tháng ở trên để xem phần chia cho ngày thường.'}`;
+}
+document.addEventListener('click',e=>{
+  const add=e.target.closest('[data-add-day]');
+  if(add){const type=add.dataset.addDay;$(type==='mega'?'bizMegaRows':'bizMiniRows').insertAdjacentHTML('beforeend',bizDayRowHtml(type,null));updateBizDayPlanSummary();return;}
+  const del=e.target.closest('#bizDayPlan .bd-del');if(del){del.closest('.biz-day-row').remove();updateBizDayPlanSummary();}
+});
+document.addEventListener('input',e=>{if(e.target.closest('#bizDayPlan')||['bizGmvTarget','bizNmvTarget','bizMonth'].includes(e.target.id))updateBizDayPlanSummary();});
 async function saveBusinessTarget(){
   if(isMultiShop()){bizMessage('bizTargetMessage','Đang xem nhiều shop: chọn 1 shop ở ô Shop để lưu mục tiêu của shop đó.',false);return;}
   const budgets={};document.querySelectorAll('[data-budget]').forEach(inp=>{if(inp.value!=='')budgets[inp.dataset.budget]=Number(inp.value);});
   try{
-    await api('/api/admin/business/target/save',{method:'POST',body:{month:$('bizMonth').value,shop_id:bizShopParam(),gmv_target:$('bizGmvTarget').value,nmv_target:$('bizNmvTarget').value,cost_budgets:budgets,note:$('bizNote').value}});
+    await api('/api/admin/business/target/save',{method:'POST',body:{month:$('bizMonth').value,shop_id:bizShopParam(),gmv_target:$('bizGmvTarget').value,nmv_target:$('bizNmvTarget').value,cost_budgets:budgets,day_targets:readBizDayRows(),note:$('bizNote').value}});
     bizMessage('bizTargetMessage','Đã lưu mục tiêu tháng '+bizMonthLabel($('bizMonth').value)+'.',true);await loadBusinessMonthly();
   }catch(e){bizMessage('bizTargetMessage',e.message,false);}
 }
