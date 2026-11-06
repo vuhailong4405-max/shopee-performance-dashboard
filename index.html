@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.35</title>
+  <title>Gooby BI Dashboard · V70.36</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -695,6 +695,13 @@
     @media(max-width:1260px){.tabs{background:#fff;border-bottom:1px solid var(--line)}.tabbtn.active:before{display:none}}
     #quickTable tr.quick-total td{background:var(--surface-2,#fff5ef);border-bottom:2px solid var(--line,#eadfd8)}
   #quickTable td{white-space:nowrap}
+  .shop-multi{position:relative}
+  .shop-multi-panel{position:absolute;z-index:60;top:calc(100% + 6px);left:0;min-width:260px;background:var(--card,#fff);border:1px solid var(--line,#eadfd8);border-radius:12px;box-shadow:0 12px 32px rgba(16,24,40,.14);padding:10px}
+  .shop-multi-panel label.shop-multi-item{display:flex;gap:8px;align-items:center;padding:7px 6px;border-radius:8px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;color:inherit}
+  .shop-multi-panel label.shop-multi-item:hover{background:rgba(255,107,53,.08)}
+  .shop-multi-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;border-top:1px solid var(--line,#eadfd8);padding-top:8px}
+  #shopMultiBtn.on{border-color:#ff6b35;color:#c2410c;background:rgba(255,107,53,.08)}
+  #quickTable .quick-pct{display:inline-block;min-width:44px;margin-left:6px;font-size:11px;color:var(--muted,#667085);font-weight:500}
 </style>
 </head>
 <body class="auth-pending">
@@ -791,8 +798,15 @@
         <div class="field hidden" data-period-field="custom"><label>Từ ngày</label><input type="date" id="fromDate"></div>
         <div class="field hidden" data-period-field="custom"><label>Đến ngày</label><input type="date" id="toDate"></div>
         <div class="field"><label>Shop</label><select id="shop"><option value="all">Tất cả shop</option></select></div>
+        <div class="field shop-multi-field"><label>Nhiều shop</label><div class="shop-multi">
+          <button type="button" class="ghost" id="shopMultiBtn" aria-haspopup="true" aria-expanded="false">☑ Chọn nhiều shop</button>
+          <div id="shopMultiPanel" class="shop-multi-panel hidden" role="dialog" aria-label="Chọn nhiều shop">
+            <div id="shopMultiList"></div>
+            <div class="shop-multi-actions"><button type="button" class="ghost" id="shopMultiClear">Bỏ chọn</button><button type="button" id="shopMultiApply">Xem các shop đã tick</button></div>
+          </div></div></div>
         <div class="field"><label>So sánh</label><select id="compare"><option value="previous_period">So với kỳ liền trước</option></select></div>
       </div>
+      <div id="multiShopNote" class="notice hidden" style="margin:8px 0 0"></div>
       <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
       <div class="quick-range" id="quickRange" aria-label="Chọn nhanh khoảng ngày">
         <button type="button" data-qr="today">Hôm nay</button><button type="button" data-qr="yesterday">Hôm qua</button>
@@ -1688,6 +1702,48 @@ function showLoggedOut(message){
   document.body.classList.remove('auth-ready');document.body.classList.add('auth-pending');
   if(message)$('loginMessage').textContent=message;
 }
+// ===== V70.36: chọn nhiều shop =====
+// Trang hỗ trợ xem nhóm shop; trang khác vẫn dùng ô Shop (Admin: tất cả shop) và hiện ghi chú.
+const SHOP_MULTI_KEY='gooby_shop_multi_v1';
+const MULTI_SHOP_VIEWS=new Set(['gmv:overview','gmv:targets','gmv:fees','quick','marketing:ads','marketing:mktcoin']);
+let multiShopIds=[];
+try{const v=JSON.parse(localStorage.getItem(SHOP_MULTI_KEY)||'[]');if(Array.isArray(v))multiShopIds=v.map(String);}catch(e){}
+function isMultiShop(){return multiShopIds.length>1;}
+function shopScopeParam(){return isMultiShop()?multiShopIds.join(','):($('shop').value||'all');}
+function saveMultiShop(){try{localStorage.setItem(SHOP_MULTI_KEY,JSON.stringify(multiShopIds));}catch(e){}}
+function shopLabel(s){return (s.channel_name||s.shop_name||s.shop_id)+' · '+s.shop_id;}
+function currentViewKey(){const tab=currentTab();return tab==='quick'?'quick':tab+':'+(currentSub(tab)||'');}
+function renderShopMulti(){
+  const list=$('shopMultiList');if(!list)return;
+  list.innerHTML=(availableShops||[]).map(sh=>`<label class="shop-multi-item"><input type="checkbox" value="${escapeHtml(String(sh.shop_id))}"${multiShopIds.includes(String(sh.shop_id))?' checked':''}> ${escapeHtml(shopLabel(sh))}</label>`).join('')||'<div class="muted">Chưa có shop.</div>';
+  const b=$('shopMultiBtn');b.textContent=isMultiShop()?'☑ '+multiShopIds.length+' shop đã chọn':'☑ Chọn nhiều shop';b.classList.toggle('on',isMultiShop());
+  b.title=isMultiShop()?(availableShops||[]).filter(sh=>multiShopIds.includes(String(sh.shop_id))).map(shopLabel).join('\n'):'Tick nhiều shop để xem tổng các shop đó';
+}
+function updateMultiShopNote(){
+  const note=$('multiShopNote');if(!note)return;
+  const show=isMultiShop()&&!MULTI_SHOP_VIEWS.has(currentViewKey());
+  note.classList.toggle('hidden',!show);
+  if(show)note.textContent=`Đang chọn ${multiShopIds.length} shop. Trang này chưa hỗ trợ xem nhiều shop nên đang hiển thị ${$('shop').value==='all'?'tất cả shop':'shop '+($('shop').selectedOptions[0]?.textContent||$('shop').value)}. Các trang xem được nhiều shop: Tổng quan, Báo cáo nhanh, Mục tiêu & runrate, Chi phí sàn, Quảng cáo, Xu Marketing.`;
+}
+function applyShopMulti(ids){
+  const allowed=new Set((availableShops||[]).map(sh=>String(sh.shop_id)));
+  ids=[...new Set(ids.map(String))].filter(id=>allowed.has(id));
+  const sel=$('shop');
+  if(ids.length>1){multiShopIds=ids;sel.value=[...sel.options].some(o=>o.value==='all')?'all':ids[0];}
+  else{multiShopIds=[];if(ids.length===1)sel.value=ids[0];}
+  saveMultiShop();renderShopMulti();updateMultiShopNote();if(typeof v28FilterLabel==='function')v28FilterLabel();reloadCurrentView();
+}
+function initShopMulti(){
+  const btn=$('shopMultiBtn'),panel=$('shopMultiPanel');if(!btn||btn.dataset.ready)return;btn.dataset.ready='1';
+  const close=()=>{panel.classList.add('hidden');btn.setAttribute('aria-expanded','false');};
+  btn.addEventListener('click',e=>{e.stopPropagation();renderShopMulti();panel.classList.toggle('hidden');btn.setAttribute('aria-expanded',String(!panel.classList.contains('hidden')));});
+  panel.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',close);
+  $('shopMultiApply').addEventListener('click',()=>{close();applyShopMulti([...panel.querySelectorAll('input:checked')].map(i=>i.value));});
+  $('shopMultiClear').addEventListener('click',()=>{panel.querySelectorAll('input').forEach(i=>{i.checked=false;});});
+  // Chọn lại 1 shop ở ô Shop thì bỏ chế độ nhiều shop (chạy trước khi trang tải lại số liệu).
+  $('shop').addEventListener('change',()=>{if(isMultiShop()){multiShopIds=[];saveMultiShop();renderShopMulti();updateMultiShopNote();}},true);
+}
 async function loadShops(){
   const data=await api('/api/shops');availableShops=data.shops||[];const sel=$('shop');const cur=sel.value;sel.innerHTML='';
   if(data.can_all_shops){const all=document.createElement('option');all.value='all';all.textContent='Tất cả shop';sel.appendChild(all);}
@@ -1695,6 +1751,10 @@ async function loadShops(){
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;else if(sel.options.length)sel.selectedIndex=0;
   renderAdminShopChoices();
   if(!sel.options.length)throw new Error('Tài khoản chưa được cấp shop nào. Vui lòng liên hệ Admin.');
+  // V70.36: giữ lựa chọn nhiều shop đã lưu (chỉ các shop tài khoản còn được xem).
+  const allowedIds=new Set(availableShops.map(sh=>String(sh.shop_id)));multiShopIds=multiShopIds.filter(id=>allowedIds.has(id));
+  if(multiShopIds.length<2)multiShopIds=[];else sel.value=[...sel.options].some(o=>o.value==='all')?'all':multiShopIds[0];
+  saveMultiShop();initShopMulti();renderShopMulti();
 }
 async function loadBootstrapStatus(){
   try{
@@ -2332,11 +2392,11 @@ function roundedPercent(n){ return n==null?'-':(Number(n)).toLocaleString('vi-VN
 // V65.2: tự động đồng bộ 1 lần khi đổi shop/ngày mà chưa có dữ liệu — giống hệt cơ chế perfAutoSynced ở tab Hiệu quả hoạt động.
 const adsAutoSynced = new Set();
 async function loadAdsCost(){
-  const r=getRange(); const shop=$('shop').value||'all';
+  const r=getRange(); const shop=shopScopeParam();
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
   let data=await api('/api/marketing/ads/dashboard?'+qs.toString());
   const autoKey=shop+'_'+r.from+'_'+r.to;
-  if(!data.cpc_rows && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !adsAutoSynced.has(autoKey)){
+  if(!data.cpc_rows && shop!=='all' && !shop.includes(',') && daysInclusive(r.from,r.to)<=31 && !adsAutoSynced.has(autoKey)){
     adsAutoSynced.add(autoKey);
     $('adsSummary').innerHTML='⏳ Chưa có dữ liệu Ads cho shop/khoảng này — đang tự động gọi Shopee Ads API...';
     try{
@@ -2366,6 +2426,7 @@ async function loadAdsCost(){
   $('adsRaw').textContent=JSON.stringify(data,null,2);
 }
 async function syncAdsCost(){
+  if(isMultiShop()){ $('adsSummary').innerHTML='⚠️ Đang xem nhiều shop: chọn 1 shop ở ô Shop rồi mới đồng bộ Ads.'; return; }
   const shop=$('shop').value||'all';
   if(shop==='all'){ $('adsSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể rồi mới đồng bộ Ads.'; return; }
   const r=getRange();
@@ -2472,11 +2533,11 @@ async function saveLivestreamAdsRows(){
 // V65.2: tự động đồng bộ Xu Shop 1 lần khi đổi shop/ngày mà chưa có dữ liệu (giới hạn max_orders=150/lần để không quá tải).
 const coinAutoSynced = new Set();
 async function loadCoinCost(){
-  const r=getRange(); const shop=$('shop').value||'all';
+  const r=getRange(); const shop=shopScopeParam();
   const qs=new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop});
   let data=await api('/api/marketing/coin/dashboard?'+qs.toString());
   const autoKey=shop+'_'+r.from+'_'+r.to;
-  if(!(data.summary?.orders_counted) && shop!=='all' && daysInclusive(r.from,r.to)<=31 && !coinAutoSynced.has(autoKey)){
+  if(!(data.summary?.orders_counted) && shop!=='all' && !shop.includes(',') && daysInclusive(r.from,r.to)<=31 && !coinAutoSynced.has(autoKey)){
     coinAutoSynced.add(autoKey);
     $('coinSummary').innerHTML='⏳ Chưa có Income cho shop/khoảng này — đang tự động quét đơn đã hoàn tất...';
     try{
@@ -2505,6 +2566,7 @@ async function loadCoinCost(){
   $('coinRaw').textContent=JSON.stringify(data,null,2);
 }
 async function syncCoinCost(){
+  if(isMultiShop()){ $('coinSummary').innerHTML='⚠️ Đang xem nhiều shop: chọn 1 shop ở ô Shop rồi mới quét bù Income.'; return; }
   const shop=$('shop').value||'all';
   if(shop==='all'){ $('coinSummary').innerHTML='⚠️ Vui lòng chọn 1 shop cụ thể rồi mới quét bù Income.'; return; }
   const r=getRange();
@@ -2522,7 +2584,7 @@ const QUICK_WEEKDAY=['CN','T2','T3','T4','T5','T6','T7'];
 let quickLoadToken=0;
 async function loadQuickReport(){
   const token=++quickLoadToken;
-  const r=getRange(),shop=$('shop').value||'all';
+  const r=getRange(),shop=shopScopeParam();
   if(daysInclusive(r.from,r.to)>92){$('quickNotice').textContent='Báo cáo nhanh xem tối đa 92 ngày một lần. Hãy chọn khoảng ngắn hơn.';$('quickRows').innerHTML='<tr><td colspan="7" class="empty">Khoảng quá dài.</td></tr>';return;}
   $('quickNotice').textContent='Đang tải báo cáo nhanh…';
   try{
@@ -2530,11 +2592,13 @@ async function loadQuickReport(){
     if(token!==quickLoadToken)return;
     const missing='<span class="muted" title="Chưa có số liệu cho ngày này">–</span>';
     const pct=v=>v==null?'–':percent(v);
+    // % nhỏ cạnh từng khoản chi phí: khoản đó ÷ NMV của cùng dòng.
+    const share=(cost,nmv)=>`<small class="quick-pct">${nmv>0?percent(Math.round(cost/nmv*10000)/100):'–'}</small>`;
     const dayLabel=x=>QUICK_WEEKDAY[new Date(x+'T00:00:00Z').getUTCDay()]+' · '+vnDateLabel(x);
     const row=(x,label,total)=>{const b=v=>total?'<b>'+v+'</b>':v;
       return `<tr${total?' class="quick-total"':''}><td>${b(label)}</td><td class="right">${b(moneyExact(x.gmv))}</td><td class="right">${b(moneyExact(x.nmv))}</td>`+
-        `<td class="right">${total||x.has_coin?b(moneyExact(x.coin_cost)):missing}</td>`+
-        `<td class="right" title="Product Ads ${moneyExact(x.ads_product)} · Livestream Ads ${moneyExact(x.ads_live)}">${total||x.has_ads?b(moneyExact(x.ads_cost)):missing}</td>`+
+        `<td class="right">${total||x.has_coin?b(moneyExact(x.coin_cost))+share(x.coin_cost,x.nmv):missing}</td>`+
+        `<td class="right" title="Product Ads ${moneyExact(x.ads_product)} · Livestream Ads ${moneyExact(x.ads_live)}">${total||x.has_ads?b(moneyExact(x.ads_cost))+share(x.ads_cost,x.nmv):missing}</td>`+
         `<td class="right">${b(moneyExact(x.cost_total))}</td><td class="right">${b(pct(x.cost_pct))}</td></tr>`;};
     const rows=d.rows||[];
     $('quickRows').innerHTML=rows.length?row(d.totals,'Tổng kỳ ('+num(rows.length)+' ngày)',true)+rows.map(x=>row(x,dayLabel(x.date),false)).join(''):'<tr><td colspan="7" class="empty">Không có ngày nào trong kỳ đang chọn.</td></tr>';
@@ -3831,6 +3895,7 @@ function currentSub(tab){
   return pick?.dataset.sub||'';
 }
 function setSub(tab,sub,{load=true}={}){
+  setTimeout(updateMultiShopNote,0);
   const nav=subnavFor(tab);if(!nav)return;
   nav.querySelectorAll('[data-sub]').forEach(btn=>btn.classList.toggle('active',btn.dataset.sub===sub));
   document.querySelectorAll(`[data-subpanel^="${tab}:"]`).forEach(panel=>panel.classList.toggle('sub-hidden',panel.dataset.subpanel!==`${tab}:${sub}`));
@@ -4088,7 +4153,7 @@ function bizPct(v){return v===null||v===undefined?'-':percent(v);}
 function bizMonthDefault(){const r=getRangeSafe();return (r?.to||todayVN()).slice(0,7);}
 function bizMonthLabel(m){const [y,mm]=m.split('-');return `${mm}/${y}`;}
 function bizPrevMonth(m){let [y,mm]=m.split('-').map(Number);mm--;if(!mm){mm=12;y--;}return `${y}-${String(mm).padStart(2,'0')}`;}
-function bizShopParam(){return $('shop').value||'all';}
+function bizShopParam(){return shopScopeParam();}
 function renderBizChart(series,projected,period){
   const svg=$('bizChart');if(!svg)return;
   const w=Math.max(320,svg.clientWidth||svg.parentElement.clientWidth||800),h=Math.max(220,svg.clientHeight||300);
@@ -4174,6 +4239,7 @@ async function loadBusinessMonthly(){
 }
 function bizMessage(id,text,ok){const el=$(id);el.className='conversion-admin-message '+(ok?'ok':'error');el.textContent=text;}
 async function saveBusinessTarget(){
+  if(isMultiShop()){bizMessage('bizTargetMessage','Đang xem nhiều shop: chọn 1 shop ở ô Shop để lưu mục tiêu của shop đó.',false);return;}
   const budgets={};document.querySelectorAll('[data-budget]').forEach(inp=>{if(inp.value!=='')budgets[inp.dataset.budget]=Number(inp.value);});
   try{
     await api('/api/admin/business/target/save',{method:'POST',body:{month:$('bizMonth').value,shop_id:bizShopParam(),gmv_target:$('bizGmvTarget').value,nmv_target:$('bizNmvTarget').value,cost_budgets:budgets,note:$('bizNote').value}});
@@ -4190,6 +4256,7 @@ async function copyPrevBusinessTarget(){
   }catch(e){bizMessage('bizTargetMessage',e.message,false);}
 }
 async function addBusinessCost(){
+  if(isMultiShop()){bizMessage('bizCostMessage','Đang xem nhiều shop: chọn 1 shop ở ô Shop để nhập chi phí cho shop đó.',false);return;}
   try{
     await api('/api/admin/business/cost/add',{method:'POST',body:{shop_id:bizShopParam(),cost_date:$('bizCostDate').value,category:$('bizCostCategory').value,amount:$('bizCostAmount').value,note:$('bizCostNote').value}});
     $('bizCostAmount').value='';$('bizCostNote').value='';bizMessage('bizCostMessage','Đã thêm chi phí.',true);await loadBusinessMonthly();
@@ -4511,6 +4578,7 @@ function setTab(tab){
   document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden', panel.id !== 'tab-'+tab));
   updateRoleUI(tab);
   updatePageHeader(tab);
+  setTimeout(updateMultiShopNote,0);
   document.querySelectorAll('.page-subnav [data-admin-only]').forEach(btn=>btn.classList.toggle('sub-hidden',!currentUser?.is_admin));
   activateSubnav(tab);
 
@@ -4524,7 +4592,7 @@ function setTab(tab){
 }
 let dashboardLoadToken=0;
 let dashboardAbortController=null;
-async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=$('shop').value||'all'; $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='quick') loadQuickReport(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
+async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=shopScopeParam(); $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='quick') loadQuickReport(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=null;if(!hasFeature('overview'))return;timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){
   const channel=encodeURIComponent($('channel').value||'Shopee');
@@ -4864,7 +4932,7 @@ function renderBrief(payload){
 function v28FilterLabel(){
   const b=$('filterToggle');if(!b)return;
   const r=getRangeSafe?getRangeSafe():null;const shopSel=$('shop');
-  const shopText=shopSel?.selectedOptions?.[0]?.textContent||'Tất cả shop';
+  const shopText=isMultiShop()?multiShopIds.length+' shop đã chọn':(shopSel?.selectedOptions?.[0]?.textContent||'Tất cả shop');
   b.querySelector('span').textContent=(r?rangeLabel(r):'')+' · '+shopText.split('·')[0].trim();
 }
 // V70.28: ô chọn file mặc định của trình duyệt -> vùng kéo-thả. Giữ nguyên input gốc nên mọi xử lý cũ vẫn chạy.
@@ -4974,7 +5042,7 @@ async function loadCoinWallet(){
   if(!$('coinWalletPanel'))return;
   if(v25NeedShop('coinWalletNotice'))return;
   $('coinWalletNotice').textContent='Đang tải tổng xu...';
-  try{const d=await api('/api/marketing/coin-wallet?'+v25Qs(),{ttlMs:20000});const t=d.totals||{};
+  try{const d=await api('/api/marketing/coin-wallet?'+v25Qs({shop_id:shopScopeParam()}),{ttlMs:20000});const t=d.totals||{};
     v26Animate($('cwSpent'),Number(t.spent||0),v=>num(Math.round(v))+' xu');
     $('cwSpentNote').textContent=num(t.tx_count||0)+' giao dịch · '+num(d.days_with_data)+'/'+num(d.days_in_range)+' ngày có số liệu';
     $('cwReceived').textContent=num(t.received||0)+' xu';
