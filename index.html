@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.37</title>
+  <title>Gooby BI Dashboard · V70.39</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -702,6 +702,48 @@
   .shop-multi-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;border-top:1px solid var(--line,#eadfd8);padding-top:8px}
   #shopMultiBtn.on{border-color:#ff6b35;color:#c2410c;background:rgba(255,107,53,.08)}
   #quickTable .quick-pct{display:inline-block;min-width:44px;margin-left:6px;font-size:11px;color:var(--muted,#667085);font-weight:500}
+  /* V70.39: BSC — trang dùng tháng riêng nên ẩn bộ lọc ngày/shop phía trên */
+  body[data-tab="bsc"] .topbar .filters,body[data-tab="bsc"] #multiShopNote,body[data-tab="bsc"] #dataHealthBanner,body[data-tab="bsc"] .quick-range>button:not(.qsearch){display:none!important}
+  body[data-tab="bsc"] .quick-range{border-top:0;padding-top:0}
+  .bsc-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:10px}
+  .bsc-head h2{margin:0}.bsc-head p{margin:4px 0 0}
+  .bsc-head .mini-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .bsc-head select{min-width:120px}
+  .bsc-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
+  .bsc-card{border:1px solid var(--line,#eadfd8);border-radius:14px;padding:12px 14px;background:var(--surface,#fff);min-width:0}
+  .bsc-card.total{background:linear-gradient(135deg,#fff3ec,#fff);border-color:#ffd2bf}
+  .bsc-card span{display:block;font-size:12px;color:var(--muted,#667085);font-weight:600}
+  .bsc-card b{display:block;font-size:26px;line-height:1.15;margin-top:4px}
+  .bsc-card small{display:block;font-size:12px;color:var(--muted,#667085);margin-top:2px}
+  .bsc-card .up{color:#067647}.bsc-card .down{color:#b42318}
+  .bsc-trend{display:flex;gap:8px;align-items:flex-end;min-height:96px;padding:8px 4px 0;margin-bottom:12px;overflow-x:auto}
+  .bsc-trend .tcol{flex:1 0 52px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;border-radius:8px;padding:4px 2px}
+  .bsc-trend .tcol.on{background:rgba(255,107,53,.08)}
+  .bsc-trend .tbar{width:28px;border-radius:6px 6px 2px 2px;background:#ffb08a}
+  .bsc-trend .tcol.on .tbar{background:#ff6b35}
+  .bsc-trend .tval{font-size:12px;font-weight:700}.bsc-trend .tlab{font-size:11px;color:var(--muted,#667085)}
+  .bsc-table{min-width:1180px}.bsc-table td{vertical-align:top}.bsc-table th:first-child{width:32px}
+  .bsc-table td.bsc-name{min-width:200px;max-width:280px}.bsc-table td.bsc-src{min-width:230px}
+  .bsc-table tr.bsc-group td{background:var(--surface-2,#fff5ef);font-weight:700;border-bottom:2px solid var(--line,#eadfd8)}
+  .bsc-table .bsc-name b{display:block}.bsc-table .bsc-name small{color:var(--muted,#667085)}
+  .bsc-bar{position:relative;height:8px;border-radius:999px;background:#f2f4f7;min-width:90px;margin-top:6px;overflow:hidden}
+  .bsc-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:#f79009}
+  .bsc-bar.ok i{background:#12b76a}.bsc-bar.bad i{background:#f04438}
+  .bsc-score{font-weight:700;white-space:nowrap}.bsc-score.bad{color:#b42318}.bsc-score.ok{color:#067647}
+  .bsc-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;background:#f2f4f7;color:#344054}
+  .bsc-chip.auto{background:#ecfdf3;color:#067647}.bsc-chip.override{background:#fffaeb;color:#b54708}.bsc-chip.manual{background:#eff8ff;color:#175cd3}
+  .bsc-sub{display:block;font-size:11px;color:var(--muted,#667085);margin-top:3px;white-space:normal}
+  .bsc-table input.bsc-in{width:120px;text-align:right}
+  .bsc-table input.bsc-note{width:200px}
+  .bsc-table input.need{border-color:#f04438;background:#fef3f2}
+  .bsc-cfg-table input,.bsc-cfg-table select{min-width:0;width:100%;font-size:12px;padding:5px 6px}
+  .bsc-cfg-table td{padding:4px}
+  .bsc-cfg-table .w-s{width:64px}.bsc-cfg-table .w-m{width:120px}.bsc-cfg-table .w-l{width:190px}
+  .bsc-cfg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0}
+  .bsc-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px}
+  .bsc-preview .card{margin:0;padding:10px 12px;font-size:12px}
+  .bsc-preview ol{margin:6px 0 0;padding-left:18px}
+  @media (max-width:900px){.bsc-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.bsc-cards .total{grid-column:1/-1}.bsc-cfg-grid{grid-template-columns:1fr}}
   .biz-day-rows{display:grid;gap:8px;margin:6px 0 8px}
   .biz-day-row{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr) 36px;gap:8px;align-items:center}
   .biz-day-row input{min-width:0}
@@ -743,6 +785,7 @@
     </div>
     <button class="tabbtn active" data-tab="gmv"><span class="ic">⌂</span>Tổng quan</button>
     <button class="tabbtn" data-tab="quick"><span class="ic">▤</span>Báo cáo nhanh</button>
+    <button class="tabbtn" data-tab="bsc"><span class="ic">◈</span>BSC</button>
     <button class="tabbtn" data-tab="orders"><span class="ic">▣</span>Đơn hàng<span class="nav-badge" id="navBadgeOrders" title="Đơn quá hạn + sắp đến hạn bàn giao"></span></button>
     <button class="tabbtn" data-tab="performance"><span class="ic">◎</span>Hiệu quả</button>
     <button class="tabbtn" data-tab="marketing"><span class="ic">↗</span>Marketing</button>
@@ -1116,6 +1159,39 @@
         <div id="quickNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
         <div class="table-wrap"><table id="quickTable"><thead><tr><th>Ngày</th><th class="right">GMV</th><th class="right">NMV</th><th class="right">Chi phí xu</th><th class="right">Chi phí ads</th><th class="right">Tổng chi phí</th><th class="right">Runrate % chi phí</th></tr></thead>
           <tbody id="quickRows"><tr><td colspan="7" class="empty">Chưa tải.</td></tr></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-bsc">
+      <section class="card" id="bscPanel">
+        <div class="bsc-head"><div><h2>Bảng điểm BSC</h2><p class="muted" id="bscSub">Tổng BSC = trung bình % đạt các chỉ số theo tỷ trọng. Cách chấm giống file BSC.</p></div>
+          <div class="mini-actions"><label class="muted">Tháng <select id="bscMonth"></select></label>
+            <button class="ghost" id="bscReload">↻ Tải lại</button>
+            <button class="ghost hidden" id="bscRefresh" title="Đọc lại dữ liệu và tính lại số tự động của tháng đang xem">⟳ Tính lại số tự động</button>
+            <button class="ghost hidden" id="bscSettingsBtn">⚙ Cài đặt BSC</button></div></div>
+        <div id="bscNotice" class="notice">Chưa tải.</div>
+        <div class="bsc-cards" id="bscCards"></div>
+        <div class="bsc-trend" id="bscTrend" aria-label="Tổng BSC theo tháng"></div>
+        <div class="table-wrap"><table id="bscTable" class="bsc-table"><thead><tr><th>#</th><th>Chỉ số</th><th class="right">Tỷ trọng</th><th class="right">Mục tiêu</th><th class="right">Thực tế</th><th>% đạt</th><th>Nguồn</th><th>Ghi chú (bắt buộc nếu &lt;80%)</th></tr></thead>
+          <tbody id="bscRows"><tr><td colspan="8" class="empty">Chưa tải.</td></tr></tbody></table></div>
+        <div class="mini-actions"><button id="bscSave" class="hidden">Lưu số nhập tay & ghi chú</button><span id="bscSaveMsg" class="muted"></span></div>
+      </section>
+      <section class="card hidden" id="bscSettings">
+        <div class="bsc-head"><div><h2>Cài đặt BSC</h2><p class="muted">Sửa chỉ số, tỷ trọng (tổng phải 100%), cách chấm, mục tiêu từng tháng và nhóm sản phẩm. Tiền nhập theo <b>nghìn đồng</b> như file BSC; tỷ lệ nhập theo % (60,9 = 60,9%).</p></div>
+          <div class="mini-actions"><button class="ghost" id="bscCfgClose">Đóng</button></div></div>
+        <div class="bsc-cfg-grid">
+          <div class="field"><label>Các tháng của BSC (cách nhau dấu phẩy)</label><input id="bscCfgMonths" placeholder="2026-07, 2026-08, …"></div>
+          <div class="field"><label>Ngày minisale mặc định trong tháng (khi chưa cài lịch ngày sale ở Mục tiêu)</label><input id="bscCfgMini" placeholder="15, 25"></div>
+        </div>
+        <div id="bscCfgWeight" class="notice"></div>
+        <div class="table-wrap"><table class="bsc-cfg-table"><thead id="bscCfgHead"></thead><tbody id="bscCfgRows"></tbody></table></div>
+        <div class="mini-actions"><button class="ghost" id="bscCfgAdd">+ Thêm chỉ số</button></div>
+        <h3 style="margin-top:18px">Nhóm sản phẩm (cho chỉ số "NMV nhóm sản phẩm")</h3>
+        <p class="muted">Một dòng bán thuộc nhóm khi <b>tên phân loại</b> chứa 1 từ khóa phân loại, hoặc <b>tên sản phẩm</b> chứa 1 từ khóa tên và không chứa từ loại trừ. Không phân biệt hoa thường. Một dòng có thể thuộc nhiều nhóm.</p>
+        <div class="table-wrap"><table class="bsc-cfg-table"><thead><tr><th>Mã</th><th>Tên nhóm</th><th>Từ khóa phân loại</th><th>Từ khóa tên sản phẩm</th><th>Từ loại trừ (tên)</th><th></th></tr></thead><tbody id="bscGroupRows"></tbody></table></div>
+        <div class="mini-actions"><button class="ghost" id="bscGroupAdd">+ Thêm nhóm</button><button class="ghost" id="bscGroupPreview">Xem trước nhóm theo tháng đang xem</button></div>
+        <div id="bscPreview" class="bsc-preview"></div>
+        <div class="mini-actions" style="margin-top:14px"><button id="bscCfgSave">Lưu cài đặt BSC</button><span id="bscCfgMsg" class="muted"></span></div>
       </section>
     </section>
 
@@ -1530,6 +1606,7 @@
               <label class="permission-choice"><input type="checkbox" value="marketing">Marketing</label>
               <label class="permission-choice"><input type="checkbox" value="warehouse">Kho hàng</label>
               <label class="permission-choice"><input type="checkbox" value="system">Hệ thống kỹ thuật</label>
+              <label class="permission-choice"><input type="checkbox" value="bsc">BSC (số toàn công ty)</label>
             </div>
           </div>
         </div>
@@ -1623,8 +1700,8 @@ let walletReportLoadToken = 0;
 let walletIncomeDetailToken = 0;
 let walletSyncStop = false;
 const AUTH_SESSION_KEY='gooby_bi_auth_session_v70';
-const TAB_FEATURE={gmv:'overview',quick:'overview',orders:'orders',performance:'performance',marketing:'marketing',warehouse:'warehouse',system:'system'};
-const FEATURE_LABEL={overview:'Tổng quan',orders:'Đơn hàng',performance:'Hiệu quả',marketing:'Marketing',warehouse:'Kho hàng',system:'Hệ thống'};
+const TAB_FEATURE={gmv:'overview',quick:'overview',bsc:'bsc',orders:'orders',performance:'performance',marketing:'marketing',warehouse:'warehouse',system:'system'};
+const FEATURE_LABEL={overview:'Tổng quan',orders:'Đơn hàng',performance:'Hiệu quả',marketing:'Marketing',warehouse:'Kho hàng',system:'Hệ thống',bsc:'BSC'};
 let authSession=null;
 let currentUser=null;
 let refreshAuthPromise=null;
@@ -2625,6 +2702,194 @@ async function loadQuickReport(){
   }catch(e){ if(token===quickLoadToken){$('quickNotice').textContent='⚠️ Không tải được báo cáo nhanh: '+e.message;} }
 }
 document.addEventListener('click',e=>{if(e.target.closest('#quickReload'))loadQuickReport();});
+// ---------- V70.39: BSC ----------
+let bscData=null,bscLoadToken=0,bscCfg=null,bscCfgMeta=null;
+const BSC_ROMAN=['','I','II','III','IV'];
+const bscPct=v=>v==null?'–':(Number(v)*100).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%';
+function bscFmt(v,unit){
+  if(v==null||v==='')return '–';
+  if(typeof v==='string')return escapeHtml(v);
+  if(unit==='money_k')return money(v*1000);
+  if(unit==='pct')return (v*100).toLocaleString('vi-VN',{maximumFractionDigits:2})+'%';
+  return Number(v).toLocaleString('vi-VN',{maximumFractionDigits:2});
+}
+// Ô nhập theo đơn vị người dùng quen: tỷ lệ nhập %, tiền nhập nghìn đồng như file BSC.
+const bscToInput=(v,unit)=>v==null?'':String(unit==='pct'?Math.round(v*1e6)/1e4:v).replace('.',',');
+function bscFromInput(t,unit){const x=String(t||'').trim().replace(/%|\s/g,'');if(!x)return null;const n=Number(x.replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.'));if(!Number.isFinite(n))return NaN;return unit==='pct'?n/100:n;}
+function bscCanEditActual(r){return currentUser?.is_admin||(hasFeature('bsc')&&(r.source?.type||'manual')==='manual');}
+async function loadBsc(opts){
+  opts=opts||{};const token=++bscLoadToken;
+  const month=$('bscMonth').value||'';
+  $('bscNotice').textContent='Đang tải BSC…';$('bscSaveMsg').textContent='';
+  try{
+    const d=await api('/api/bsc/report?'+new URLSearchParams({...(month?{month}:{}),...(opts.refresh?{refresh:'1'}:{})}));
+    if(token!==bscLoadToken)return;
+    bscData=d;renderBsc();
+  }catch(e){if(token===bscLoadToken)$('bscNotice').textContent='⚠️ Không tải được BSC: '+e.message;}
+}
+function renderBsc(){
+  const d=bscData;if(!d)return;
+  $('bscMonth').innerHTML=(d.months||[]).map(m=>'<option value="'+m+'"'+(m===d.month?' selected':'')+'>Tháng '+Number(m.slice(5))+'/'+m.slice(0,4)+'</option>').join('');
+  $('bscSettingsBtn').classList.toggle('hidden',!d.can_admin);$('bscRefresh').classList.toggle('hidden',!d.can_admin);
+  const prev=d.previous;
+  const delta=(now,before)=>{if(before==null)return '';const x=Math.round((now-before)*1000)/10;return x===0?'<small>= tháng trước</small>':'<small class="'+(x>0?'up':'down')+'">'+(x>0?'▲ +':'▼ ')+String(x).replace('.',',')+' điểm so với tháng trước</small>';};
+  $('bscCards').innerHTML='<div class="bsc-card total"><span>Tổng BSC tháng '+Number(d.month.slice(5))+'</span><b>'+bscPct(d.total)+'</b>'+delta(d.total,prev?.total)+'<small>'+(d.missing?num(d.missing)+' chỉ số chưa có số (tính 0%)':'Đủ số tất cả chỉ số')+'</small></div>'+
+    d.perspectives.map(p=>{const pv=prev?.perspectives?.find(x=>x.key===p.key);return '<div class="bsc-card"><span>'+BSC_ROMAN[p.key]+'. '+escapeHtml(p.label)+' · '+String(p.weight).replace('.',',')+'%</span><b>'+bscPct(p.score)+'</b>'+delta(p.score,pv?.score)+(p.missing?'<small>'+num(p.missing)+'/'+num(p.kpis)+' chỉ số chưa có số</small>':'')+'</div>';}).join('');
+  const maxT=Math.max(1,...(d.trend||[]).map(t=>t.total));
+  $('bscTrend').innerHTML=(d.trend||[]).map(t=>'<div class="tcol'+(t.month===d.month?' on':'')+'" data-bsc-month="'+t.month+'" title="Xem tháng '+t.month+'"><span class="tval">'+bscPct(t.total)+'</span><span class="tbar" style="height:'+Math.max(4,Math.round(t.total/maxT*64))+'px"></span><span class="tlab">T'+Number(t.month.slice(5))+'</span></div>').join('');
+  let html='',i=0;const editable=[];
+  for(const p of d.perspectives){
+    html+='<tr class="bsc-group"><td>'+BSC_ROMAN[p.key]+'</td><td>'+escapeHtml(p.label)+'</td><td class="right">'+String(p.weight).replace('.',',')+'%</td><td colspan="2"></td><td><span class="bsc-score">'+bscPct(p.score)+'</span></td><td colspan="2"></td></tr>';
+    for(const r of d.rows.filter(x=>Number(x.perspective)===p.key)){
+      i++;const cls=r.missing?'':r.score<0.8?'bad':r.score>=1?'ok':'';
+      const canAct=bscCanEditActual(r),canNote=hasFeature('bsc');
+      if(canAct||canNote)editable.push(r.id);
+      const isAuto=(r.source?.type||'manual')!=='manual';
+      const chip=r.actual_source==='auto'?'<span class="bsc-chip auto">Tự động</span>':r.actual_source==='override'?'<span class="bsc-chip override">'+(r.from_sheet?'Số file BSC':'Ghi đè tay')+'</span>':r.actual_source==='manual'?'<span class="bsc-chip manual">'+(r.from_sheet?'Số file BSC':'Nhập tay')+'</span>':'<span class="bsc-chip">'+(isAuto?'Tự động · chưa có':'Chưa nhập')+'</span>';
+      const sub=[];
+      if(isAuto&&r.auto_note)sub.push(escapeHtml(r.auto_note));
+      if(r.actual_source==='override'&&r.auto_value!=null)sub.push('Tự tính: '+bscFmt(r.auto_value,r.unit));
+      if(r.projected!=null)sub.push('Dự kiến cuối tháng: '+bscFmt(r.projected,r.unit)+' ('+bscPct(r.projected_score)+')');
+      const unitHint=r.calc==='MANUAL'?'% hoàn thành':r.unit==='pct'?'%':r.unit==='money_k'?'nghìn đ':'';
+      const actualCell=canAct?'<input class="bsc-in" data-bsc-actual="'+r.id+'" value="'+escapeHtml(r.actual_source==='auto'?'':bscToInput(r.actual,r.calc==='MANUAL'?'pct':r.unit))+'" placeholder="'+escapeHtml(r.actual_source==='auto'?'tự động':unitHint)+'" title="'+escapeHtml(isAuto?'Để trống = dùng số tự động. Điền số = ghi đè.':'Nhập '+unitHint)+'"><span class="bsc-sub">'+(r.actual!=null?bscFmt(r.actual,r.calc==='MANUAL'?'pct':r.unit):'')+'</span>':'<b>'+bscFmt(r.actual,r.calc==='MANUAL'?'pct':r.unit)+'</b>';
+      const need=!r.missing&&(r.projected_score??r.score)<0.8&&!r.note;
+      html+='<tr><td>'+i+'</td><td class="bsc-name" title="'+escapeHtml((r.objective||'')+(r.method?'\n'+r.method:''))+'"><b>'+escapeHtml(r.category||r.metric)+'</b><small>'+escapeHtml(r.metric)+' · '+escapeHtml(r.pic||'')+'</small></td>'+
+        '<td class="right">'+String(r.weight).replace('.',',')+'%</td><td class="right">'+(r.target_text?escapeHtml(r.target_text):bscFmt(r.target,r.unit))+'</td>'+
+        '<td class="right">'+actualCell+'</td>'+
+        '<td><span class="bsc-score '+cls+'">'+(r.missing?'–':bscPct(r.score))+'</span><div class="bsc-bar '+cls+'"><i style="width:'+Math.min(100,Math.round(r.score/1.2*100))+'%"></i></div></td>'+
+        '<td class="bsc-src">'+chip+(sub.length?'<span class="bsc-sub">'+sub.join('<br>')+'</span>':'')+'</td>'+
+        '<td>'+(canNote?'<input class="bsc-note'+(need?' need':'')+'" data-bsc-note="'+r.id+'" value="'+escapeHtml(r.note||'')+'" placeholder="'+(need?'Cần ghi nguyên nhân':'Ghi chú')+'">':escapeHtml(r.note||''))+'</td></tr>';
+    }
+  }
+  $('bscRows').innerHTML=html||'<tr><td colspan="8" class="empty">Chưa có chỉ số.</td></tr>';
+  $('bscSave').classList.toggle('hidden',!editable.length);
+  const notes=[];
+  const per=d.period||{};
+  if(per.phase==='current')notes.push('Tháng đang chạy: số tự động tính đến hôm nay ('+vnDateLabel(per.data_to)+'), % đạt sẽ tăng dần; xem thêm "Dự kiến cuối tháng".');
+  if(per.phase==='future')notes.push('Tháng chưa tới: chưa có số tự động.');
+  if(d.below_80_without_note)notes.push(num(d.below_80_without_note)+' chỉ số dưới 80% chưa ghi nguyên nhân.');
+  if(d.auto_meta?.extras_error)notes.push('Chưa đọc được dữ liệu sản phẩm/Affiliate (đã chạy SQL V70.39 chưa?): '+d.auto_meta.extras_error);
+  if(d.auto_meta?.returns_ok===false)notes.push('Có shop chưa đọc được hàng hoàn nên NMV chưa trừ hoàn.');
+  if(Math.abs((d.weight_total||0)-100)>0.01)notes.push('Tổng tỷ trọng đang là '+String(d.weight_total).replace('.',',')+'%, chưa đủ 100%.');
+  $('bscNotice').innerHTML='<span>'+(notes.length?'⚠️ ':'✅ ')+'Tháng '+Number(d.month.slice(5))+'/'+d.month.slice(0,4)+' · Tổng BSC <b>'+bscPct(d.total)+'</b>'+(d.auto_cached_at?' · số tự động tính lúc '+new Date(d.auto_cached_at).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):'')+'.'+(notes.length?' '+escapeHtml(notes.join(' ')):'')+'</span>';
+}
+async function saveBscMonth(){
+  if(!bscData)return;
+  const values={};let bad='';
+  for(const r of bscData.rows){
+    const a=document.querySelector('[data-bsc-actual="'+r.id+'"]'),n=document.querySelector('[data-bsc-note="'+r.id+'"]');
+    if(!a&&!n)continue;
+    const unit=r.calc==='MANUAL'?'pct':r.unit;
+    const oldActual=r.actual_source==='auto'?null:r.actual;
+    const newActual=a?bscFromInput(a.value,unit):oldActual;
+    if(Number.isNaN(newActual)){bad=r.category||r.metric;break;}
+    const newNote=n?n.value.trim():(r.note||'');
+    const same=(x,y)=>(x==null&&y==null)||(x!=null&&y!=null&&Math.abs(x-y)<1e-9);
+    if(same(newActual,oldActual)&&newNote===(r.note||''))continue;
+    values[r.id]={actual:newActual,note:newNote};
+  }
+  if(bad){$('bscSaveMsg').textContent='⚠️ '+bad+': thực tế phải là số.';return;}
+  if(!Object.keys(values).length){$('bscSaveMsg').textContent='Không có thay đổi.';return;}
+  $('bscSave').disabled=true;$('bscSaveMsg').textContent='Đang lưu…';
+  try{await api('/api/bsc/month/save',{method:'POST',body:{month:bscData.month,values}});$('bscSaveMsg').textContent='✅ Đã lưu '+num(Object.keys(values).length)+' chỉ số.';await loadBsc();}
+  catch(e){$('bscSaveMsg').textContent='⚠️ '+e.message;}
+  finally{$('bscSave').disabled=false;}
+}
+// ----- Cài đặt BSC (Admin) -----
+function bscCfgTargetToInput(v,unit){return v==null?'':typeof v==='string'||unit==='text'?String(v):bscToInput(v,unit);}
+function bscCfgTargetFromInput(t,unit){const x=String(t||'').trim();if(!x)return null;if(unit==='text')return x;const n=bscFromInput(x,unit);return Number.isNaN(n)?x:n;}
+function renderBscCfg(){
+  const c=bscCfg,meta=bscCfgMeta;
+  $('bscCfgMonths').value=(c.months||[]).join(', ');$('bscCfgMini').value=(c.mini_days||[]).join(', ');
+  const months=c.months||[];
+  $('bscCfgHead').innerHTML='<tr><th>Góc nhìn</th><th>PIC</th><th>Hạng mục</th><th>Mục tiêu chiến lược</th><th>Chỉ số</th><th>Tỷ trọng %</th><th>Cách chấm</th><th>Trần %</th><th>Đơn vị</th><th>Nguồn thực tế</th>'+months.map(m=>'<th>MT T'+Number(m.slice(5))+'</th>').join('')+'<th></th></tr>';
+  const opt=(list,val)=>list.map(([v,l])=>'<option value="'+escapeHtml(String(v))+'"'+(String(v)===String(val)?' selected':'')+'>'+escapeHtml(l)+'</option>').join('');
+  const units=[['money_k','Tiền (nghìn đ)'],['pct','Tỷ lệ %'],['number','Số lượng'],['score','Điểm']];
+  const sources=Object.entries(meta.sources||{});
+  const shops=(meta.shops||[]).map(s=>[s.shop_id,s.shop_name||s.shop_id]);
+  const groups=(c.groups||[]).map(g=>[g.key,g.label]);
+  $('bscCfgRows').innerHTML=(c.kpis||[]).map((k,i)=>{
+    const st=k.source?.type||'manual';
+    const param=st==='nmv_shop'?'<select data-k="shop">'+opt(shops,k.source.shop_id)+'</select>':st==='nmv_group'?'<select data-k="group">'+opt(groups,k.source.group)+'</select>':'';
+    return '<tr data-i="'+i+'" data-id="'+escapeHtml(k.id)+'"><td class="w-s"><select data-k="perspective">'+opt([[1,'I'],[2,'II'],[3,'III'],[4,'IV']],k.perspective)+'</select></td>'+
+      '<td class="w-m"><input data-k="pic" value="'+escapeHtml(k.pic||'')+'"></td><td class="w-l"><input data-k="category" value="'+escapeHtml(k.category||'')+'"></td>'+
+      '<td class="w-l"><input data-k="objective" value="'+escapeHtml(k.objective||'')+'"></td><td class="w-l"><input data-k="metric" value="'+escapeHtml(k.metric||'')+'"></td>'+
+      '<td class="w-s"><input data-k="weight" value="'+bscToInput(k.weight,'number')+'"></td>'+
+      '<td class="w-m"><select data-k="calc">'+opt((meta.calc_types||[]).map(x=>[x,x==='TL'?'TL (thực tế ÷ mục tiêu)':x==='MANUAL'?'MANUAL (tự chấm %)':x]),k.calc)+'</select></td>'+
+      '<td class="w-s"><input data-k="cap" value="'+(k.cap==null?'':bscToInput(k.cap,'pct'))+'"></td>'+
+      '<td class="w-m"><select data-k="unit">'+opt(units,k.unit)+'</select></td>'+
+      '<td class="w-l"><select data-k="source">'+opt(sources,st)+'</select>'+param+'</td>'+
+      months.map(m=>'<td class="w-m"><input data-month="'+m+'" value="'+escapeHtml(bscCfgTargetToInput(k.targets?.[m],k.calc==='MANUAL'?'text':k.unit))+'"></td>').join('')+
+      '<td><button class="ghost" data-bsc-del="'+i+'" title="Xóa chỉ số">✕</button></td></tr>';}).join('');
+  $('bscGroupRows').innerHTML=(c.groups||[]).map((g,i)=>'<tr data-g="'+i+'"><td class="w-m"><input data-g="key" value="'+escapeHtml(g.key)+'"></td><td class="w-m"><input data-g="label" value="'+escapeHtml(g.label)+'"></td>'+
+    '<td class="w-l"><input data-g="model" value="'+escapeHtml((g.model||[]).join(', '))+'"></td><td class="w-l"><input data-g="name" value="'+escapeHtml((g.name||[]).join(', '))+'"></td><td class="w-m"><input data-g="exclude" value="'+escapeHtml((g.exclude||[]).join(', '))+'"></td>'+
+    '<td><button class="ghost" data-bsc-gdel="'+i+'">✕</button></td></tr>').join('');
+  updateBscWeight();
+}
+function readBscCfg(){
+  const c=bscCfg;const months=String($('bscCfgMonths').value).split(',').map(x=>x.trim()).filter(Boolean);
+  const mini=String($('bscCfgMini').value).split(',').map(x=>Number(x.trim())).filter(Boolean);
+  const kpis=[...document.querySelectorAll('#bscCfgRows tr')].map(tr=>{
+    const g=k=>tr.querySelector('[data-k="'+k+'"]')?.value??'';
+    const unit=g('unit');const type=g('source');const tUnit=g('calc')==='MANUAL'?'text':unit;
+    const source={type};if(type==='nmv_shop')source.shop_id=Number(g('shop'));if(type==='nmv_group')source.group=g('group');
+    const old=c.kpis.find(k=>k.id===tr.dataset.id)||{};
+    if(type==='nmv_total'&&old.source?.shop_ids)source.shop_ids=old.source.shop_ids;
+    const targets={};tr.querySelectorAll('[data-month]').forEach(inp=>{targets[inp.dataset.month]=bscCfgTargetFromInput(inp.value,tUnit);});
+    const cap=g('cap').trim()===''?null:bscFromInput(g('cap'),'pct');
+    return {id:tr.dataset.id,perspective:Number(g('perspective')),pic:g('pic'),category:g('category'),objective:g('objective'),metric:g('metric'),weight:bscFromInput(g('weight'),'number'),calc:g('calc'),cap,unit,source,targets,method:old.method||''};
+  });
+  const groups=[...document.querySelectorAll('#bscGroupRows tr')].map(tr=>{const g=k=>tr.querySelector('[data-g="'+k+'"]').value;const list=k=>g(k).split(',').map(x=>x.trim()).filter(Boolean);return {key:g('key'),label:g('label'),model:list('model'),name:list('name'),exclude:list('exclude')};});
+  return {months,mini_days:mini,kpis,groups};
+}
+function updateBscWeight(){
+  const w=[...document.querySelectorAll('#bscCfgRows [data-k="weight"]')].reduce((a,x)=>a+(bscFromInput(x.value,'number')||0),0);
+  const r=Math.round(w*100)/100;
+  $('bscCfgWeight').innerHTML=(Math.abs(r-100)<0.01?'✅ ':'⚠️ ')+'Tổng tỷ trọng: <b>'+String(r).replace('.',',')+'%</b>'+(Math.abs(r-100)<0.01?'':' — phải đúng 100% mới lưu được.');
+}
+async function openBscSettings(){
+  $('bscSettings').classList.remove('hidden');$('bscCfgMsg').textContent='Đang tải cài đặt…';
+  try{const d=await api('/api/admin/bsc/config');bscCfgMeta=d;bscCfg=d.config;renderBscCfg();$('bscCfgMsg').textContent=d.is_default?'Đang dùng cấu hình nạp sẵn từ file BSC của bạn.':'';$('bscSettings').scrollIntoView({behavior:'smooth',block:'start'});}
+  catch(e){$('bscCfgMsg').textContent='⚠️ '+e.message;}
+}
+async function saveBscCfg(){
+  const config=readBscCfg();
+  if(config.kpis.some(k=>k.weight==null||Number.isNaN(k.weight))){$('bscCfgMsg').textContent='⚠️ Tỷ trọng phải là số.';return;}
+  $('bscCfgSave').disabled=true;$('bscCfgMsg').textContent='Đang lưu…';
+  try{await api('/api/admin/bsc/config/save',{method:'POST',body:{config}});$('bscCfgMsg').textContent='✅ Đã lưu. Số tự động được tính lại theo cài đặt mới.';bscCfg=(await api('/api/admin/bsc/config')).config;renderBscCfg();await loadBsc();}
+  catch(e){$('bscCfgMsg').textContent='⚠️ '+e.message;}
+  finally{$('bscCfgSave').disabled=false;}
+}
+async function previewBscGroups(){
+  const month=bscData?.month;if(!month)return;
+  $('bscPreview').innerHTML='<div class="notice">Đang đọc doanh số sản phẩm tháng '+month+'…</div>';
+  try{
+    const d=await api('/api/admin/bsc/group-preview',{method:'POST',body:{month,groups:readBscCfg().groups}});
+    const line=x=>'<li>'+escapeHtml(x.item_name)+(x.model_name?' · <i>'+escapeHtml(x.model_name)+'</i>':'')+' — '+money(x.nmv)+'</li>';
+    $('bscPreview').innerHTML=d.groups.map(g=>'<div class="card"><b>'+escapeHtml(g.label)+'</b>: NMV '+money(g.nmv)+' ('+(d.total_nmv?bscPct(g.nmv/d.total_nmv):'–')+' tổng) · '+num(g.lines)+' dòng<ol>'+g.top.map(line).join('')+'</ol></div>').join('')+
+      '<div class="card"><b>Chưa thuộc nhóm nào</b> (25 dòng lớn nhất)<ol>'+d.unmatched.map(line).join('')+'</ol></div>';
+  }catch(e){$('bscPreview').innerHTML='<div class="notice">⚠️ '+escapeHtml(e.message)+'</div>';}
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#bscReload'))loadBsc();
+  if(e.target.closest('#bscRefresh'))loadBsc({refresh:true});
+  if(e.target.closest('#bscSave'))saveBscMonth();
+  if(e.target.closest('#bscSettingsBtn'))openBscSettings();
+  if(e.target.closest('#bscCfgClose'))$('bscSettings').classList.add('hidden');
+  if(e.target.closest('#bscCfgSave'))saveBscCfg();
+  if(e.target.closest('#bscGroupPreview'))previewBscGroups();
+  const tm=e.target.closest('[data-bsc-month]');if(tm){$('bscMonth').value=tm.dataset.bscMonth;loadBsc();}
+  if(e.target.closest('#bscCfgAdd')){bscCfg={...readBscCfg(),months:bscCfg.months};const ids=new Set(bscCfg.kpis.map(k=>k.id));let n=bscCfg.kpis.length+1;while(ids.has('k'+n))n++;bscCfg.kpis.push({id:'k'+n,perspective:1,pic:'',category:'Chỉ số mới',objective:'',metric:'',weight:0,calc:'TL',cap:1,unit:'number',source:{type:'manual'},targets:{}});renderBscCfg();}
+  if(e.target.closest('#bscGroupAdd')){bscCfg={...readBscCfg(),months:bscCfg.months};bscCfg.groups.push({key:'nhom_'+(bscCfg.groups.length+1),label:'Nhóm mới',model:[],name:[],exclude:[]});renderBscCfg();}
+  const del=e.target.closest('[data-bsc-del]');if(del){bscCfg={...readBscCfg(),months:bscCfg.months};bscCfg.kpis.splice(Number(del.dataset.bscDel),1);renderBscCfg();}
+  const gdel=e.target.closest('[data-bsc-gdel]');if(gdel){bscCfg={...readBscCfg(),months:bscCfg.months};bscCfg.groups.splice(Number(gdel.dataset.bscGdel),1);renderBscCfg();}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='bscMonth')loadBsc();
+  if(e.target.closest('#bscCfgRows')&&(e.target.dataset.k==='source'||e.target.dataset.k==='unit'||e.target.dataset.k==='calc')){bscCfg={...readBscCfg(),months:bscCfg.months};renderBscCfg();}
+  if(e.target.id==='bscCfgMonths'){const keep=readBscCfg();bscCfg={...keep};renderBscCfg();}
+});
+document.addEventListener('input',e=>{if(e.target.closest('#bscCfgRows')&&e.target.dataset.k==='weight')updateBscWeight();});
 async function loadMarketing(){
   await Promise.all([
     loadShopTraffic().catch(e=>{ $('shopTrafficSummary').textContent='⚠️ Không tải được Traffic toàn shop: '+e.message; }),
@@ -3876,6 +4141,7 @@ function initWorkspaceUI(){
 // ===== V70.17: tiêu đề trang, mục con trong từng tab, cảnh báo bàn giao, lý do hủy =====
 const PAGE_META={
   quick:{title:'Báo cáo nhanh',desc:'GMV, NMV, chi phí xu, chi phí ads và % chi phí theo từng ngày của kỳ đang chọn.'},
+  bsc:{title:'BSC · Bảng điểm cân bằng',desc:'4 góc nhìn Tài chính, Khách hàng, Quy trình nội bộ, Học hỏi & phát triển: mục tiêu, thực tế và % đạt theo tháng.'},
   gmv:{title:'Tổng quan kinh doanh',desc:'GMV, NMV, đơn hàng và tỷ lệ hủy của kỳ đang chọn; cảnh báo vận hành cần xử lý.'},
   orders:{title:'Đơn hàng & vận hành',desc:'Cảnh báo hạn bàn giao, lý do hủy, danh sách đơn, đối soát tiền về ví và phân bổ khu vực.'},
   performance:{title:'Hiệu quả',desc:'Hiệu suất từng link sản phẩm (xem, bán, chuyển đổi, tồn kho, Ads) và sức khỏe shop từ AccountHealth.'},
@@ -4639,6 +4905,7 @@ function setTab(tab){
 
   if(tab==='marketing') loadMarketing();
   if(tab==='quick') loadQuickReport();
+  if(tab==='bsc') loadBsc();
   if(tab==='warehouse'){
     loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); });
     loadWarehouseSalesAll(true).catch(()=>{});
