@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.39</title>
+  <title>Gooby BI Dashboard · V70.39.1</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -703,39 +703,68 @@
   #shopMultiBtn.on{border-color:#ff6b35;color:#c2410c;background:rgba(255,107,53,.08)}
   #quickTable .quick-pct{display:inline-block;min-width:44px;margin-left:6px;font-size:11px;color:var(--muted,#667085);font-weight:500}
   /* V70.39: BSC — trang dùng tháng riêng nên ẩn bộ lọc ngày/shop phía trên */
-  body[data-tab="bsc"] .topbar .filters,body[data-tab="bsc"] #multiShopNote,body[data-tab="bsc"] #dataHealthBanner,body[data-tab="bsc"] .quick-range>button:not(.qsearch){display:none!important}
+  body[data-tab="bsc"] .topbar,body[data-tab="bsc"] #multiShopNote,body[data-tab="bsc"] #dataHealthBanner{display:none!important}
   body[data-tab="bsc"] .quick-range{border-top:0;padding-top:0}
   .bsc-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:10px}
   .bsc-head h2{margin:0}.bsc-head p{margin:4px 0 0}
   .bsc-head .mini-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .bsc-head select{min-width:120px}
-  .bsc-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
-  .bsc-card{border:1px solid var(--line,#eadfd8);border-radius:14px;padding:12px 14px;background:var(--surface,#fff);min-width:0}
-  .bsc-card.total{background:linear-gradient(135deg,#fff3ec,#fff);border-color:#ffd2bf}
-  .bsc-card span{display:block;font-size:12px;color:var(--muted,#667085);font-weight:600}
-  .bsc-card b{display:block;font-size:26px;line-height:1.15;margin-top:4px}
-  .bsc-card small{display:block;font-size:12px;color:var(--muted,#667085);margin-top:2px}
-  .bsc-card .up{color:#067647}.bsc-card .down{color:#b42318}
-  .bsc-trend{display:flex;gap:8px;align-items:flex-end;min-height:96px;padding:8px 4px 0;margin-bottom:12px;overflow-x:auto}
-  .bsc-trend .tcol{flex:1 0 52px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;border-radius:8px;padding:4px 2px}
-  .bsc-trend .tcol.on{background:rgba(255,107,53,.08)}
-  .bsc-trend .tbar{width:28px;border-radius:6px 6px 2px 2px;background:#ffb08a}
-  .bsc-trend .tcol.on .tbar{background:#ff6b35}
-  .bsc-trend .tval{font-size:12px;font-weight:700}.bsc-trend .tlab{font-size:11px;color:var(--muted,#667085)}
-  .bsc-table{min-width:1180px}.bsc-table td{vertical-align:top}.bsc-table th:first-child{width:32px}
-  .bsc-table td.bsc-name{min-width:200px;max-width:280px}.bsc-table td.bsc-src{min-width:230px}
-  .bsc-table tr.bsc-group td{background:var(--surface-2,#fff5ef);font-weight:700;border-bottom:2px solid var(--line,#eadfd8)}
-  .bsc-table .bsc-name b{display:block}.bsc-table .bsc-name small{color:var(--muted,#667085)}
-  .bsc-bar{position:relative;height:8px;border-radius:999px;background:#f2f4f7;min-width:90px;margin-top:6px;overflow:hidden}
+  /* V70.39.1: trang BSC gọn — 1 khung tóm tắt, mỗi góc nhìn 1 bảng 5 cột, chế độ nhập số tách riêng */
+  #bscMonth{min-width:150px;font-weight:700}
+  .bsc-more{position:relative}.bsc-more summary{list-style:none;cursor:pointer;border:1px solid var(--line,#eadfd8);border-radius:10px;padding:7px 12px;font-weight:700}
+  .bsc-more summary::-webkit-details-marker{display:none}
+  .bsc-more>div{position:absolute;right:0;top:110%;z-index:20;background:var(--surface,#fff);border:1px solid var(--line,#eadfd8);border-radius:12px;padding:6px;display:grid;gap:4px;min-width:210px;box-shadow:0 12px 30px rgba(16,24,40,.12)}
+  .bsc-more>div button{text-align:left;border:0;background:transparent}
+  .bsc-summary{display:grid;grid-template-columns:minmax(200px,260px) minmax(0,1fr);gap:18px;border:1px solid var(--line,#eadfd8);border-radius:16px;padding:16px 18px;margin:6px 0 12px;background:linear-gradient(135deg,#fff7f2,#fff)}
+  .bsc-total span{display:block;font-size:12px;font-weight:700;color:var(--muted,#667085);text-transform:uppercase;letter-spacing:.04em}
+  .bsc-total b{display:block;font-size:44px;line-height:1.05;margin:6px 0 4px;letter-spacing:-.02em}
+  .bsc-total small{display:block;font-size:12px;color:var(--muted,#667085);margin-top:3px}
+  .bsc-persp{display:grid;gap:10px;align-content:center}
+  .bp-row{display:grid;grid-template-columns:minmax(150px,220px) minmax(80px,1fr) 64px 56px;gap:12px;align-items:center;font-size:13px}
+  .bp-row .bp-name{font-weight:700}.bp-row .bp-name i{font-style:normal;font-weight:500;color:var(--muted,#667085);margin-left:4px}
+  .bp-row b{text-align:right}.bp-row small{font-size:11px;color:var(--muted,#667085)}
+  .up{color:#067647!important}.down{color:#b42318!important}
+  .lvl-ok{color:#067647}.lvl-mid{color:#b54708}.lvl-bad{color:#b42318}
+  .bsc-bar{position:relative;height:8px;border-radius:999px;background:#f2f4f7;overflow:hidden;min-width:60px}
   .bsc-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:#f79009}
-  .bsc-bar.ok i{background:#12b76a}.bsc-bar.bad i{background:#f04438}
-  .bsc-score{font-weight:700;white-space:nowrap}.bsc-score.bad{color:#b42318}.bsc-score.ok{color:#067647}
-  .bsc-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;background:#f2f4f7;color:#344054}
-  .bsc-chip.auto{background:#ecfdf3;color:#067647}.bsc-chip.override{background:#fffaeb;color:#b54708}.bsc-chip.manual{background:#eff8ff;color:#175cd3}
-  .bsc-sub{display:block;font-size:11px;color:var(--muted,#667085);margin-top:3px;white-space:normal}
-  .bsc-table input.bsc-in{width:120px;text-align:right}
-  .bsc-table input.bsc-note{width:200px}
-  .bsc-table input.need{border-color:#f04438;background:#fef3f2}
+  .bsc-bar.lvl-ok i{background:#12b76a}.bsc-bar.lvl-bad i{background:#f04438}
+  .bsc-bar .mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:#344054;opacity:.35;left:83.333%}
+  .bsc-trend{display:flex;gap:6px;align-items:flex-end;grid-column:1/-1;border-top:1px dashed var(--line,#eadfd8);padding-top:10px;overflow-x:auto}
+  .bsc-trend .tlabel{font-size:11px;color:var(--muted,#667085);align-self:center;margin-right:6px;white-space:nowrap}
+  .bsc-trend .tcol{flex:0 0 58px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:8px;padding:4px 2px;border:1px solid transparent}
+  .bsc-trend .tcol.on{border-color:#ffd2bf;background:#fff}
+  .bsc-trend .tbar{width:22px;border-radius:5px 5px 2px 2px;background:#ffcfb8}.bsc-trend .tcol.on .tbar{background:#ff6b35}
+  .bsc-trend .tval{font-size:11px;font-weight:700}.bsc-trend .tlab{font-size:11px;color:var(--muted,#667085)}
+  .bsc-alerts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+  .bsc-alerts:empty{display:none}
+  .bsc-alert{font-size:12px;border-radius:999px;padding:5px 11px;background:#f2f4f7;color:#344054}
+  .bsc-alert.warn{background:#fffaeb;color:#b54708}.bsc-alert.bad{background:#fef3f2;color:#b42318}
+  .bsc-legend{font-size:12px;color:var(--muted,#667085);display:flex;flex-wrap:wrap;gap:14px;margin:0 2px 10px}
+  .src{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle;background:#98a2b3}
+  .src.auto{background:#12b76a}.src.manual{background:#2e90fa}.src.sheet{background:#9e77ed}.src.override{background:#f79009}
+  .bsc-sec{border:1px solid var(--line,#eadfd8);border-radius:14px;margin-bottom:14px;overflow:hidden;background:var(--surface,#fff)}
+  .bsc-sec>header{display:grid;grid-template-columns:minmax(0,1fr) auto 140px 70px;gap:14px;align-items:center;padding:12px 16px;background:var(--surface-2,#fff8f4);border-bottom:1px solid var(--line,#eadfd8)}
+  .bsc-sec>header h3{margin:0;font-size:15px}.bsc-sec>header span{font-size:12px;color:var(--muted,#667085)}
+  .bsc-sec>header b{font-size:18px;text-align:right}
+  .bsc-sec .table-wrap{margin:0;border:0;border-radius:0}
+  .bsc-t{width:100%;border-collapse:collapse}
+  .bsc-t th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted,#667085);font-weight:700;padding:8px 16px;text-align:left;background:transparent}
+  .bsc-t td{padding:10px 16px;border-top:1px solid var(--line2,#f2ebe6);vertical-align:middle;font-size:13px}
+  .bsc-t th.right,.bsc-t td.right{text-align:right}
+  .bsc-t td.kpi b{display:block;font-weight:700}.bsc-t td.kpi small{display:block;color:var(--muted,#667085);font-size:11px;margin-top:2px}
+  .bsc-t td.kpi .note{display:block;font-size:12px;color:#475467;margin-top:4px;font-style:italic}
+  .bsc-t td.kpi .need{display:inline-block;font-size:11px;color:#b42318;background:#fef3f2;border-radius:999px;padding:1px 8px;margin-top:4px}
+  .bsc-t td.act{white-space:nowrap;font-weight:700}
+  .bsc-t td.pc{width:170px}.bsc-t td.pc .pcv{display:flex;justify-content:space-between;gap:8px;font-weight:700;margin-bottom:5px}
+  .bsc-t td.pc .pcv small{font-weight:500;color:var(--muted,#667085)}
+  .bsc-t td.w{width:70px;color:var(--muted,#667085)}
+  .bsc-t td.tg{color:#475467;white-space:nowrap}
+  .bsc-t input.bsc-in{width:130px;text-align:right}.bsc-t input.bsc-note{width:100%;min-width:180px}
+  .bsc-t input.need-in{border-color:#f04438;background:#fef3f2}
+  .bsc-t .ro{font-size:11px;color:var(--muted,#667085);font-weight:500;display:block}
+  .bsc-savebar{position:sticky;bottom:12px;z-index:15;display:flex;gap:10px;align-items:center;justify-content:flex-end;background:#101828;color:#fff;border-radius:14px;padding:10px 14px;margin-top:8px;box-shadow:0 10px 30px rgba(16,24,40,.25)}
+  .bsc-savebar span{margin-right:auto;font-size:13px}.bsc-savebar .ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+  body.bsc-editing .bsc-sec td.pc .pcv small{display:none}
   .bsc-cfg-table input,.bsc-cfg-table select{min-width:0;width:100%;font-size:12px;padding:5px 6px}
   .bsc-cfg-table td{padding:4px}
   .bsc-cfg-table .w-s{width:64px}.bsc-cfg-table .w-m{width:120px}.bsc-cfg-table .w-l{width:190px}
@@ -743,7 +772,9 @@
   .bsc-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px}
   .bsc-preview .card{margin:0;padding:10px 12px;font-size:12px}
   .bsc-preview ol{margin:6px 0 0;padding-left:18px}
-  @media (max-width:900px){.bsc-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.bsc-cards .total{grid-column:1/-1}.bsc-cfg-grid{grid-template-columns:1fr}}
+  @media (max-width:900px){.bsc-summary{grid-template-columns:1fr}.bp-row{grid-template-columns:minmax(0,1fr) 64px 52px}.bp-row .bsc-bar{display:none}.bsc-sec>header{grid-template-columns:minmax(0,1fr) 70px}.bsc-sec>header span,.bsc-sec>header .bsc-bar{display:none}.bsc-cfg-grid{grid-template-columns:1fr}.bsc-t td.w,.bsc-t th.w{display:none}}
+  .bsc-t .mt-m{display:none}
+  @media (max-width:600px){.bsc-t th.tg-h,.bsc-t td.tg{display:none}.bsc-t .mt-m{display:block;font-size:11px;font-weight:500;color:var(--muted,#667085)}.bsc-t td,.bsc-t th{padding:9px 10px}.bsc-t td.pc{width:96px;white-space:normal}.bsc-t td.pc .pcv{flex-wrap:wrap;gap:0 6px}.bsc-t td.kpi{min-width:0!important;max-width:none!important}.bsc-t td.act{white-space:normal}.bsc-t td.kpi small{display:none}.bsc-total b{font-size:36px}.bsc-legend{display:none}}
   .biz-day-rows{display:grid;gap:8px;margin:6px 0 8px}
   .biz-day-row{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr) 36px;gap:8px;align-items:center}
   .biz-day-row input{min-width:0}
@@ -1164,17 +1195,17 @@
 
     <section class="tab-panel hidden" id="tab-bsc">
       <section class="card" id="bscPanel">
-        <div class="bsc-head"><div><h2>Bảng điểm BSC</h2><p class="muted" id="bscSub">Tổng BSC = trung bình % đạt các chỉ số theo tỷ trọng. Cách chấm giống file BSC.</p></div>
-          <div class="mini-actions"><label class="muted">Tháng <select id="bscMonth"></select></label>
-            <button class="ghost" id="bscReload">↻ Tải lại</button>
-            <button class="ghost hidden" id="bscRefresh" title="Đọc lại dữ liệu và tính lại số tự động của tháng đang xem">⟳ Tính lại số tự động</button>
-            <button class="ghost hidden" id="bscSettingsBtn">⚙ Cài đặt BSC</button></div></div>
-        <div id="bscNotice" class="notice">Chưa tải.</div>
-        <div class="bsc-cards" id="bscCards"></div>
-        <div class="bsc-trend" id="bscTrend" aria-label="Tổng BSC theo tháng"></div>
-        <div class="table-wrap"><table id="bscTable" class="bsc-table"><thead><tr><th>#</th><th>Chỉ số</th><th class="right">Tỷ trọng</th><th class="right">Mục tiêu</th><th class="right">Thực tế</th><th>% đạt</th><th>Nguồn</th><th>Ghi chú (bắt buộc nếu &lt;80%)</th></tr></thead>
-          <tbody id="bscRows"><tr><td colspan="8" class="empty">Chưa tải.</td></tr></tbody></table></div>
-        <div class="mini-actions"><button id="bscSave" class="hidden">Lưu số nhập tay & ghi chú</button><span id="bscSaveMsg" class="muted"></span></div>
+        <div class="bsc-head"><div><h2 id="bscTitle">Bảng điểm BSC</h2></div>
+          <div class="mini-actions"><select id="bscMonth" aria-label="Chọn tháng"></select>
+            <button class="ghost hidden" id="bscEdit">✎ Nhập số tháng này</button>
+            <button class="ghost" id="bscReload" title="Tải lại">↻</button>
+            <details class="bsc-more hidden" id="bscMore"><summary title="Thêm">⋯</summary><div>
+              <button class="ghost" id="bscRefresh">⟳ Tính lại số tự động</button><button class="ghost" id="bscSettingsBtn">⚙ Cài đặt BSC</button></div></details></div></div>
+        <div class="bsc-summary" id="bscSummary"><div class="muted">Đang tải…</div></div>
+        <div class="bsc-alerts" id="bscNotice"></div>
+        <div class="bsc-legend"><span><i class="src auto"></i> Tự động</span><span><i class="src manual"></i> Nhập tay</span><span><i class="src sheet"></i> Số đã báo cáo (file BSC)</span><span><i class="src override"></i> Ghi đè số tự động</span><span>Vạch mờ trên thanh = mốc 100%</span></div>
+        <div id="bscSections"></div>
+        <div class="bsc-savebar hidden" id="bscSaveBar"><span id="bscSaveMsg">Đang nhập số tháng này. Để trống ô thực tế của chỉ số tự động = dùng số tự động.</span><button class="ghost" id="bscCancel">Hủy</button><button id="bscSave">Lưu</button></div>
       </section>
       <section class="card hidden" id="bscSettings">
         <div class="bsc-head"><div><h2>Cài đặt BSC</h2><p class="muted">Sửa chỉ số, tỷ trọng (tổng phải 100%), cách chấm, mục tiêu từng tháng và nhóm sản phẩm. Tiền nhập theo <b>nghìn đồng</b> như file BSC; tỷ lệ nhập theo % (60,9 = 60,9%).</p></div>
@@ -2720,59 +2751,72 @@ function bscCanEditActual(r){return currentUser?.is_admin||(hasFeature('bsc')&&(
 async function loadBsc(opts){
   opts=opts||{};const token=++bscLoadToken;
   const month=$('bscMonth').value||'';
-  $('bscNotice').textContent='Đang tải BSC…';$('bscSaveMsg').textContent='';
+  $('bscNotice').innerHTML='<span class="bsc-alert">Đang tải BSC…</span>';
   try{
     const d=await api('/api/bsc/report?'+new URLSearchParams({...(month?{month}:{}),...(opts.refresh?{refresh:'1'}:{})}));
     if(token!==bscLoadToken)return;
     bscData=d;renderBsc();
-  }catch(e){if(token===bscLoadToken)$('bscNotice').textContent='⚠️ Không tải được BSC: '+e.message;}
+  }catch(e){if(token===bscLoadToken)$('bscNotice').innerHTML='<span class="bsc-alert bad">Không tải được BSC: '+escapeHtml(e.message)+'</span>';}
+}
+let bscEditing=false;
+const bscLvl=s=>s==null?'':s>=1?'lvl-ok':s>=0.8?'lvl-mid':'lvl-bad';
+const bscBar=s=>'<div class="bsc-bar '+bscLvl(s)+'"><i style="width:'+Math.min(100,Math.round((s||0)/1.2*100))+'%"></i><span class="mark"></span></div>';
+const bscMonthLabel=m=>'Tháng '+Number(m.slice(5))+'/'+m.slice(0,4);
+function bscSrc(r){
+  const t=r.actual_source;if(!t)return '';
+  const kind=r.from_sheet?'sheet':t;
+  const title={auto:'Tự động',manual:'Nhập tay',sheet:'Số đã báo cáo trong file BSC',override:'Ghi đè số tự động'}[kind]+(r.auto_note?' · '+r.auto_note:'')+(t==='override'&&r.auto_value!=null?' · Số tự tính: '+bscFmt(r.auto_value,r.unit).replace(/<[^>]+>/g,''):'');
+  return '<i class="src '+kind+'" title="'+escapeHtml(title)+'"></i>';
 }
 function renderBsc(){
   const d=bscData;if(!d)return;
-  $('bscMonth').innerHTML=(d.months||[]).map(m=>'<option value="'+m+'"'+(m===d.month?' selected':'')+'>Tháng '+Number(m.slice(5))+'/'+m.slice(0,4)+'</option>').join('');
-  $('bscSettingsBtn').classList.toggle('hidden',!d.can_admin);$('bscRefresh').classList.toggle('hidden',!d.can_admin);
-  const prev=d.previous;
-  const delta=(now,before)=>{if(before==null)return '';const x=Math.round((now-before)*1000)/10;return x===0?'<small>= tháng trước</small>':'<small class="'+(x>0?'up':'down')+'">'+(x>0?'▲ +':'▼ ')+String(x).replace('.',',')+' điểm so với tháng trước</small>';};
-  $('bscCards').innerHTML='<div class="bsc-card total"><span>Tổng BSC tháng '+Number(d.month.slice(5))+'</span><b>'+bscPct(d.total)+'</b>'+delta(d.total,prev?.total)+'<small>'+(d.missing?num(d.missing)+' chỉ số chưa có số (tính 0%)':'Đủ số tất cả chỉ số')+'</small></div>'+
-    d.perspectives.map(p=>{const pv=prev?.perspectives?.find(x=>x.key===p.key);return '<div class="bsc-card"><span>'+BSC_ROMAN[p.key]+'. '+escapeHtml(p.label)+' · '+String(p.weight).replace('.',',')+'%</span><b>'+bscPct(p.score)+'</b>'+delta(p.score,pv?.score)+(p.missing?'<small>'+num(p.missing)+'/'+num(p.kpis)+' chỉ số chưa có số</small>':'')+'</div>';}).join('');
-  const maxT=Math.max(1,...(d.trend||[]).map(t=>t.total));
-  $('bscTrend').innerHTML=(d.trend||[]).map(t=>'<div class="tcol'+(t.month===d.month?' on':'')+'" data-bsc-month="'+t.month+'" title="Xem tháng '+t.month+'"><span class="tval">'+bscPct(t.total)+'</span><span class="tbar" style="height:'+Math.max(4,Math.round(t.total/maxT*64))+'px"></span><span class="tlab">T'+Number(t.month.slice(5))+'</span></div>').join('');
-  let html='',i=0;const editable=[];
-  for(const p of d.perspectives){
-    html+='<tr class="bsc-group"><td>'+BSC_ROMAN[p.key]+'</td><td>'+escapeHtml(p.label)+'</td><td class="right">'+String(p.weight).replace('.',',')+'%</td><td colspan="2"></td><td><span class="bsc-score">'+bscPct(p.score)+'</span></td><td colspan="2"></td></tr>';
-    for(const r of d.rows.filter(x=>Number(x.perspective)===p.key)){
-      i++;const cls=r.missing?'':r.score<0.8?'bad':r.score>=1?'ok':'';
-      const canAct=bscCanEditActual(r),canNote=hasFeature('bsc');
-      if(canAct||canNote)editable.push(r.id);
-      const isAuto=(r.source?.type||'manual')!=='manual';
-      const chip=r.actual_source==='auto'?'<span class="bsc-chip auto">Tự động</span>':r.actual_source==='override'?'<span class="bsc-chip override">'+(r.from_sheet?'Số file BSC':'Ghi đè tay')+'</span>':r.actual_source==='manual'?'<span class="bsc-chip manual">'+(r.from_sheet?'Số file BSC':'Nhập tay')+'</span>':'<span class="bsc-chip">'+(isAuto?'Tự động · chưa có':'Chưa nhập')+'</span>';
-      const sub=[];
-      if(isAuto&&r.auto_note)sub.push(escapeHtml(r.auto_note));
-      if(r.actual_source==='override'&&r.auto_value!=null)sub.push('Tự tính: '+bscFmt(r.auto_value,r.unit));
-      if(r.projected!=null)sub.push('Dự kiến cuối tháng: '+bscFmt(r.projected,r.unit)+' ('+bscPct(r.projected_score)+')');
-      const unitHint=r.calc==='MANUAL'?'% hoàn thành':r.unit==='pct'?'%':r.unit==='money_k'?'nghìn đ':'';
-      const actualCell=canAct?'<input class="bsc-in" data-bsc-actual="'+r.id+'" value="'+escapeHtml(r.actual_source==='auto'?'':bscToInput(r.actual,r.calc==='MANUAL'?'pct':r.unit))+'" placeholder="'+escapeHtml(r.actual_source==='auto'?'tự động':unitHint)+'" title="'+escapeHtml(isAuto?'Để trống = dùng số tự động. Điền số = ghi đè.':'Nhập '+unitHint)+'"><span class="bsc-sub">'+(r.actual!=null?bscFmt(r.actual,r.calc==='MANUAL'?'pct':r.unit):'')+'</span>':'<b>'+bscFmt(r.actual,r.calc==='MANUAL'?'pct':r.unit)+'</b>';
-      const need=!r.missing&&(r.projected_score??r.score)<0.8&&!r.note;
-      html+='<tr><td>'+i+'</td><td class="bsc-name" title="'+escapeHtml((r.objective||'')+(r.method?'\n'+r.method:''))+'"><b>'+escapeHtml(r.category||r.metric)+'</b><small>'+escapeHtml(r.metric)+' · '+escapeHtml(r.pic||'')+'</small></td>'+
-        '<td class="right">'+String(r.weight).replace('.',',')+'%</td><td class="right">'+(r.target_text?escapeHtml(r.target_text):bscFmt(r.target,r.unit))+'</td>'+
-        '<td class="right">'+actualCell+'</td>'+
-        '<td><span class="bsc-score '+cls+'">'+(r.missing?'–':bscPct(r.score))+'</span><div class="bsc-bar '+cls+'"><i style="width:'+Math.min(100,Math.round(r.score/1.2*100))+'%"></i></div></td>'+
-        '<td class="bsc-src">'+chip+(sub.length?'<span class="bsc-sub">'+sub.join('<br>')+'</span>':'')+'</td>'+
-        '<td>'+(canNote?'<input class="bsc-note'+(need?' need':'')+'" data-bsc-note="'+r.id+'" value="'+escapeHtml(r.note||'')+'" placeholder="'+(need?'Cần ghi nguyên nhân':'Ghi chú')+'">':escapeHtml(r.note||''))+'</td></tr>';
-    }
-  }
-  $('bscRows').innerHTML=html||'<tr><td colspan="8" class="empty">Chưa có chỉ số.</td></tr>';
-  $('bscSave').classList.toggle('hidden',!editable.length);
-  const notes=[];
+  $('bscMonth').innerHTML=(d.months||[]).map(m=>'<option value="'+m+'"'+(m===d.month?' selected':'')+'>'+bscMonthLabel(m)+'</option>').join('');
+  $('bscTitle').textContent='Bảng điểm BSC · '+bscMonthLabel(d.month);
+  $('bscMore').classList.toggle('hidden',!d.can_admin);
+  const canEditAny=hasFeature('bsc');
+  $('bscEdit').classList.toggle('hidden',!canEditAny||bscEditing);
+  $('bscSaveBar').classList.toggle('hidden',!bscEditing);
+  document.body.classList.toggle('bsc-editing',bscEditing);
+  const prev=d.previous,prevLabel=prev?'T'+Number(prev.month.slice(5)):'';
+  const delta=(now,before,short)=>{if(before==null)return '';const x=Math.round((now-before)*1000)/10;const tip=' title="So với '+prevLabel+': '+(x>0?'+':'')+String(x).replace('.',',')+' điểm"';if(!x)return '<small'+tip+'>= '+prevLabel+'</small>';return '<small class="'+(x>0?'up':'down')+'"'+tip+'>'+(x>0?'▲ ':'▼ ')+String(Math.abs(x)).replace('.',',')+(short?'':' điểm so với '+prevLabel)+'</small>';};
+  const have=d.rows.length-d.missing;
   const per=d.period||{};
-  if(per.phase==='current')notes.push('Tháng đang chạy: số tự động tính đến hôm nay ('+vnDateLabel(per.data_to)+'), % đạt sẽ tăng dần; xem thêm "Dự kiến cuối tháng".');
-  if(per.phase==='future')notes.push('Tháng chưa tới: chưa có số tự động.');
-  if(d.below_80_without_note)notes.push(num(d.below_80_without_note)+' chỉ số dưới 80% chưa ghi nguyên nhân.');
-  if(d.auto_meta?.extras_error)notes.push('Chưa đọc được dữ liệu sản phẩm/Affiliate (đã chạy SQL V70.39 chưa?): '+d.auto_meta.extras_error);
-  if(d.auto_meta?.returns_ok===false)notes.push('Có shop chưa đọc được hàng hoàn nên NMV chưa trừ hoàn.');
-  if(Math.abs((d.weight_total||0)-100)>0.01)notes.push('Tổng tỷ trọng đang là '+String(d.weight_total).replace('.',',')+'%, chưa đủ 100%.');
-  $('bscNotice').innerHTML='<span>'+(notes.length?'⚠️ ':'✅ ')+'Tháng '+Number(d.month.slice(5))+'/'+d.month.slice(0,4)+' · Tổng BSC <b>'+bscPct(d.total)+'</b>'+(d.auto_cached_at?' · số tự động tính lúc '+new Date(d.auto_cached_at).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):'')+'.'+(notes.length?' '+escapeHtml(notes.join(' ')):'')+'</span>';
+  $('bscSummary').innerHTML='<div class="bsc-total"><span>Tổng BSC</span><b class="'+bscLvl(d.total)+'">'+bscPct(d.total)+'</b>'+delta(d.total,prev?.total)+'<small>'+num(have)+'/'+num(d.rows.length)+' chỉ số đã có số'+(d.missing?' · ô trống tính 0%':'')+'</small>'+(per.phase==='current'?'<small>Tháng đang chạy · số đến '+vnDateLabel(per.data_to)+'</small>':'')+'</div>'+
+    '<div class="bsc-persp">'+d.perspectives.map(p=>{const pv=prev?.perspectives?.find(x=>x.key===p.key);
+      return '<div class="bp-row"><span class="bp-name">'+BSC_ROMAN[p.key]+'. '+escapeHtml((x=>x.charAt(0).toUpperCase()+x.slice(1))(p.label.replace('Góc nhìn ','')))+'<i>'+String(p.weight).replace('.',',')+'%</i></span>'+bscBar(p.score)+'<b class="'+bscLvl(p.score)+'">'+bscPct(p.score)+'</b>'+(delta(p.score,pv?.score,true)||'<small></small>')+'</div>';}).join('')+'</div>'+
+    ((d.trend||[]).length>1?'<div class="bsc-trend"><span class="tlabel">Tổng BSC theo tháng</span>'+(()=>{const maxT=Math.max(0.01,...d.trend.map(t=>t.total));return d.trend.map(t=>'<div class="tcol'+(t.month===d.month?' on':'')+'" data-bsc-month="'+t.month+'" title="Xem '+bscMonthLabel(t.month)+'"><span class="tval">'+bscPct(t.total)+'</span><span class="tbar" style="height:'+Math.max(4,Math.round(t.total/maxT*42))+'px"></span><span class="tlab">T'+Number(t.month.slice(5))+'</span></div>').join('');})()+'</div>':'');
+  const alerts=[];
+  if(d.below_80_without_note)alerts.push(['bad',num(d.below_80_without_note)+' chỉ số dưới 80% chưa ghi nguyên nhân']);
+  if(per.phase==='current')alerts.push(['','Tháng chưa hết: % đạt của chỉ số theo tháng sẽ tăng dần, xem "dự kiến" dưới mỗi thanh']);
+  if(per.phase==='future')alerts.push(['','Tháng chưa tới, chưa có số tự động']);
+  if(d.auto_meta?.affiliate_coverage!=null&&d.auto_meta.affiliate_coverage<0.95)alerts.push(['warn','Affiliate: Income mới có '+Math.round(d.auto_meta.affiliate_coverage*100)+'% đơn, số tự động thấp hơn thực tế']);
+  if(d.auto_meta?.extras_error)alerts.push(['bad','Chưa đọc được dữ liệu sản phẩm/Affiliate']);
+  if(d.auto_meta?.returns_ok===false)alerts.push(['warn','Có shop chưa đọc được hàng hoàn, NMV chưa trừ hoàn']);
+  if(Math.abs((d.weight_total||0)-100)>0.01)alerts.push(['bad','Tổng tỷ trọng đang là '+String(d.weight_total).replace('.',',')+'%']);
+  $('bscNotice').innerHTML=alerts.map(([k,t])=>'<span class="bsc-alert '+k+'">'+escapeHtml(t)+'</span>').join('');
+  const canNote=hasFeature('bsc');
+  $('bscSections').innerHTML=d.perspectives.map(p=>{
+    const rows=d.rows.filter(x=>Number(x.perspective)===p.key);
+    const body=rows.map(r=>{
+      const unit=r.calc==='MANUAL'?'pct':r.unit;
+      const effective=r.projected_score??r.score;
+      const need=!r.missing&&effective<0.8&&!r.note;
+      const canAct=bscCanEditActual(r);
+      const isAuto=(r.source?.type||'manual')!=='manual';
+      let act;
+      if(bscEditing&&canAct)act='<input class="bsc-in" data-bsc-actual="'+r.id+'" value="'+escapeHtml(r.actual_source==='auto'?'':bscToInput(r.actual,unit))+'" placeholder="'+escapeHtml(r.actual_source==='auto'?bscToInput(r.actual,unit)+' (tự động)':r.calc==='MANUAL'?'% hoàn thành':unit==='pct'?'%':unit==='money_k'?'nghìn đ':'')+'">';
+      else act=(r.actual==null?'<span class="muted">'+(isAuto?'chưa có số':'chưa nhập')+'</span>':bscFmt(r.actual,unit))+bscSrc(r)+(bscEditing&&!canAct?'<span class="ro">tự động</span>':'');
+      const pcv=r.missing?'<div class="pcv"><span class="muted">–</span></div>':'<div class="pcv"><span class="'+bscLvl(r.score)+'">'+bscPct(r.score)+'</span>'+(r.projected_score!=null?'<small title="Dự kiến cuối tháng '+escapeHtml(bscFmt(r.projected,r.unit))+'">dự kiến '+bscPct(r.projected_score)+'</small>':'')+'</div>'+bscBar(r.score);
+      return '<tr><td class="kpi" title="'+escapeHtml((r.objective||'')+(r.method?'\n'+r.method:''))+'"><b>'+escapeHtml(r.category||r.metric)+'</b><small>'+escapeHtml(r.metric)+(r.pic?' · '+escapeHtml(r.pic):'')+'</small>'+
+        (!bscEditing&&r.note?'<span class="note">“'+escapeHtml(r.note)+'”</span>':'')+(!bscEditing&&need?'<span class="need">Chưa ghi nguyên nhân</span>':'')+'</td>'+
+        '<td class="right tg">'+(r.target_text?escapeHtml(r.target_text):bscFmt(r.target,r.unit))+'</td><td class="right act">'+act+'<span class="mt-m">MT '+(r.target_text?escapeHtml(r.target_text):bscFmt(r.target,r.unit))+'</span></td><td class="pc">'+pcv+'</td><td class="right w">'+String(r.weight).replace('.',',')+'%</td>'+
+        (bscEditing?'<td>'+(canNote?'<input class="bsc-note'+(need?' need-in':'')+'" data-bsc-note="'+r.id+'" value="'+escapeHtml(r.note||'')+'" placeholder="'+(need?'Cần ghi nguyên nhân (<80%)':'Ghi chú')+'">':escapeHtml(r.note||''))+'</td>':'')+'</tr>';
+    }).join('');
+    return '<section class="bsc-sec"><header><h3>'+BSC_ROMAN[p.key]+' · '+escapeHtml(p.label)+'</h3><span>Tỷ trọng '+String(p.weight).replace('.',',')+'% · '+num(p.kpis)+' chỉ số</span>'+bscBar(p.score)+'<b class="'+bscLvl(p.score)+'">'+bscPct(p.score)+'</b></header>'+
+      '<div class="table-wrap"><table class="bsc-t"><thead><tr><th>Chỉ số</th><th class="right tg-h">Mục tiêu</th><th class="right">Thực tế</th><th>% đạt</th><th class="right w">Tỷ trọng</th>'+(bscEditing?'<th>Ghi chú</th>':'')+'</tr></thead><tbody>'+body+'</tbody></table></div></section>';
+  }).join('');
 }
+function setBscEditing(on){bscEditing=!!on;$('bscSaveMsg').textContent=on?'Đang nhập số tháng này. Để trống ô thực tế của chỉ số tự động = dùng số tự động.':'';renderBsc();if(on)document.querySelector('#bscSections input')?.focus();}
 async function saveBscMonth(){
   if(!bscData)return;
   const values={};let bad='';
@@ -2789,9 +2833,9 @@ async function saveBscMonth(){
     values[r.id]={actual:newActual,note:newNote};
   }
   if(bad){$('bscSaveMsg').textContent='⚠️ '+bad+': thực tế phải là số.';return;}
-  if(!Object.keys(values).length){$('bscSaveMsg').textContent='Không có thay đổi.';return;}
+  if(!Object.keys(values).length){setBscEditing(false);return;}
   $('bscSave').disabled=true;$('bscSaveMsg').textContent='Đang lưu…';
-  try{await api('/api/bsc/month/save',{method:'POST',body:{month:bscData.month,values}});$('bscSaveMsg').textContent='✅ Đã lưu '+num(Object.keys(values).length)+' chỉ số.';await loadBsc();}
+  try{await api('/api/bsc/month/save',{method:'POST',body:{month:bscData.month,values}});bscEditing=false;await loadBsc();$('bscNotice').insertAdjacentHTML('afterbegin','<span class="bsc-alert">✅ Đã lưu '+num(Object.keys(values).length)+' chỉ số</span>');}
   catch(e){$('bscSaveMsg').textContent='⚠️ '+e.message;}
   finally{$('bscSave').disabled=false;}
 }
@@ -2874,18 +2918,21 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#bscReload'))loadBsc();
   if(e.target.closest('#bscRefresh'))loadBsc({refresh:true});
   if(e.target.closest('#bscSave'))saveBscMonth();
+  if(e.target.closest('#bscEdit'))setBscEditing(true);
+  if(e.target.closest('#bscCancel'))setBscEditing(false);
+  if(e.target.closest('#bscRefresh')||e.target.closest('#bscSettingsBtn'))$('bscMore').open=false;
   if(e.target.closest('#bscSettingsBtn'))openBscSettings();
   if(e.target.closest('#bscCfgClose'))$('bscSettings').classList.add('hidden');
   if(e.target.closest('#bscCfgSave'))saveBscCfg();
   if(e.target.closest('#bscGroupPreview'))previewBscGroups();
-  const tm=e.target.closest('[data-bsc-month]');if(tm){$('bscMonth').value=tm.dataset.bscMonth;loadBsc();}
+  const tm=e.target.closest('[data-bsc-month]');if(tm){$('bscMonth').value=tm.dataset.bscMonth;bscEditing=false;loadBsc();}
   if(e.target.closest('#bscCfgAdd')){bscCfg={...readBscCfg(),months:bscCfg.months};const ids=new Set(bscCfg.kpis.map(k=>k.id));let n=bscCfg.kpis.length+1;while(ids.has('k'+n))n++;bscCfg.kpis.push({id:'k'+n,perspective:1,pic:'',category:'Chỉ số mới',objective:'',metric:'',weight:0,calc:'TL',cap:1,unit:'number',source:{type:'manual'},targets:{}});renderBscCfg();}
   if(e.target.closest('#bscGroupAdd')){bscCfg={...readBscCfg(),months:bscCfg.months};bscCfg.groups.push({key:'nhom_'+(bscCfg.groups.length+1),label:'Nhóm mới',model:[],name:[],exclude:[]});renderBscCfg();}
   const del=e.target.closest('[data-bsc-del]');if(del){bscCfg={...readBscCfg(),months:bscCfg.months};bscCfg.kpis.splice(Number(del.dataset.bscDel),1);renderBscCfg();}
   const gdel=e.target.closest('[data-bsc-gdel]');if(gdel){bscCfg={...readBscCfg(),months:bscCfg.months};bscCfg.groups.splice(Number(gdel.dataset.bscGdel),1);renderBscCfg();}
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='bscMonth')loadBsc();
+  if(e.target.id==='bscMonth'){bscEditing=false;loadBsc();}
   if(e.target.closest('#bscCfgRows')&&(e.target.dataset.k==='source'||e.target.dataset.k==='unit'||e.target.dataset.k==='calc')){bscCfg={...readBscCfg(),months:bscCfg.months};renderBscCfg();}
   if(e.target.id==='bscCfgMonths'){const keep=readBscCfg();bscCfg={...keep};renderBscCfg();}
 });
