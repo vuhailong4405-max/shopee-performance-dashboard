@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.39.1</title>
+  <title>Gooby BI Dashboard · V70.40</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -702,6 +702,13 @@
   .shop-multi-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;border-top:1px solid var(--line,#eadfd8);padding-top:8px}
   #shopMultiBtn.on{border-color:#ff6b35;color:#c2410c;background:rgba(255,107,53,.08)}
   #quickTable .quick-pct{display:inline-block;min-width:44px;margin-left:6px;font-size:11px;color:var(--muted,#667085);font-weight:500}
+  /* V70.40: cảnh báo % chi phí (xu ≤0,5%, ads ≤3,5% NMV): xanh dưới mức, vàng tới mức +0,5 điểm, đỏ vượt hơn */
+  #quickTable .quick-pct.lv-ok,#quickTable .quick-pct.lv-warn,#quickTable .quick-pct.lv-bad{border-radius:999px;padding:1px 7px;font-weight:700;text-align:center}
+  #quickTable .quick-pct.lv-ok,.qlv.lv-ok{background:#ecfdf3;color:#067647}
+  #quickTable .quick-pct.lv-warn,.qlv.lv-warn{background:#fef7c3;color:#a15c07}
+  #quickTable .quick-pct.lv-bad,.qlv.lv-bad{background:#fef3f2;color:#b42318}
+  #quickTable tr.quick-row-bad td:first-child{box-shadow:inset 3px 0 0 #f04438}
+  .qlv{display:inline-block;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin:0 2px}
   /* V70.39: BSC — trang dùng tháng riêng nên ẩn bộ lọc ngày/shop phía trên */
   body[data-tab="bsc"] .topbar,body[data-tab="bsc"] #multiShopNote,body[data-tab="bsc"] #dataHealthBanner{display:none!important}
   body[data-tab="bsc"] .quick-range{border-top:0;padding-top:0}
@@ -709,6 +716,25 @@
   .bsc-head h2{margin:0}.bsc-head p{margin:4px 0 0}
   .bsc-head .mini-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .bsc-head select{min-width:120px}
+  /* V70.40: lịch tích ngày (bộ lọc trên cùng + ngày minisale BSC) */
+  .day-pick{position:relative}
+  .day-pick-panel{position:absolute;left:0;top:calc(100% + 6px);z-index:40;width:300px;background:var(--surface,#fff);border:1px solid var(--line,#eadfd8);border-radius:14px;padding:12px;box-shadow:0 16px 40px rgba(16,24,40,.16)}
+  .dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:700}
+  .dp-head button{border:0;background:transparent;font-size:18px;padding:2px 10px;cursor:pointer}
+  .dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .dp-grid .wd{font-size:11px;text-align:center;color:var(--muted,#667085);font-weight:700;padding:2px 0}
+  .dp-grid button{height:34px;border:1px solid var(--line,#eadfd8);background:#fff;color:#101828;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;padding:0;position:relative;box-shadow:none;min-width:0}
+  .dp-grid button:hover{border-color:#ff6b35}
+  .dp-grid button.on{background:#ff6b35;border-color:#ff6b35;color:#fff;font-weight:700}
+  .dp-grid button.future{opacity:.35}
+  .dp-grid button.mega{box-shadow:inset 0 -3px 0 #7a5af8}
+  .dp-grid button:disabled{cursor:not-allowed;opacity:.45;background:#f2f4f7}
+  .dp-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .dp-quick button{font-size:12px;padding:4px 9px;border-radius:999px}
+  .dp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:12px}
+  .bsc-mini{border:1px solid var(--line,#eadfd8);border-radius:12px;padding:10px 12px;max-width:380px}
+  .bsc-mini .dp-grid button{height:30px}
+  .bsc-mini-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:12px}
   /* V70.39.1: trang BSC gọn — 1 khung tóm tắt, mỗi góc nhìn 1 bảng 5 cột, chế độ nhập số tách riêng */
   #bscMonth{min-width:150px;font-weight:700}
   .bsc-more{position:relative}.bsc-more summary{list-style:none;cursor:pointer;border:1px solid var(--line,#eadfd8);border-radius:10px;padding:7px 12px;font-weight:700}
@@ -871,12 +897,20 @@
 
     <section class="topbar">
       <div class="filters">
-        <div class="field"><label>Kiểu xem</label><select id="period"><option value="day">Theo ngày</option><option value="week">Theo tuần</option><option value="month">Theo tháng</option><option value="custom">Tùy chọn</option></select></div>
+        <div class="field"><label>Kiểu xem</label><select id="period"><option value="day">Theo ngày</option><option value="week">Theo tuần</option><option value="month">Theo tháng</option><option value="custom">Tùy chọn (khoảng)</option><option value="days">Chọn ngày (tích)</option></select></div>
         <div class="field" data-period-field="day"><label>Ngày xem</label><input type="date" id="dayDate"></div>
         <div class="field hidden" data-period-field="week"><label>Tuần xem</label><input type="week" id="weekInput"></div>
         <div class="field hidden" data-period-field="month"><label>Tháng xem</label><input type="month" id="monthInput"></div>
         <div class="field hidden" data-period-field="custom"><label>Từ ngày</label><input type="date" id="fromDate"></div>
         <div class="field hidden" data-period-field="custom"><label>Đến ngày</label><input type="date" id="toDate"></div>
+        <div class="field hidden" data-period-field="days"><label>Các ngày xem</label><div class="day-pick">
+          <button type="button" class="ghost" id="dayPickBtn" aria-haspopup="true" aria-expanded="false">📅 Tích ngày</button>
+          <div id="dayPickPanel" class="day-pick-panel hidden" role="dialog" aria-label="Tích các ngày muốn xem">
+            <div class="dp-head"><button type="button" data-dp-nav="-1" aria-label="Tháng trước">‹</button><span id="dayPickMonth"></span><button type="button" data-dp-nav="1" aria-label="Tháng sau">›</button></div>
+            <div class="dp-grid" id="dayPickGrid"></div>
+            <div class="dp-quick"><button type="button" class="ghost" data-dp-quick="double">+ Ngày đôi</button><button type="button" class="ghost" data-dp-quick="mini">+ Ngày 15 & 25</button><button type="button" class="ghost" data-dp-quick="month">Cả tháng</button><button type="button" class="ghost" data-dp-quick="clear">Bỏ chọn</button></div>
+            <div class="dp-foot"><span id="dayPickCount" class="muted"></span><button type="button" id="dayPickApply">Xem các ngày đã tích</button></div>
+          </div></div></div>
         <div class="field"><label>Shop</label><select id="shop"><option value="all">Tất cả shop</option></select></div>
         <div class="field shop-multi-field"><label>Nhiều shop</label><div class="shop-multi">
           <button type="button" class="ghost" id="shopMultiBtn" aria-haspopup="true" aria-expanded="false">☑ Chọn nhiều shop</button>
@@ -887,6 +921,7 @@
         <div class="field"><label>So sánh</label><select id="compare"><option value="previous_period">So với kỳ liền trước</option></select></div>
       </div>
       <div id="multiShopNote" class="notice hidden" style="margin:8px 0 0"></div>
+      <div id="dayPickNote" class="notice hidden" style="margin:8px 0 0"></div>
       <div class="status"><span id="snapshotText">Đang khởi tạo...</span><span>•</span><span id="lastLoaded">-</span></div>
       <div class="quick-range" id="quickRange" aria-label="Chọn nhanh khoảng ngày">
         <button type="button" data-qr="today">Hôm nay</button><button type="button" data-qr="yesterday">Hôm qua</button>
@@ -1212,7 +1247,9 @@
           <div class="mini-actions"><button class="ghost" id="bscCfgClose">Đóng</button></div></div>
         <div class="bsc-cfg-grid">
           <div class="field"><label>Các tháng của BSC (cách nhau dấu phẩy)</label><input id="bscCfgMonths" placeholder="2026-07, 2026-08, …"></div>
-          <div class="field"><label>Ngày minisale mặc định trong tháng (khi chưa cài lịch ngày sale ở Mục tiêu)</label><input id="bscCfgMini" placeholder="15, 25"></div>
+          <div class="field"><label>Ngày minisale (tích trên lịch; dùng khi chưa cài lịch ngày sale ở Mục tiêu tháng)</label>
+            <div class="bsc-mini"><div class="bsc-mini-head"><select id="bscMiniScope" aria-label="Áp dụng cho"></select><span id="bscMiniInfo" class="muted"></span><button type="button" class="ghost hidden" id="bscMiniReset">Về mặc định</button></div>
+              <div class="dp-grid" id="bscMiniGrid"></div><p class="muted" style="margin:8px 0 0;font-size:12px">Ngày đôi (gạch tím) luôn là Mega sale, không tính minisale.</p></div></div>
         </div>
         <div id="bscCfgWeight" class="notice"></div>
         <div class="table-wrap"><table class="bsc-cfg-table"><thead id="bscCfgHead"></thead><tbody id="bscCfgRows"></tbody></table></div>
@@ -1754,7 +1791,7 @@ function moneyExact(n){ const value=Number(n); return Number.isFinite(value)?val
 function num(n){ return Number(n||0).toLocaleString('vi-VN'); }
 function percent(n){ return (Number(n||0)).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%'; }
 function vnDateLabel(date){ const [y,m,d]=date.split('-'); return `${d}/${m}/${y}`; }
-function rangeLabel(r){ return r.from===r.to ? vnDateLabel(r.from) : vnDateLabel(r.from)+' → '+vnDateLabel(r.to); }
+function rangeLabel(r){ if(r.days&&r.days.length>1){const sh=d=>Number(d.slice(8))+'/'+Number(d.slice(5,7));return r.days.length+' ngày: '+r.days.slice(0,6).map(sh).join(', ')+(r.days.length>6?'…':'');} return r.from===r.to ? vnDateLabel(r.from) : vnDateLabel(r.from)+' → '+vnDateLabel(r.to); }
 function periodName(){ return $('period').value==='week'?'tuần':$('period').value==='month'?'tháng':$('period').value==='custom'?'khoảng tùy chọn':'ngày'; }
 function compareLabel(){ return 'kỳ trước'; }
 function updateUrls(){ const w=getWorker(); $('pushUrl').textContent=w+'/api/shopee/push'; $('callbackUrl').textContent=w+'/api/oauth/callback'; }
@@ -1842,7 +1879,14 @@ function renderShopMulti(){
   const b=$('shopMultiBtn');b.textContent=isMultiShop()?'☑ '+multiShopIds.length+' shop đã chọn':'☑ Chọn nhiều shop';b.classList.toggle('on',isMultiShop());
   b.title=isMultiShop()?(availableShops||[]).filter(sh=>multiShopIds.includes(String(sh.shop_id))).map(shopLabel).join('\n'):'Tick nhiều shop để xem tổng các shop đó';
 }
+function updateDayPickNote(){
+  const note=$('dayPickNote');if(!note)return;
+  const r=getRangeSafe();const show=!!(r&&r.days&&$('period').value==='days'&&!DAY_PICK_VIEWS.has(currentViewKey())&&currentTab()!=='bsc'&&currentTab()!=='system');
+  note.classList.toggle('hidden',!show);
+  if(show)note.textContent='Đang tích '+r.days.length+' ngày rời. Trang này chưa tính theo ngày rời nên đang xem cả khoảng '+vnDateLabel(r.from)+' → '+vnDateLabel(r.to)+'. Trang tính đúng các ngày đã tích: Tổng quan (số tổng, biểu đồ) và Báo cáo nhanh.';
+}
 function updateMultiShopNote(){
+  updateDayPickNote();
   const note=$('multiShopNote');if(!note)return;
   const show=isMultiShop()&&!MULTI_SHOP_VIEWS.has(currentViewKey());
   note.classList.toggle('hidden',!show);
@@ -1977,10 +2021,18 @@ async function changeManagedPassword(userId){
   catch(e){alert('Không thể đổi mật khẩu: '+e.message);}
 }
 
-function updatePeriodFields(){ const p=$('period').value; document.querySelectorAll('[data-period-field]').forEach(el=>el.classList.toggle('hidden', el.dataset.periodField!==p)); const r=getRangeSafe(); $('heroRange').textContent=r?rangeLabel(r):'-'; }
+function updatePeriodFields(){ const p=$('period').value; document.querySelectorAll('[data-period-field]').forEach(el=>el.classList.toggle('hidden', el.dataset.periodField!==p)); const r=getRangeSafe(); $('heroRange').textContent=r?rangeLabel(r):'-'; if($('dayPickBtn'))$('dayPickBtn').textContent='📅 '+(pickDays.length?pickDays.length+' ngày đã tích':'Tích ngày'); if(typeof updateMultiShopNote==='function')updateMultiShopNote(); }
 function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
-function getRange(){ const p=$('period').value; if(p==='day'){ const d=$('dayDate').value||todayVN(); return {period:p,from:d,to:d}; } if(p==='week'){ return {period:p,...weekToRange($('weekInput').value||isoWeekString(todayVN()))}; } if(p==='month'){ const ym=$('monthInput').value||todayVN().slice(0,7); return {period:p,from:ym+'-01',to:monthLastDay(ym)}; } let from=$('fromDate').value||todayVN(), to=$('toDate').value||from; if(from>to) [from,to]=[to,from]; return {period:p,from,to}; }
-function getCompareRange(r){ if(r.period==='day') return {from:addDaysISO(r.from,-1),to:addDaysISO(r.to,-1)}; if(r.period==='week') return {from:addDaysISO(r.from,-7),to:addDaysISO(r.to,-7)}; if(r.period==='month') return prevMonthRange(r.from.slice(0,7)); const span=daysInclusive(r.from,r.to); const to=addDaysISO(r.from,-1); const from=addDaysISO(to,-(span-1)); return {from,to}; }
+// V70.40: kiểu xem "Chọn ngày (tích)": các ngày rời, lưu trên trình duyệt này.
+const DAY_PICK_KEY='gooby_pick_days_v1';
+const DAY_PICK_VIEWS=new Set(['gmv:overview','quick']);
+let pickDays=(()=>{try{const v=JSON.parse(localStorage.getItem(DAY_PICK_KEY)||'[]');return Array.isArray(v)?v.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort():[];}catch{return [];}})();
+let pickViewMonth=(pickDays.at(-1)||todayVN()).slice(0,7);
+let pickDraft=null;
+function savePickDays(list){pickDays=[...new Set(list)].sort();try{localStorage.setItem(DAY_PICK_KEY,JSON.stringify(pickDays));}catch{}}
+function prevMonthSameDays(days){return [...new Set(days.map(d=>{let y=+d.slice(0,4),m=+d.slice(5,7)-1;if(!m){m=12;y--;}const c=y+'-'+String(m).padStart(2,'0')+'-'+d.slice(8);return isoDate(new Date(Date.parse(c+'T00:00:00Z')))===c?c:null;}).filter(Boolean))].sort();}
+function getRange(){ const p=$('period').value; if(p==='days'){ const days=pickDays.length?pickDays:[todayVN()]; return {period:p,from:days[0],to:days[days.length-1],days}; } if(p==='day'){ const d=$('dayDate').value||todayVN(); return {period:p,from:d,to:d}; } if(p==='week'){ return {period:p,...weekToRange($('weekInput').value||isoWeekString(todayVN()))}; } if(p==='month'){ const ym=$('monthInput').value||todayVN().slice(0,7); return {period:p,from:ym+'-01',to:monthLastDay(ym)}; } let from=$('fromDate').value||todayVN(), to=$('toDate').value||from; if(from>to) [from,to]=[to,from]; return {period:p,from,to}; }
+function getCompareRange(r){ if(r.days){ const cd=prevMonthSameDays(r.days); return cd.length?{from:cd[0],to:cd[cd.length-1],days:cd}:{from:addDaysISO(r.from,-1),to:addDaysISO(r.from,-1),days:[]}; } if(r.period==='day') return {from:addDaysISO(r.from,-1),to:addDaysISO(r.to,-1)}; if(r.period==='week') return {from:addDaysISO(r.from,-7),to:addDaysISO(r.to,-7)}; if(r.period==='month') return prevMonthRange(r.from.slice(0,7)); const span=daysInclusive(r.from,r.to); const to=addDaysISO(r.from,-1); const from=addDaysISO(to,-(span-1)); return {from,to}; }
 function deltaClass(value, reverse=false){ if(value===null || value===undefined || !isFinite(value) || value===0) return 'delta neutral'; const good = reverse ? value<0 : value>0; return 'delta '+(good?'up':'down'); }
 function deltaText(d){ if(!d || d.percent===null || d.percent===undefined) return 'mới'; const sign=d.percent>0?'+':''; return sign+percent(d.percent); }
 function exactMetricText(value,type){
@@ -2705,23 +2757,29 @@ async function syncCoinCost(){
 // ===== V70.35: Báo cáo nhanh theo ngày =====
 const QUICK_WEEKDAY=['CN','T2','T3','T4','T5','T6','T7'];
 let quickLoadToken=0;
+// V70.40: giới hạn chi phí trên NMV của Báo cáo nhanh. Dưới giới hạn = xanh, từ giới hạn tới giới hạn + 0,5 điểm = vàng, cao hơn = đỏ.
+const QUICK_COST_LIMITS={coin:0.5,ads:3.5},QUICK_COST_BAND=0.5;
+function quickCostLevel(pct,limit){if(pct==null||!Number.isFinite(pct))return '';return pct<limit?'ok':pct<=limit+QUICK_COST_BAND+1e-9?'warn':'bad';}
 async function loadQuickReport(){
   const token=++quickLoadToken;
   const r=getRange(),shop=shopScopeParam();
-  if(daysInclusive(r.from,r.to)>92){$('quickNotice').textContent='Báo cáo nhanh xem tối đa 92 ngày một lần. Hãy chọn khoảng ngắn hơn.';$('quickRows').innerHTML='<tr><td colspan="7" class="empty">Khoảng quá dài.</td></tr>';return;}
+  if(r.days?r.days.length>92:daysInclusive(r.from,r.to)>92){$('quickNotice').textContent='Báo cáo nhanh xem tối đa 92 ngày một lần. Hãy chọn khoảng ngắn hơn.';$('quickRows').innerHTML='<tr><td colspan="7" class="empty">Khoảng quá dài.</td></tr>';return;}
   $('quickNotice').textContent='Đang tải báo cáo nhanh…';
   try{
-    const d=await api('/api/business/daily-quick?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop}));
+    const d=await api('/api/business/daily-quick?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,...(r.days?{days:r.days.join(',')}:{})}));
     if(token!==quickLoadToken)return;
     const missing='<span class="muted" title="Chưa có số liệu cho ngày này">–</span>';
     const pct=v=>v==null?'–':percent(v);
     // % nhỏ cạnh từng khoản chi phí: khoản đó ÷ NMV của cùng dòng.
-    const share=(cost,nmv)=>`<small class="quick-pct">${nmv>0?percent(Math.round(cost/nmv*10000)/100):'–'}</small>`;
+    const lvText={ok:'Dưới giới hạn',warn:'Chạm giới hạn',bad:'Vượt giới hạn'};
+    const share=(cost,nmv,kind)=>{if(!(nmv>0))return '<small class="quick-pct">–</small>';const p=Math.round(cost/nmv*10000)/100,lim=QUICK_COST_LIMITS[kind],lv=quickCostLevel(p,lim);return `<small class="quick-pct lv-${lv}" title="${lvText[lv]} ${percent(lim)} (${kind==='coin'?'xu':'ads'} ÷ NMV)">${percent(p)}</small>`;};
+    const rowLevel=x=>{if(!(x.nmv>0))return '';const lc=x.has_coin?quickCostLevel(Math.round(x.coin_cost/x.nmv*10000)/100,QUICK_COST_LIMITS.coin):'',la=x.has_ads?quickCostLevel(Math.round(x.ads_cost/x.nmv*10000)/100,QUICK_COST_LIMITS.ads):'';return {coin:lc,ads:la};};
     const dayLabel=x=>QUICK_WEEKDAY[new Date(x+'T00:00:00Z').getUTCDay()]+' · '+vnDateLabel(x);
     const row=(x,label,total)=>{const b=v=>total?'<b>'+v+'</b>':v;
-      return `<tr${total?' class="quick-total"':''}><td>${b(label)}</td><td class="right">${b(moneyExact(x.gmv))}</td><td class="right">${b(moneyExact(x.nmv))}</td>`+
-        `<td class="right">${total||x.has_coin?b(moneyExact(x.coin_cost))+share(x.coin_cost,x.nmv):missing}</td>`+
-        `<td class="right" title="Product Ads ${moneyExact(x.ads_product)} · Livestream Ads ${moneyExact(x.ads_live)}">${total||x.has_ads?b(moneyExact(x.ads_cost))+share(x.ads_cost,x.nmv):missing}</td>`+
+      const lv=total?{}:rowLevel(x)||{};
+      return `<tr class="${total?'quick-total':''}${lv.coin==='bad'||lv.ads==='bad'?' quick-row-bad':''}"><td>${b(label)}</td><td class="right">${b(moneyExact(x.gmv))}</td><td class="right">${b(moneyExact(x.nmv))}</td>`+
+        `<td class="right">${total||x.has_coin?b(moneyExact(x.coin_cost))+share(x.coin_cost,x.nmv,'coin'):missing}</td>`+
+        `<td class="right" title="Product Ads ${moneyExact(x.ads_product)} · Livestream Ads ${moneyExact(x.ads_live)}">${total||x.has_ads?b(moneyExact(x.ads_cost))+share(x.ads_cost,x.nmv,'ads'):missing}</td>`+
         `<td class="right">${b(moneyExact(x.cost_total))}</td><td class="right">${b(pct(x.cost_pct))}</td></tr>`;};
     const rows=d.rows||[];
     $('quickRows').innerHTML=rows.length?row(d.totals,'Tổng kỳ ('+num(rows.length)+' ngày)',true)+rows.map(x=>row(x,dayLabel(x.date),false)).join(''):'<tr><td colspan="7" class="empty">Không có ngày nào trong kỳ đang chọn.</td></tr>';
@@ -2729,10 +2787,47 @@ async function loadQuickReport(){
     if((d.days_missing_coin||[]).length)notes.push(`${num(d.days_missing_coin.length)} ngày chưa có số liệu xu (tiện ích Chrome chưa đồng bộ)`);
     if((d.days_missing_ads||[]).length)notes.push(`${num(d.days_missing_ads.length)} ngày chưa có số liệu ads`);
     if(d.nmv_deducts_returns&&!d.returns_available)notes.push('chưa đọc được hàng hoàn trả nên NMV chưa trừ hoàn trả');
-    $('quickNotice').innerHTML=`${notes.length?'⚠️ ':'✅ '}${escapeHtml(rangeLabel(r))} · % chi phí cả kỳ: <b>${pct(d.totals?.cost_pct)}</b> (chi phí ${money(d.totals?.cost_total)} / NMV ${money(d.totals?.nmv)}).${notes.length?' Lưu ý: '+escapeHtml(notes.join('; '))+'. Ô "–" là ngày chưa có số liệu, tính như 0.':''}`;
+    const cnt=k=>{const c={ok:0,warn:0,bad:0};for(const x of rows){const l=(rowLevel(x)||{})[k];if(l)c[l]++;}return c;};const cc=cnt('coin'),ca=cnt('ads');
+    const legend=`<div style="margin-top:6px">Giới hạn chi phí ÷ NMV — Xu ${percent(QUICK_COST_LIMITS.coin)}: <span class="qlv lv-ok">${cc.ok} ngày dưới</span><span class="qlv lv-warn">${cc.warn} ngày chạm</span><span class="qlv lv-bad">${cc.bad} ngày vượt</span> · Ads ${percent(QUICK_COST_LIMITS.ads)}: <span class="qlv lv-ok">${ca.ok} ngày dưới</span><span class="qlv lv-warn">${ca.warn} ngày chạm</span><span class="qlv lv-bad">${ca.bad} ngày vượt</span> <span class="muted">(vàng = từ giới hạn tới +0,5 điểm, đỏ = cao hơn)</span></div>`;
+    $('quickNotice').innerHTML='<div>'+`${notes.length?'⚠️ ':'✅ '}${escapeHtml(rangeLabel(r))} · % chi phí cả kỳ: <b>${pct(d.totals?.cost_pct)}</b> (chi phí ${money(d.totals?.cost_total)} / NMV ${money(d.totals?.nmv)}).${notes.length?' Lưu ý: '+escapeHtml(notes.join('; '))+'. Ô "–" là ngày chưa có số liệu, tính như 0.':''}`+(rows.length?legend:'')+'</div>';
   }catch(e){ if(token===quickLoadToken){$('quickNotice').textContent='⚠️ Không tải được báo cáo nhanh: '+e.message;} }
 }
 document.addEventListener('click',e=>{if(e.target.closest('#quickReload'))loadQuickReport();});
+// ---------- V70.40: lịch tích ngày ----------
+const DP_WD=['T2','T3','T4','T5','T6','T7','CN'];
+function dayGridHtml(ym,isOn,opts){
+  opts=opts||{};const [y,m]=ym.split('-').map(Number);const n=new Date(Date.UTC(y,m,0)).getUTCDate();
+  const lead=(new Date(Date.UTC(y,m-1,1)).getUTCDay()+6)%7;const today=todayVN();
+  let h=DP_WD.map(w=>'<span class="wd">'+w+'</span>').join('')+'<span></span>'.repeat(lead);
+  for(let d=1;d<=n;d++){const iso=ym+'-'+String(d).padStart(2,'0');const mega=d===m;
+    const dis=opts.disableMega&&mega;
+    h+='<button type="button" '+(opts.attr||'data-dp-day')+'="'+iso+'" class="'+(isOn(iso,d)?'on ':'')+(mega?'mega ':'')+(opts.markFuture&&iso>today?'future':'')+'"'+(dis?' disabled title="Ngày đôi là Mega sale"':' title="'+vnDateLabel(iso)+(mega?' · ngày đôi':'')+'"')+'>'+d+'</button>';}
+  return h;
+}
+function renderDayPick(){
+  const set=new Set(pickDraft);
+  $('dayPickMonth').textContent='Tháng '+Number(pickViewMonth.slice(5))+'/'+pickViewMonth.slice(0,4);
+  $('dayPickGrid').innerHTML=dayGridHtml(pickViewMonth,iso=>set.has(iso),{markFuture:true});
+  $('dayPickCount').textContent=pickDraft.length?'Đã tích '+pickDraft.length+' ngày'+(pickDraft.length>92?' (tối đa 92)':''):'Chưa tích ngày nào';
+  $('dayPickApply').disabled=!pickDraft.length||pickDraft.length>92;
+}
+function openDayPick(){pickDraft=[...pickDays];$('dayPickPanel').classList.remove('hidden');$('dayPickBtn').setAttribute('aria-expanded','true');renderDayPick();}
+function closeDayPick(){$('dayPickPanel').classList.add('hidden');$('dayPickBtn').setAttribute('aria-expanded','false');}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#dayPickBtn')){$('dayPickPanel').classList.contains('hidden')?openDayPick():closeDayPick();return;}
+  const panel=$('dayPickPanel');if(!panel||panel.classList.contains('hidden'))return;
+  if(!e.target.closest('.day-pick')){closeDayPick();return;}
+  const nav=e.target.closest('[data-dp-nav]');if(nav){const [y,m]=pickViewMonth.split('-').map(Number);const d=new Date(Date.UTC(y,m-1+Number(nav.dataset.dpNav),1));pickViewMonth=isoDate(d).slice(0,7);renderDayPick();return;}
+  const day=e.target.closest('[data-dp-day]');if(day){const iso=day.dataset.dpDay;pickDraft=pickDraft.includes(iso)?pickDraft.filter(x=>x!==iso):[...pickDraft,iso].sort();renderDayPick();return;}
+  const q=e.target.closest('[data-dp-quick]');if(q){const ym=pickViewMonth,[y,m]=ym.split('-').map(Number),n=new Date(Date.UTC(y,m,0)).getUTCDate(),k=q.dataset.dpQuick;const p=d=>ym+'-'+String(d).padStart(2,'0');
+    if(k==='clear')pickDraft=pickDraft.filter(x=>!x.startsWith(ym));
+    else if(k==='double'&&m<=n)pickDraft=[...new Set([...pickDraft,p(m)])].sort();
+    else if(k==='mini')pickDraft=[...new Set([...pickDraft,p(15),p(25)])].sort();
+    else if(k==='month')pickDraft=[...new Set([...pickDraft,...Array.from({length:n},(_,i)=>p(i+1)).filter(x=>x<=todayVN())])].sort();
+    renderDayPick();return;}
+  if(e.target.closest('#dayPickApply')){savePickDays(pickDraft);closeDayPick();$('period').value='days';reloadCurrentView();typeof v28FilterLabel==='function'&&v28FilterLabel();}
+});
+document.addEventListener('change',e=>{if(e.target.id==='period'&&e.target.value==='days'&&!pickDays.length)setTimeout(openDayPick,0);});
 // ---------- V70.39: BSC ----------
 let bscData=null,bscLoadToken=0,bscCfg=null,bscCfgMeta=null;
 const BSC_ROMAN=['','I','II','III','IV'];
@@ -2842,9 +2937,36 @@ async function saveBscMonth(){
 // ----- Cài đặt BSC (Admin) -----
 function bscCfgTargetToInput(v,unit){return v==null?'':typeof v==='string'||unit==='text'?String(v):bscToInput(v,unit);}
 function bscCfgTargetFromInput(t,unit){const x=String(t||'').trim();if(!x)return null;if(unit==='text')return x;const n=bscFromInput(x,unit);return Number.isNaN(n)?x:n;}
+// Ngày minisale: "Mặc định mọi tháng" là lịch 1–31; chọn 1 tháng để tích riêng cho tháng đó (tháng chưa tích riêng dùng mặc định).
+let bscMiniWork=null;
+function renderBscMini(){
+  const sel=$('bscMiniScope');const months=(bscCfg?.months||[]);const cur=sel.value||'';
+  sel.innerHTML='<option value="">Mặc định mọi tháng</option>'+months.map(m=>'<option value="'+m+'"'+(m===cur?' selected':'')+'>Tháng '+Number(m.slice(5))+'/'+m.slice(0,4)+(bscMiniWork.by[m]?' · riêng':'')+'</option>').join('');
+  sel.value=months.includes(cur)?cur:'';
+  const scope=sel.value;
+  if(!scope){
+    const set=new Set(bscMiniWork.def);
+    $('bscMiniGrid').innerHTML=Array.from({length:31},(_,i)=>i+1).map(d=>'<button type="button" data-bsc-mini="'+d+'" class="'+(set.has(d)?'on':'')+'">'+d+'</button>').join('');
+    $('bscMiniInfo').textContent=bscMiniWork.def.length?'Ngày '+bscMiniWork.def.join(', '):'Chưa tích ngày nào';
+    $('bscMiniReset').classList.add('hidden');
+  }else{
+    const own=Array.isArray(bscMiniWork.by[scope]);const list=own?bscMiniWork.by[scope]:bscMiniWork.def;const set=new Set(list);
+    $('bscMiniGrid').innerHTML=dayGridHtml(scope,(iso,d)=>set.has(d),{attr:'data-bsc-mini-day',disableMega:true});
+    $('bscMiniInfo').textContent=(own?'Riêng tháng này: ':'Đang theo mặc định: ')+(list.length?list.join(', '):'không có');
+    $('bscMiniReset').classList.toggle('hidden',!own);
+  }
+}
+document.addEventListener('click',e=>{
+  if(!bscMiniWork)return;
+  const a=e.target.closest('[data-bsc-mini]');if(a){const d=Number(a.dataset.bscMini);bscMiniWork.def=bscMiniWork.def.includes(d)?bscMiniWork.def.filter(x=>x!==d):[...bscMiniWork.def,d].sort((x,y)=>x-y);renderBscMini();return;}
+  const b=e.target.closest('[data-bsc-mini-day]');if(b){const scope=$('bscMiniScope').value;const d=Number(b.dataset.bscMiniDay.slice(8));const base=Array.isArray(bscMiniWork.by[scope])?bscMiniWork.by[scope]:[...bscMiniWork.def];bscMiniWork.by[scope]=base.includes(d)?base.filter(x=>x!==d):[...base,d].sort((x,y)=>x-y);renderBscMini();return;}
+  if(e.target.closest('#bscMiniReset')){delete bscMiniWork.by[$('bscMiniScope').value];renderBscMini();}
+});
+document.addEventListener('change',e=>{if(e.target.id==='bscMiniScope'&&bscMiniWork)renderBscMini();});
 function renderBscCfg(){
   const c=bscCfg,meta=bscCfgMeta;
-  $('bscCfgMonths').value=(c.months||[]).join(', ');$('bscCfgMini').value=(c.mini_days||[]).join(', ');
+  $('bscCfgMonths').value=(c.months||[]).join(', ');
+  bscMiniWork={def:[...(c.mini_days||[])],by:JSON.parse(JSON.stringify(c.mini_days_by_month||{}))};renderBscMini();
   const months=c.months||[];
   $('bscCfgHead').innerHTML='<tr><th>Góc nhìn</th><th>PIC</th><th>Hạng mục</th><th>Mục tiêu chiến lược</th><th>Chỉ số</th><th>Tỷ trọng %</th><th>Cách chấm</th><th>Trần %</th><th>Đơn vị</th><th>Nguồn thực tế</th>'+months.map(m=>'<th>MT T'+Number(m.slice(5))+'</th>').join('')+'<th></th></tr>';
   const opt=(list,val)=>list.map(([v,l])=>'<option value="'+escapeHtml(String(v))+'"'+(String(v)===String(val)?' selected':'')+'>'+escapeHtml(l)+'</option>').join('');
@@ -2872,7 +2994,7 @@ function renderBscCfg(){
 }
 function readBscCfg(){
   const c=bscCfg;const months=String($('bscCfgMonths').value).split(',').map(x=>x.trim()).filter(Boolean);
-  const mini=String($('bscCfgMini').value).split(',').map(x=>Number(x.trim())).filter(Boolean);
+  const mini=[...(bscMiniWork?.def||[])];const miniBy=Object.fromEntries(Object.entries(bscMiniWork?.by||{}).filter(([m])=>months.includes(m)));
   const kpis=[...document.querySelectorAll('#bscCfgRows tr')].map(tr=>{
     const g=k=>tr.querySelector('[data-k="'+k+'"]')?.value??'';
     const unit=g('unit');const type=g('source');const tUnit=g('calc')==='MANUAL'?'text':unit;
@@ -2884,7 +3006,7 @@ function readBscCfg(){
     return {id:tr.dataset.id,perspective:Number(g('perspective')),pic:g('pic'),category:g('category'),objective:g('objective'),metric:g('metric'),weight:bscFromInput(g('weight'),'number'),calc:g('calc'),cap,unit,source,targets,method:old.method||''};
   });
   const groups=[...document.querySelectorAll('#bscGroupRows tr')].map(tr=>{const g=k=>tr.querySelector('[data-g="'+k+'"]').value;const list=k=>g(k).split(',').map(x=>x.trim()).filter(Boolean);return {key:g('key'),label:g('label'),model:list('model'),name:list('name'),exclude:list('exclude')};});
-  return {months,mini_days:mini,kpis,groups};
+  return {months,mini_days:mini,mini_days_by_month:miniBy,kpis,groups};
 }
 function updateBscWeight(){
   const w=[...document.querySelectorAll('#bscCfgRows [data-k="weight"]')].reduce((a,x)=>a+(bscFromInput(x.value,'number')||0),0);
@@ -4961,7 +5083,7 @@ function setTab(tab){
 }
 let dashboardLoadToken=0;
 let dashboardAbortController=null;
-async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=shopScopeParam(); $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='quick') loadQuickReport(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
+async function loadDashboard(opts){ opts=opts||{}; const token=++dashboardLoadToken; if(dashboardAbortController) dashboardAbortController.abort(); dashboardAbortController=new AbortController(); const signal=dashboardAbortController.signal; try{ const r=getRange(); const cr=getCompareRange(r); const shop=shopScopeParam(); $('snapshotText').textContent='Đang đọc database...'; const qs=new URLSearchParams({period:r.period,date_from:r.from,date_to:r.to,compare_date_from:cr.from,compare_date_to:cr.to,shop_id:shop,compare:'previous_period'}); if(r.days)qs.set('days',r.days.join(',')); const historical=r.to<todayVN(); const data=await api('/api/dashboard/compare?'+qs.toString(),{signal,ttlMs:historical?300000:0}); if(token!==dashboardLoadToken)return; render(data); if((data.load_errors||[]).length&&hasFeature('system')){ $('diagSummary').innerHTML='⚠️ Dashboard tải được nhưng có lỗi đọc snapshot: '+data.load_errors.map(x=>escapeHtml(x.message)).join(' | '); } if(!opts.skipDiagnostics&&hasFeature('system')){ if(daysInclusive(r.from,r.to)<=7){ loadDiagnostics().catch(err=>{ if(err?.name==='AbortError')return; $('diagSummary').innerHTML='⚠️ Không tải được báo lỗi: '+escapeHtml(err.message)+' — mở trực tiếp '+escapeHtml(getWorker())+'/api/diagnostics để xem JSON.'; }); } else { $('diagSummary').innerHTML='ℹ️ Khoảng đang xem dài '+daysInclusive(r.from,r.to)+' ngày nên web không tự chạy kiểm tra (truy vấn nặng). Bấm "Kiểm tra lỗi" nếu cần.'; } } if(currentTab()==='performance') loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }); if(currentTab()==='orders') loadOrders(true).catch(err=>{ $('ordersRows').innerHTML='<tr><td colspan="10" class="empty">Không tải được đơn: '+escapeHtml(err.message)+'</td></tr>'; }); if(currentTab()==='marketing') loadMarketing(); if(currentTab()==='quick') loadQuickReport(); if(currentTab()==='warehouse') loadWarehouse().catch(err=>{ $('warehouseSummary').innerHTML='⚠️ Không tải được kho hàng: '+escapeHtml(err.message); }); }catch(e){ if(e?.name==='AbortError'||token!==dashboardLoadToken)return; $('snapshotText').textContent='Lỗi tải dữ liệu'; $('storageBox').innerHTML='❌ '+escapeHtml(e.message)+'<br><small>Kiểm tra Worker: '+escapeHtml(getWorker())+'/api/debug/version</small>'; console.error(e); } }
 function schedule(){ if(timer) clearInterval(timer); timer=null;if(!hasFeature('overview'))return;timer=setInterval(()=>{ const r=getRangeSafe(); if(r && r.to>=todayVN()) loadDashboard({skipDiagnostics:true}); },60000); }
 async function connectShop(){
   const channel=encodeURIComponent($('channel').value||'Shopee');
