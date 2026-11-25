@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.40</title>
+  <title>Gooby BI Dashboard · V70.41</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -716,6 +716,14 @@
   .bsc-head h2{margin:0}.bsc-head p{margin:4px 0 0}
   .bsc-head .mini-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .bsc-head select{min-width:120px}
+  /* V70.41: giao thất bại */
+  .fd-bar{position:relative;height:6px;border-radius:999px;background:#f2f4f7;min-width:60px;overflow:hidden;margin-top:4px}
+  .fd-bar i{position:absolute;left:0;top:0;bottom:0;background:#f04438;border-radius:999px}
+  .fd-rate-bad{color:#b42318;font-weight:700}.fd-rate-mid{color:#b54708;font-weight:700}
+  .fd-chip{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .fd-chip.ok{background:#ecfdf3;color:#067647}.fd-chip.wait{background:#fffaeb;color:#b54708}.fd-chip.lost{background:#f2f4f7;color:#344054}
+  #fdOrderRows td{vertical-align:top}#fdOrderRows small{color:var(--muted,#667085)}
+  .fd-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
   /* V70.40: lịch tích ngày (bộ lọc trên cùng + ngày minisale BSC) */
   .day-pick{position:relative}
   .day-pick-panel{position:absolute;left:0;top:calc(100% + 6px);z-index:40;width:300px;background:var(--surface,#fff);border:1px solid var(--line,#eadfd8);border-radius:14px;padding:12px;box-shadow:0 16px 40px rgba(16,24,40,.16)}
@@ -956,10 +964,11 @@
       <div class="card metric" data-icon="₫" data-tone="teal"><div class="label">NMV</div><div class="value" id="mNmv">-</div><div class="subline"><span id="dNmv" class="delta neutral">-</span><span id="cNmv">so sánh</span></div><div class="formula" id="nmvFormula">(GMV − GMV hủy − GMV hoàn trả) / 1,08</div></div>
       <div class="card metric" data-icon="▣" data-tone="violet"><div class="label">Đơn đã đặt</div><div class="value" id="mOrders">-</div><div class="subline"><span id="dOrders" class="delta neutral">-</span><span id="cOrders">so sánh</span></div></div>
       <div class="card metric" data-icon="✓" data-tone="green"><div class="label">Đơn hợp lệ</div><div class="value" id="mValid">-</div><div class="subline"><span id="dValid" class="delta neutral">-</span><span id="cValid">so sánh</span></div></div>
-      <div class="card metric" data-icon="×" data-tone="red"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div></div>
+      <div class="card metric" data-icon="×" data-tone="red"><div class="label">GMV hủy</div><div class="value" id="mCancelGmv">-</div><div class="subline"><span id="dCancelGmv" class="delta neutral">-</span><span id="cCancelGmv">so sánh</span></div><div class="formula" id="cancelSplitFormula">Gồm hủy trước giao + giao thất bại</div></div>
       <div class="card metric" data-icon="%" data-tone="orange"><div class="label">Tỷ lệ hủy</div><div class="value" id="mCancelRate">-</div><div class="subline"><span id="dCancelRate" class="delta neutral">-</span><span id="cCancelRate">so sánh</span></div><div class="formula">GMV hủy / GMV</div></div>
       <div class="card metric" data-icon="◇" data-tone="blue"><div class="label">AOV</div><div class="value" id="mAov">-</div><div class="subline"><span id="dAov" class="delta neutral">-</span><span id="cAov">so sánh</span></div><div class="formula">GMV / đơn đã đặt</div></div>
       <div class="card metric" data-icon="↩" data-tone="red"><div class="label">GMV hoàn trả</div><div class="value" id="mReturn">-</div><div class="subline"><span id="dReturn" class="delta neutral">-</span><span id="cReturn">so sánh</span></div><div class="formula" id="returnFormula">Phiếu trả hàng đã hoàn tiền · theo ngày tạo đơn</div></div>
+      <div class="card metric" data-icon="⟲" data-tone="red"><div class="label">Giao thất bại (hoàn về shop)</div><div class="value" id="mFailed">-</div><div class="subline"><span id="dFailed" class="delta neutral">-</span><span id="cFailed">so sánh</span></div><div class="formula" id="failedFormula">Shopee ghi là Hủy · đã nằm trong GMV hủy</div></div>
     </section>
 
     <section class="grid2" data-subpanel="gmv:overview">
@@ -1148,6 +1157,7 @@
         <div class="ops-kpi"><span>Chi phí / GMV</span><b id="bizCostRatio">-</b><small id="bizCostRatioNote">-</small></div>
         <div class="ops-kpi"><span>Chi phí / NMV</span><b id="bizCostNmvRatio">-</b><small id="bizCostNmvNote">-</small></div>
         <div class="ops-kpi"><span>Hoàn trả (đã trừ vào NMV)</span><b id="bizReturnGmv">-</b><small id="bizReturnNote">-</small></div>
+        <div class="ops-kpi"><span>Giao thất bại (trong GMV hủy)</span><b id="bizFailedGmv">-</b><small id="bizFailedNote">-</small></div>
         <div class="ops-kpi"><span>Giá vốn hàng bán</span><b id="bizCogs">-</b><small id="bizCogsNote">-</small></div>
         <div class="ops-kpi"><span>Lãi gộp (NMV − giá vốn)</span><b id="bizGross">-</b><small id="bizGrossNote">-</small></div>
         <div class="ops-kpi"><span>Lãi ước tính sau chi phí</span><b id="bizNet">-</b><small id="bizNetNote">-</small></div>
@@ -1223,8 +1233,8 @@
         <div class="section-title"><div><h2>Báo cáo nhanh theo ngày</h2><p>Mỗi dòng là một ngày của kỳ đang chọn ở bộ lọc phía trên. NMV = (GMV − hủy − hoàn trả) ÷ 1,08. Chi phí xu lấy từ ví Xu Của Shop, chi phí ads = Product Ads + Livestream Ads, giữ nguyên số Shopee ghi nhận. Runrate % chi phí = (xu + ads) ÷ NMV của chính ngày đó.</p></div>
           <div class="mini-actions" style="margin-top:0"><button class="ghost" id="quickReload">↻ Tải lại</button></div></div>
         <div id="quickNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
-        <div class="table-wrap"><table id="quickTable"><thead><tr><th>Ngày</th><th class="right">GMV</th><th class="right">NMV</th><th class="right">Chi phí xu</th><th class="right">Chi phí ads</th><th class="right">Tổng chi phí</th><th class="right">Runrate % chi phí</th></tr></thead>
-          <tbody id="quickRows"><tr><td colspan="7" class="empty">Chưa tải.</td></tr></tbody></table></div>
+        <div class="table-wrap"><table id="quickTable"><thead><tr><th>Ngày</th><th class="right">GMV</th><th class="right">NMV</th><th class="right" title="Hoàn tiền (Returns) + giao thất bại hoàn về shop">Hoàn hàng</th><th class="right">Chi phí xu</th><th class="right">Chi phí ads</th><th class="right">Tổng chi phí</th><th class="right">Runrate % chi phí</th></tr></thead>
+          <tbody id="quickRows"><tr><td colspan="8" class="empty">Chưa tải.</td></tr></tbody></table></div>
       </section>
     </section>
 
@@ -1492,7 +1502,32 @@
 
     <section class="tab-panel hidden" id="tab-orders">
 
-    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="returns">Hàng trả</button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="returns">Hàng trả</button><button type="button" data-sub="failed">Giao thất bại <span class="subcount" id="subCountFailed"></span></button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+
+    <section class="card" data-subpanel="orders:failed" id="failedPanel">
+      <div class="section-title"><div><h2>Giao thất bại – hoàn về shop</h2><p>Đơn Shopee ghi là <b>Hủy</b> nhưng hàng đã rời kho: lý do "Failed Delivery", vận chuyển báo giao thất bại, hoặc đã được lấy hàng rồi mới hủy. Đã nằm trong GMV hủy nên NMV không đổi. <b>Hoàn hàng = hoàn tiền + giao thất bại.</b></p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="fdReload">↻ Tải lại</button></div></div>
+      <div id="fdNotice" class="notice">Chọn kỳ ở bộ lọc phía trên.</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>Giao thất bại</span><b id="fdFailed">-</b><small id="fdFailedNote">-</small></div>
+        <div class="ops-kpi"><span>Hoàn hàng (trả + giao thất bại)</span><b id="fdBack">-</b><small id="fdBackNote">-</small></div>
+        <div class="ops-kpi"><span>Hủy trước khi giao</span><b id="fdPre">-</b><small id="fdPreNote">-</small></div>
+        <div class="ops-kpi"><span>Kho đã nhận lại</span><b id="fdRecv">-</b><small id="fdRecvNote">-</small></div>
+      </div>
+      <div class="v25-two">
+        <div><h3 class="biz-subhead">Theo tỉnh/thành</h3><div class="table-wrap"><table><thead><tr><th>Tỉnh/thành</th><th class="right">Đơn GTB</th><th class="right">Tỷ lệ</th><th class="right">Giá trị</th></tr></thead><tbody id="fdProvRows"></tbody></table></div></div>
+        <div><h3 class="biz-subhead">Theo đơn vị vận chuyển</h3><div class="table-wrap"><table><thead><tr><th>Đơn vị</th><th class="right">Đơn GTB</th><th class="right">Tỷ lệ</th><th class="right">Giá trị</th></tr></thead><tbody id="fdCarrierRows"></tbody></table></div></div>
+      </div>
+      <div class="v25-two" style="margin-top:12px">
+        <div><h3 class="biz-subhead">Sản phẩm hay giao thất bại</h3><div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th class="right">Đơn</th><th class="right">SL</th></tr></thead><tbody id="fdProductRows"></tbody></table></div></div>
+        <div><h3 class="biz-subhead">Theo ngày đặt</h3><div class="table-wrap"><table><thead><tr><th>Ngày</th><th class="right">Đơn GTB</th><th class="right">Giá trị</th><th class="right">Thất lạc</th></tr></thead><tbody id="fdDailyRows"></tbody></table></div></div>
+      </div>
+      <h3 class="biz-subhead" style="margin-top:14px">Danh sách đơn để kho đối soát</h3>
+      <div class="fd-tools"><select id="fdFilter" aria-label="Lọc đơn"><option value="pending">Chưa nhận lại</option><option value="received">Đã nhận lại</option><option value="lost">Thất lạc</option><option value="all">Tất cả</option></select>
+        <input id="fdSearch" placeholder="Tìm mã đơn, tỉnh, sản phẩm…" style="min-width:220px">
+        <button class="ghost" id="fdMarkBtn">✓ Đánh dấu đã nhận lại các đơn đã tick</button><button class="ghost" id="fdUnmarkBtn">↺ Bỏ đánh dấu</button><span id="fdMarkMsg" class="muted"></span></div>
+      <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="fdCheckAll" aria-label="Chọn tất cả"></th><th>Mã đơn</th><th>Ngày đặt</th><th>Tỉnh/thành</th><th>Vận chuyển</th><th>Sản phẩm</th><th class="right">Giá trị</th><th>Kho</th></tr></thead><tbody id="fdOrderRows"><tr><td colspan="8" class="empty">Chưa tải.</td></tr></tbody></table></div>
+    </section>
 
     <section class="card" data-subpanel="orders:returns" id="returnsPanel">
       <div class="section-title"><div><h2>Hàng trả &amp; hoàn tiền</h2><p>Lấy tự động từ Shopee (Returns API) mỗi 10 phút. Ngày theo ngày tạo đơn. Chỉ phiếu đã hoàn tiền mới được trừ vào NMV; đơn đã hủy không bị trừ lần 2.</p></div>
@@ -1865,7 +1900,7 @@ function showLoggedOut(message){
 // ===== V70.36: chọn nhiều shop =====
 // Trang hỗ trợ xem nhóm shop; trang khác vẫn dùng ô Shop (Admin: tất cả shop) và hiện ghi chú.
 const SHOP_MULTI_KEY='gooby_shop_multi_v1';
-const MULTI_SHOP_VIEWS=new Set(['gmv:overview','gmv:targets','gmv:fees','quick','marketing:ads','marketing:mktcoin']);
+const MULTI_SHOP_VIEWS=new Set(['gmv:overview','gmv:targets','gmv:fees','quick','marketing:ads','marketing:mktcoin','orders:failed']);
 let multiShopIds=[];
 try{const v=JSON.parse(localStorage.getItem(SHOP_MULTI_KEY)||'[]');if(Array.isArray(v))multiShopIds=v.map(String);}catch(e){}
 function isMultiShop(){return multiShopIds.length>1;}
@@ -1883,7 +1918,7 @@ function updateDayPickNote(){
   const note=$('dayPickNote');if(!note)return;
   const r=getRangeSafe();const show=!!(r&&r.days&&$('period').value==='days'&&!DAY_PICK_VIEWS.has(currentViewKey())&&currentTab()!=='bsc'&&currentTab()!=='system');
   note.classList.toggle('hidden',!show);
-  if(show)note.textContent='Đang tích '+r.days.length+' ngày rời. Trang này chưa tính theo ngày rời nên đang xem cả khoảng '+vnDateLabel(r.from)+' → '+vnDateLabel(r.to)+'. Trang tính đúng các ngày đã tích: Tổng quan (số tổng, biểu đồ) và Báo cáo nhanh.';
+  if(show)note.textContent='Đang tích '+r.days.length+' ngày rời. Trang này chưa tính theo ngày rời nên đang xem cả khoảng '+vnDateLabel(r.from)+' → '+vnDateLabel(r.to)+'. Trang tính đúng các ngày đã tích: Tổng quan (số tổng, biểu đồ), Báo cáo nhanh và Giao thất bại.';
 }
 function updateMultiShopNote(){
   updateDayPickNote();
@@ -2025,7 +2060,7 @@ function updatePeriodFields(){ const p=$('period').value; document.querySelector
 function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
 // V70.40: kiểu xem "Chọn ngày (tích)": các ngày rời, lưu trên trình duyệt này.
 const DAY_PICK_KEY='gooby_pick_days_v1';
-const DAY_PICK_VIEWS=new Set(['gmv:overview','quick']);
+const DAY_PICK_VIEWS=new Set(['gmv:overview','quick','orders:failed']);
 let pickDays=(()=>{try{const v=JSON.parse(localStorage.getItem(DAY_PICK_KEY)||'[]');return Array.isArray(v)?v.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort():[];}catch{return [];}})();
 let pickViewMonth=(pickDays.at(-1)||todayVN()).slice(0,7);
 let pickDraft=null;
@@ -2763,7 +2798,7 @@ function quickCostLevel(pct,limit){if(pct==null||!Number.isFinite(pct))return ''
 async function loadQuickReport(){
   const token=++quickLoadToken;
   const r=getRange(),shop=shopScopeParam();
-  if(r.days?r.days.length>92:daysInclusive(r.from,r.to)>92){$('quickNotice').textContent='Báo cáo nhanh xem tối đa 92 ngày một lần. Hãy chọn khoảng ngắn hơn.';$('quickRows').innerHTML='<tr><td colspan="7" class="empty">Khoảng quá dài.</td></tr>';return;}
+  if(r.days?r.days.length>92:daysInclusive(r.from,r.to)>92){$('quickNotice').textContent='Báo cáo nhanh xem tối đa 92 ngày một lần. Hãy chọn khoảng ngắn hơn.';$('quickRows').innerHTML='<tr><td colspan="8" class="empty">Khoảng quá dài.</td></tr>';return;}
   $('quickNotice').textContent='Đang tải báo cáo nhanh…';
   try{
     const d=await api('/api/business/daily-quick?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,...(r.days?{days:r.days.join(',')}:{})}));
@@ -2778,11 +2813,12 @@ async function loadQuickReport(){
     const row=(x,label,total)=>{const b=v=>total?'<b>'+v+'</b>':v;
       const lv=total?{}:rowLevel(x)||{};
       return `<tr class="${total?'quick-total':''}${lv.coin==='bad'||lv.ads==='bad'?' quick-row-bad':''}"><td>${b(label)}</td><td class="right">${b(moneyExact(x.gmv))}</td><td class="right">${b(moneyExact(x.nmv))}</td>`+
+        `<td class="right" title="Hoàn tiền ${moneyExact(x.return_gmv)} · Giao thất bại ${moneyExact(x.failed_gmv||0)} (${num(x.failed_orders||0)} đơn)">${x.returned_goods_gmv==null?'–':b(moneyExact(x.returned_goods_gmv))+`<small class="quick-pct">${x.gmv>0?percent(Math.round(x.returned_goods_gmv/x.gmv*10000)/100):'–'}</small>`}</td>`+
         `<td class="right">${total||x.has_coin?b(moneyExact(x.coin_cost))+share(x.coin_cost,x.nmv,'coin'):missing}</td>`+
         `<td class="right" title="Product Ads ${moneyExact(x.ads_product)} · Livestream Ads ${moneyExact(x.ads_live)}">${total||x.has_ads?b(moneyExact(x.ads_cost))+share(x.ads_cost,x.nmv,'ads'):missing}</td>`+
         `<td class="right">${b(moneyExact(x.cost_total))}</td><td class="right">${b(pct(x.cost_pct))}</td></tr>`;};
     const rows=d.rows||[];
-    $('quickRows').innerHTML=rows.length?row(d.totals,'Tổng kỳ ('+num(rows.length)+' ngày)',true)+rows.map(x=>row(x,dayLabel(x.date),false)).join(''):'<tr><td colspan="7" class="empty">Không có ngày nào trong kỳ đang chọn.</td></tr>';
+    $('quickRows').innerHTML=rows.length?row(d.totals,'Tổng kỳ ('+num(rows.length)+' ngày)',true)+rows.map(x=>row(x,dayLabel(x.date),false)).join(''):'<tr><td colspan="8" class="empty">Không có ngày nào trong kỳ đang chọn.</td></tr>';
     const notes=[];
     if((d.days_missing_coin||[]).length)notes.push(`${num(d.days_missing_coin.length)} ngày chưa có số liệu xu (tiện ích Chrome chưa đồng bộ)`);
     if((d.days_missing_ads||[]).length)notes.push(`${num(d.days_missing_ads.length)} ngày chưa có số liệu ads`);
@@ -2793,6 +2829,64 @@ async function loadQuickReport(){
   }catch(e){ if(token===quickLoadToken){$('quickNotice').textContent='⚠️ Không tải được báo cáo nhanh: '+e.message;} }
 }
 document.addEventListener('click',e=>{if(e.target.closest('#quickReload'))loadQuickReport();});
+// ---------- V70.41: giao thất bại ----------
+let fdData=null,fdToken=0;
+function fdRateCls(r){return r==null?'':r>=10?'fd-rate-bad':r>=5?'fd-rate-mid':'';}
+async function loadFailedDeliveries(){
+  const token=++fdToken;const r=getRange();const shop=shopScopeParam();
+  $('fdNotice').textContent='Đang tải đơn giao thất bại…';
+  try{
+    const d=await api('/api/orders/failed-deliveries?'+new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shop,...(r.days?{days:r.days.join(',')}:{})}));
+    if(token!==fdToken)return;fdData=d;renderFailedDeliveries();
+  }catch(e){if(token===fdToken){$('fdNotice').textContent='⚠️ Không tải được: '+e.message+(String(e.message).includes('app_failed_deliveries')?' — cần chạy SQL V70.41.':'');}}
+}
+function renderFailedDeliveries(){
+  const d=fdData;if(!d)return;const t=d.totals||{};
+  $('fdFailed').textContent=num(t.failed_orders)+' đơn';$('fdFailedNote').textContent=money(t.failed_gmv)+(t.failed_rate!=null?' · '+percent(t.failed_rate)+' GMV':'')+(t.fail_rate_of_shipped!=null?' · '+percent(t.fail_rate_of_shipped)+' đơn đã gửi':'');
+  $('fdBack').textContent=money(t.returned_goods_gmv);$('fdBackNote').textContent=num(t.returned_goods_orders)+' đơn · '+(t.returned_goods_rate!=null?percent(t.returned_goods_rate)+' GMV · ':'')+'hoàn tiền '+money(t.return_gmv)+' + GTB '+money(t.failed_gmv);
+  $('fdPre').textContent=money(t.pre_ship_cancel_gmv);$('fdPreNote').textContent=(t.gmv?percent(Math.round(t.pre_ship_cancel_gmv/t.gmv*10000)/100)+' GMV · ':'')+'khách hủy/chưa thanh toán'+(t.lost_orders?' · thất lạc '+num(t.lost_orders)+' đơn ('+money(t.lost_gmv)+')':'');
+  $('fdRecv').textContent=num(t.received_orders)+'/'+num(t.failed_orders);$('fdRecvNote').textContent=t.pending_orders?num(t.pending_orders)+' đơn chưa xác nhận nhận lại':'Đã nhận lại đủ';
+  if($('subCountFailed'))$('subCountFailed').textContent=t.pending_orders?String(t.pending_orders):'';
+  const max=Math.max(1,...(d.by_province||[]).map(x=>x.fail_rate||0),...(d.by_carrier||[]).map(x=>x.fail_rate||0));
+  const rateCell=x=>x.fail_rate==null?'<span class="muted">–</span>':'<span class="'+fdRateCls(x.fail_rate)+'" title="'+num(x.orders)+' / '+num(x.shipped)+' đơn đã gửi">'+percent(x.fail_rate)+'</span><div class="fd-bar"><i style="width:'+Math.round(x.fail_rate/max*100)+'%"></i></div>';
+  const grp=(rows,empty)=>rows.length?rows.map(x=>'<tr><td>'+escapeHtml(x.key)+'</td><td class="right">'+num(x.orders)+'</td><td class="right">'+rateCell(x)+'</td><td class="right">'+money(x.gmv)+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">'+empty+'</td></tr>';
+  $('fdProvRows').innerHTML=grp((d.by_province||[]).slice(0,20),'Không có đơn giao thất bại.');
+  $('fdCarrierRows').innerHTML=grp(d.by_carrier||[],'Không có đơn giao thất bại.');
+  $('fdProductRows').innerHTML=(d.by_product||[]).length?d.by_product.slice(0,15).map(x=>'<tr><td>'+escapeHtml(x.item_name)+'</td><td class="right">'+num(x.orders)+'</td><td class="right">'+num(x.qty)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">–</td></tr>';
+  $('fdDailyRows').innerHTML=(d.daily||[]).length?[...d.daily].reverse().map(x=>'<tr><td>'+vnDateLabel(x.date)+'</td><td class="right">'+num(x.failed_orders)+'</td><td class="right">'+money(x.failed_gmv)+'</td><td class="right">'+(x.lost_orders?num(x.lost_orders):'–')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">–</td></tr>';
+  renderFdOrders();
+  const notes=[];if(!d.returns_available)notes.push('chưa đọc được hàng hoàn tiền');(d.notes||[]).forEach(n=>notes.push(n));
+  $('fdNotice').innerHTML='<span>'+(notes.length?'⚠️ ':'✅ ')+escapeHtml(rangeLabel(getRange()))+' · '+num(t.failed_orders)+' đơn giao thất bại ('+money(t.failed_gmv)+'), tỷ lệ cao nhất theo tỉnh/đơn vị vận chuyển tô đỏ (≥10%) hoặc cam (≥5%).'+(notes.length?' Lưu ý: '+escapeHtml(notes.join('; '))+'.':'')+'</span>';
+}
+function renderFdOrders(){
+  const d=fdData;if(!d)return;const f=$('fdFilter').value,q=v25Fold?v25Fold($('fdSearch').value||''):String($('fdSearch').value||'').toLowerCase();
+  const list=(d.orders||[]).filter(o=>f==='all'||(f==='lost'?o.kind==='lost':o.kind==='failed'&&(f==='received'?!!o.received_at:!o.received_at)))
+    .filter(o=>!q||(v25Fold?v25Fold:String)([o.order_sn,o.province,o.carrier,...(o.items||[]).map(i=>i.item_name+' '+i.model_name)].join(' ')).toLowerCase().includes(q));
+  const canMark=!isMultiShop()&&($('shop').value||'all')!=='all';
+  $('fdMarkBtn').disabled=!canMark;$('fdUnmarkBtn').disabled=!canMark;
+  if(!canMark)$('fdMarkMsg').textContent='Chọn 1 shop ở bộ lọc phía trên để đánh dấu kho đã nhận.';else if($('fdMarkMsg').textContent.startsWith('Chọn 1 shop'))$('fdMarkMsg').textContent='';
+  $('fdOrderRows').innerHTML=list.length?list.slice(0,500).map(o=>{
+    const st=o.kind==='lost'?'<span class="fd-chip lost">Thất lạc (Shopee bồi thường)</span>':o.received_at?'<span class="fd-chip ok" title="'+escapeHtml((o.received_by||'')+(o.receipt_note?' · '+o.receipt_note:''))+'">Đã nhận '+escapeHtml(vnDateLabel(String(o.received_at).slice(0,10)))+'</span>':'<span class="fd-chip wait">Chưa nhận</span>';
+    const items=(o.items||[]).map(i=>escapeHtml(i.item_name)+(i.model_name?' · <small>'+escapeHtml(i.model_name)+'</small>':'')+' ×'+num(i.qty)).join('<br>');
+    return '<tr><td>'+(o.kind==='failed'?'<input type="checkbox" data-fd-sn="'+escapeHtml(o.order_sn)+'">':'')+'</td><td><b>'+escapeHtml(o.order_sn)+'</b><br><small>'+escapeHtml(o.cancel_reason||'')+'</small></td><td>'+vnDateLabel(o.create_date)+'</td><td>'+escapeHtml(o.province||'–')+'</td><td>'+escapeHtml(o.carrier||'–')+'</td><td style="min-width:260px">'+items+'</td><td class="right">'+money(o.amount)+'</td><td>'+st+'</td></tr>';
+  }).join('')+(list.length>500?'<tr><td colspan="8" class="empty">Đang hiện 500/'+num(list.length)+' đơn — lọc hoặc tìm để thu hẹp.</td></tr>':''):'<tr><td colspan="8" class="empty">Không có đơn nào.</td></tr>';
+  $('fdCheckAll').checked=false;
+}
+async function markFailedReceived(received){
+  const sns=[...document.querySelectorAll('[data-fd-sn]:checked')].map(x=>x.dataset.fdSn);
+  if(!sns.length){$('fdMarkMsg').textContent='Tick ít nhất 1 đơn.';return;}
+  const shop=$('shop').value;$('fdMarkMsg').textContent='Đang lưu…';
+  try{await api('/api/orders/failed-deliveries/receive?shop_id='+encodeURIComponent(shop),{method:'POST',body:{shop_id:shop,order_sns:sns,received}});$('fdMarkMsg').textContent='✅ Đã '+(received?'đánh dấu nhận lại ':'bỏ đánh dấu ')+num(sns.length)+' đơn.';await loadFailedDeliveries();}
+  catch(e){$('fdMarkMsg').textContent='⚠️ '+e.message;}
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#fdReload'))loadFailedDeliveries();
+  if(e.target.closest('#fdMarkBtn'))markFailedReceived(true);
+  if(e.target.closest('#fdUnmarkBtn'))markFailedReceived(false);
+  if(e.target.id==='fdCheckAll')document.querySelectorAll('[data-fd-sn]').forEach(x=>x.checked=e.target.checked);
+});
+document.addEventListener('change',e=>{if(e.target.id==='fdFilter')renderFdOrders();});
+document.addEventListener('input',e=>{if(e.target.id==='fdSearch')renderFdOrders();});
 // ---------- V70.40: lịch tích ngày ----------
 const DP_WD=['T2','T3','T4','T5','T6','T7','CN'];
 function dayGridHtml(ym,isOn,opts){
@@ -4326,6 +4420,7 @@ const SUB_LOADERS={
   'marketing:mktcoin':()=>loadCoinWallet(),
   'gmv:customers':()=>loadCustomers(),
   'orders:returns':()=>loadReturns(),
+  'orders:failed':()=>loadFailedDeliveries(),
   'performance:listings':()=>loadListingPerformance(),
   'performance:health':()=>loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }),
   'marketing:vouchers':()=>loadShopVouchers(),
@@ -5177,6 +5272,13 @@ function renderV7025Extras(payload){
   const delta={percent:old?Math.round((cur-old)/old*1000)/10:(cur?null:0)};
   setMetric('mReturn','dReturn','cReturn',cur,delta,'money',true);
   if($('returnFormula'))$('returnFormula').textContent=s.return_gmv===undefined?'Chưa có dữ liệu hàng trả (cần chạy SQL V70.25)':`${num(s.return_orders||0)} đơn · ${percent(s.return_rate||0)} GMV · theo ngày tạo đơn`;
+  // V70.41: giao thất bại tách khỏi GMV hủy (NMV không đổi vì đã trừ như hủy).
+  if(s.failed_delivery_gmv!==undefined){
+    const fc=Number(s.failed_delivery_gmv||0),fo=Number(prev.failed_delivery_gmv||0);
+    setMetric('mFailed','dFailed','cFailed',fc,{percent:fo?Math.round((fc-fo)/fo*1000)/10:(fc?null:0)},'money',true);
+    if($('failedFormula'))$('failedFormula').textContent=num(s.failed_delivery_orders||0)+' đơn · '+percent(s.failed_delivery_rate||0)+' GMV · Hoàn hàng (trả + giao thất bại): '+money(s.returned_goods_gmv||0)+' = '+percent(s.returned_goods_rate||0);
+    if($('cancelSplitFormula'))$('cancelSplitFormula').textContent='Hủy trước giao '+money(s.pre_ship_cancel_gmv||0)+' ('+percent(s.pre_ship_cancel_rate||0)+') · giao thất bại '+money(s.failed_delivery_gmv||0)+(s.lost_gmv?' · thất lạc '+money(s.lost_gmv):'');
+  }else if($('mFailed')){$('mFailed').textContent='-';if($('failedFormula'))$('failedFormula').textContent='Chưa có dữ liệu (cần chạy SQL V70.41)';}
   if($('nmvFormula'))$('nmvFormula').textContent=s.nmv_deducts_returns===false?'(GMV − GMV hủy) / 1,08 · chưa trừ hoàn trả':'(GMV − GMV hủy − GMV hoàn trả) / 1,08';
   renderDataHealth(payload);
 }
@@ -5266,7 +5368,7 @@ async function syncReturnsNow(){
 // --- Mục tiêu tháng: hoàn trả + giá vốn + lãi ---
 function renderBizProfit(d){
   if(!d||!$('bizReturnGmv'))return;const p=d.profit||{},r=d.returns||{};
-  $('bizReturnGmv').textContent=r.available?money(r.return_gmv):'-';$('bizReturnNote').textContent=r.available?num(r.return_orders)+' đơn hoàn tiền':'Chưa có dữ liệu hàng trả';
+  $('bizReturnGmv').textContent=r.available?money(r.return_gmv):'-';if($('bizFailedGmv')){$('bizFailedGmv').textContent=r.failed_available?money(r.failed_gmv):'-';$('bizFailedNote').textContent=r.failed_available?num(r.failed_orders)+' đơn · hoàn hàng tổng '+money(r.returned_goods_gmv):'Chưa có dữ liệu (SQL V70.41)';}$('bizReturnNote').textContent=r.available?num(r.return_orders)+' đơn hoàn tiền':'Chưa có dữ liệu hàng trả';
   $('bizCogs').textContent=p.available?money(p.cogs):'-';$('bizCogsNote').textContent=p.available?('Độ phủ giá vốn '+v25Pct(p.cogs_coverage_pct)+(p.skus_without_cost?' · '+num(p.skus_without_cost)+' SKU thiếu':'')):'Chưa nhập giá vốn';
   $('bizGross').textContent=p.available?money(p.gross_profit):'-';$('bizGrossNote').textContent='NMV '+money(p.nmv);
   $('bizNet').textContent=p.available?money(p.net_profit):'-';$('bizNetNote').textContent=p.available?'Biên '+v25Pct(p.net_margin_pct)+' NMV':'-';
