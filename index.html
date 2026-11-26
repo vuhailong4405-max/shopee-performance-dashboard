@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.43</title>
+  <title>Gooby BI Dashboard · V70.44</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -716,6 +716,16 @@
   .bsc-head h2{margin:0}.bsc-head p{margin:4px 0 0}
   .bsc-head .mini-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .bsc-head select{min-width:120px}
+  /* V70.44: điểm quà & giá chênh */
+  .op-tabs{display:flex;gap:6px;margin:12px 0 8px;flex-wrap:wrap}
+  .op-tabs button{border:1px solid var(--line,#eadfd8);background:#fff;color:#101828;border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:none}
+  #opDiff span,#opPrice span{font-size:inherit}
+  #pointsPanel .op-tabs button{color:#101828!important;background:#fff!important;border-color:var(--line,#eadfd8)!important}
+  #pointsPanel .op-tabs button.on{color:#fff!important;background:#101828!important;border-color:#101828!important}
+  .op-tabs button.on{background:#101828;color:#fff;border-color:#101828}
+  .op-pos{color:#067647;font-weight:700}.op-neg{color:#b42318;font-weight:700}.op-zero{color:#667085;font-weight:700}
+  #opRows td{vertical-align:top}#opRows small{color:var(--muted,#667085)}
+  .op-pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px;font-size:13px}
   /* V70.41: giao thất bại */
   .fd-bar{position:relative;height:6px;border-radius:999px;background:#f2f4f7;min-width:60px;overflow:hidden;margin-top:4px}
   .fd-bar i{position:absolute;left:0;top:0;bottom:0;background:#f04438;border-radius:999px}
@@ -1502,7 +1512,23 @@
 
     <section class="tab-panel hidden" id="tab-orders">
 
-    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="returns">Hàng trả</button><button type="button" data-sub="failed">Giao thất bại <span class="subcount" id="subCountFailed"></span></button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+    <nav class="page-subnav" data-tab="orders" aria-label="Mục trong trang"><button type="button" data-sub="deadlines">Cảnh báo bàn giao <span class="subcount" id="subCountDeadlines"></span></button><button type="button" data-sub="cancel">Lý do hủy <span class="subcount" id="subCountCancel"></span></button><button type="button" data-sub="list">Danh sách đơn</button><button type="button" data-sub="returns">Hàng trả</button><button type="button" data-sub="failed">Giao thất bại <span class="subcount" id="subCountFailed"></span></button><button type="button" data-sub="points">Điểm quà &amp; giá chênh</button><button type="button" data-sub="wallet">Đối soát ví</button><button type="button" data-sub="regions">Khu vực</button></nav>
+
+    <section class="card" data-subpanel="orders:points" id="pointsPanel">
+      <div class="section-title"><div><h2>Điểm quà &amp; giá chênh theo đơn</h2><p>Ghép từng dòng đơn Shopee với combo / SKU lẻ trong <b>Master SKU</b>. Điểm bỉm = mỗi bịch bỉm 1 điểm (theo điểm/đơn vị); điểm quà = điểm quà của các món quà trong combo; <b>chênh = điểm bỉm − điểm quà</b> (dương: bỉm nhiều hơn quà, âm: quà vượt điểm bỉm). Giá chênh = giá gốc trên sàn − giá niêm yết SKU × số bịch trong combo. Bỏ đơn hủy và chưa thanh toán.</p></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="opReload">↻ Tải lại</button><button class="ghost" id="opCsv">⬇ Tải CSV bảng đang xem</button></div></div>
+      <div id="opNotice" class="notice">Chọn shop và kỳ ở bộ lọc phía trên (tối đa 62 ngày).</div>
+      <div class="ops-kpis">
+        <div class="ops-kpi"><span>Điểm bỉm gốc</span><b id="opBim">-</b><small id="opBimNote">-</small></div>
+        <div class="ops-kpi"><span>Điểm quà gốc</span><b id="opGift">-</b><small id="opGiftNote">-</small></div>
+        <div class="ops-kpi"><span>Điểm quà chênh (bỉm − quà)</span><b id="opDiff">-</b><small id="opDiffNote">-</small></div>
+        <div class="ops-kpi"><span>Giá chênh (giá gốc − giá SKU)</span><b id="opPrice">-</b><small id="opPriceNote">-</small></div>
+      </div>
+      <div class="op-tabs"><button type="button" data-op-view="orders" class="on">Bảng 1 · Điểm quà theo đơn</button><button type="button" data-op-view="lines">Bảng 2 · Giá chênh theo dòng sản phẩm</button></div>
+      <div class="fd-tools"><select id="opFilter" aria-label="Lọc"></select><input id="opSearch" placeholder="Tìm mã đơn, SKU, phân loại, quà…" style="min-width:240px"></div>
+      <div class="table-wrap"><table><thead id="opHead"></thead><tbody id="opRows"><tr><td class="empty">Chưa tải.</td></tr></tbody></table></div>
+      <div class="op-pager"><button class="ghost" id="opPrev">‹ Trước</button><span id="opPage" class="muted"></span><button class="ghost" id="opNext">Sau ›</button></div>
+    </section>
 
     <section class="card" data-subpanel="orders:failed" id="failedPanel">
       <div class="section-title"><div><h2>Giao thất bại – hoàn về shop</h2><p>Đơn Shopee ghi là <b>Hủy</b> nhưng hàng đã rời kho: lý do "Failed Delivery", vận chuyển báo giao thất bại, hoặc đã được lấy hàng rồi mới hủy. Đã nằm trong GMV hủy nên NMV không đổi. <b>Hoàn hàng = hoàn tiền + giao thất bại.</b></p></div>
@@ -1900,7 +1926,7 @@ function showLoggedOut(message){
 // ===== V70.36: chọn nhiều shop =====
 // Trang hỗ trợ xem nhóm shop; trang khác vẫn dùng ô Shop (Admin: tất cả shop) và hiện ghi chú.
 const SHOP_MULTI_KEY='gooby_shop_multi_v1';
-const MULTI_SHOP_VIEWS=new Set(['gmv:overview','gmv:targets','gmv:fees','quick','marketing:ads','marketing:mktcoin','orders:failed']);
+const MULTI_SHOP_VIEWS=new Set(['gmv:overview','gmv:targets','gmv:fees','quick','marketing:ads','marketing:mktcoin','orders:failed','orders:points']);
 let multiShopIds=[];
 try{const v=JSON.parse(localStorage.getItem(SHOP_MULTI_KEY)||'[]');if(Array.isArray(v))multiShopIds=v.map(String);}catch(e){}
 function isMultiShop(){return multiShopIds.length>1;}
@@ -2060,7 +2086,7 @@ function updatePeriodFields(){ const p=$('period').value; document.querySelector
 function getRangeSafe(){ try{ return getRange(); }catch{ return null; } }
 // V70.40: kiểu xem "Chọn ngày (tích)": các ngày rời, lưu trên trình duyệt này.
 const DAY_PICK_KEY='gooby_pick_days_v1';
-const DAY_PICK_VIEWS=new Set(['gmv:overview','quick','orders:failed']);
+const DAY_PICK_VIEWS=new Set(['gmv:overview','quick','orders:failed','orders:points']);
 let pickDays=(()=>{try{const v=JSON.parse(localStorage.getItem(DAY_PICK_KEY)||'[]');return Array.isArray(v)?v.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort():[];}catch{return [];}})();
 let pickViewMonth=(pickDays.at(-1)||todayVN()).slice(0,7);
 let pickDraft=null;
@@ -2829,6 +2855,63 @@ async function loadQuickReport(){
   }catch(e){ if(token===quickLoadToken){$('quickNotice').textContent='⚠️ Không tải được báo cáo nhanh: '+e.message;} }
 }
 document.addEventListener('click',e=>{if(e.target.closest('#quickReload'))loadQuickReport();});
+// ---------- V70.44: điểm quà & giá chênh ----------
+let opView='orders',opPage=1,opToken=0,opLast=null,opSearchTimer=0;
+const OP_FILTERS={orders:[['all','Tất cả đơn'],['negative','Chênh âm (quà vượt điểm bỉm)'],['positive','Chênh dương'],['zero','Chênh = 0'],['unmatched','Có dòng không khớp SKU']],
+  lines:[['all','Tất cả dòng'],['diff_negative','Giá gốc thấp hơn giá SKU'],['diff_positive','Giá gốc cao hơn giá SKU'],['missing_price','SKU thiếu giá niêm yết'],['unmatched','Không khớp combo/SKU']]};
+const opPts=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
+const opSign=v=>v>0?'<span class="op-pos">+'+opPts(v)+'</span>':v<0?'<span class="op-neg">'+opPts(v)+'</span>':'<span class="op-zero">0</span>';
+const opMoneySign=v=>v==null?'<span class="muted">–</span>':v>0?'<span class="op-pos">+'+moneyExact(v)+'</span>':v<0?'<span class="op-neg">'+moneyExact(v)+'</span>':'<span class="op-zero">0đ</span>';
+function opParams(extra){const r=getRange();return new URLSearchParams({date_from:r.from,date_to:r.to,shop_id:shopScopeParam(),view:opView,filter:$('opFilter').value||'all',q:($('opSearch').value||'').trim(),page:String(opPage),page_size:'100',...(r.days?{days:r.days.join(',')}:{}),...(extra||{})});}
+function renderOpFilter(){const cur=$('opFilter').value;$('opFilter').innerHTML=OP_FILTERS[opView].map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('');if(OP_FILTERS[opView].some(([v])=>v===cur))$('opFilter').value=cur;}
+async function loadOrderPoints(reset){
+  if(reset)opPage=1;if(!$('opFilter').options.length)renderOpFilter();
+  const token=++opToken;const r=getRange();const multi=shopScopeParam().includes(',')||shopScopeParam()==='all';
+  $('opNotice').textContent='Đang tính điểm quà và giá chênh…';
+  try{
+    const d=await api('/api/orders/points?'+opParams());if(token!==opToken)return;opLast=d;renderOrderPoints(d,multi);
+  }catch(e){if(token===opToken)$('opNotice').textContent='⚠️ '+e.message+(String(e.message).includes('app_order_points')?' — cần chạy SQL V70.44.':'');}
+}
+function renderOrderPoints(d,multi){
+  const t=d.totals||{};
+  $('opBim').textContent=opPts(t.bim_points);$('opBimNote').textContent=num(t.orders)+' đơn · '+num(t.lines)+' dòng sản phẩm';
+  $('opGift').textContent=opPts(t.gift_points);$('opGiftNote').textContent=t.lines_missing_gift_points?num(t.lines_missing_gift_points)+' dòng có quà chưa có điểm':'Quà đều có điểm';
+  $('opDiff').innerHTML=opSign(t.point_diff);$('opDiffNote').textContent=num(t.orders_negative)+' đơn âm ('+opPts(t.negative_points)+' điểm) · '+num(t.orders_positive)+' dương · '+num(t.orders_zero)+' bằng';
+  $('opPrice').innerHTML=opMoneySign(t.price_diff);$('opPriceNote').textContent='Giá gốc '+money(t.original_total_matched)+' − giá SKU '+money(t.sku_total)+(t.lines_missing_price?' · '+num(t.lines_missing_price)+' dòng SKU thiếu giá':'');
+  const shopCol=multi?'<th>Shop</th>':'';const shopCell=x=>multi?'<td>'+escapeHtml((()=>{const sh=(availableShops||[]).find(z=>String(z.shop_id)===String(x.shop_id));return sh?(sh.channel_name||sh.shop_name||sh.shop_id):String(x.shop_id);})())+'</td>':'';
+  if(opView==='orders'){
+    $('opHead').innerHTML='<tr><th>Mã đơn hàng</th><th>Ngày đặt</th>'+shopCol+'<th class="right">Điểm bỉm gốc</th><th class="right">Điểm quà gốc</th><th class="right">Điểm quà chênh</th><th>Quà trong đơn</th></tr>';
+    $('opRows').innerHTML=(d.rows||[]).map(o=>'<tr><td><b>'+escapeHtml(o.order_sn)+'</b>'+(o.unmatched_lines?'<br><small>'+num(o.unmatched_lines)+' dòng không khớp SKU</small>':'')+'</td><td>'+vnDateLabel(o.create_date)+'</td>'+shopCell(o)+'<td class="right">'+opPts(o.bim_points)+'</td><td class="right">'+opPts(o.gift_points)+(o.missing_gift_points?' <small title="Có quà chưa có điểm trong Master SKU">⚠</small>':'')+'</td><td class="right">'+opSign(o.point_diff)+'</td><td><small>'+escapeHtml(o.gifts||'–')+'</small></td></tr>').join('')||'<tr><td colspan="7" class="empty">Không có đơn phù hợp.</td></tr>';
+  }else{
+    $('opHead').innerHTML='<tr><th>Mã đơn hàng</th>'+shopCol+'<th>Phân loại sản phẩm</th><th class="right">SL</th><th class="right">Giá bán trên sàn (giá gốc)</th><th class="right">Giá theo SKU (combo bỉm)</th><th class="right">Chênh lệch</th></tr>';
+    $('opRows').innerHTML=(d.rows||[]).map(l=>'<tr><td><b>'+escapeHtml(l.order_sn)+'</b><br><small>'+vnDateLabel(l.create_date)+' · '+escapeHtml(l.sku||'(không SKU)')+'</small></td>'+shopCell(l)+'<td>'+escapeHtml(l.model_name||'–')+(l.main_names?'<br><small>'+escapeHtml(l.main_names)+'</small>':'')+(l.match==='none'?'<br><small class="op-neg">Không khớp combo/SKU trong Master SKU</small>':l.missing_price?'<br><small class="op-neg">Có SKU chưa có giá niêm yết</small>':'')+'</td><td class="right">'+num(l.qty)+'</td><td class="right">'+moneyExact(l.original_total)+'<br><small>'+moneyExact(l.original_price)+' × '+num(l.qty)+'</small></td><td class="right">'+(l.sku_total==null?'<span class="muted">–</span>':moneyExact(l.sku_total))+'</td><td class="right">'+opMoneySign(l.price_diff)+'</td></tr>').join('')||'<tr><td colspan="7" class="empty">Không có dòng phù hợp.</td></tr>';
+  }
+  const pages=Math.max(1,Math.ceil((d.total_rows||0)/(d.page_size||100)));
+  $('opPage').textContent='Trang '+d.page+'/'+pages+' · '+num(d.total_rows)+' '+(opView==='orders'?'đơn':'dòng');
+  $('opPrev').disabled=d.page<=1;$('opNext').disabled=d.page>=pages;
+  $('opNotice').innerHTML='<span>'+(t.unmatched_lines?'⚠️ ':'✅ ')+escapeHtml(rangeLabel(getRange()))+' · '+num(t.orders)+' đơn.'+(t.unmatched_lines?' '+num(t.unmatched_lines)+' dòng ('+num(t.unmatched_orders)+' đơn) không khớp combo/SKU nào trong Master SKU nên chưa tính điểm và giá — xem lọc "không khớp".':'')+'</span>';
+}
+async function downloadOrderPointsCsv(){
+  $('opNotice').textContent='Đang chuẩn bị file CSV…';
+  try{
+    const d=await api('/api/orders/points?'+opParams({all:'1'}));const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    let head,rows;
+    if(opView==='orders'){head=['Mã đơn hàng','Ngày đặt','Shop','Điểm bỉm gốc','Điểm quà gốc','Điểm quà chênh','Quà trong đơn','Dòng không khớp SKU'];rows=d.rows.map(o=>[o.order_sn,o.create_date,o.shop_id,o.bim_points,o.gift_points,o.point_diff,o.gifts,o.unmatched_lines].map(q).join(','));}
+    else{head=['Mã đơn hàng','Ngày đặt','Shop','SKU','Phân loại sản phẩm','SL','Giá gốc 1 đơn vị','Giá bán trên sàn (giá gốc × SL)','Giá theo SKU (combo bỉm)','Chênh lệch','Hàng trong combo','Ghi chú'];rows=d.rows.map(l=>[l.order_sn,l.create_date,l.shop_id,l.sku,l.model_name,l.qty,l.original_price,l.original_total,l.sku_total??'',l.price_diff??'',l.main_names,l.match==='none'?'Không khớp SKU':l.missing_price?'SKU thiếu giá':''].map(q).join(','));}
+    const blob=new Blob(['\ufeff'+[head.join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(opView==='orders'?'diem-qua-theo-don':'gia-chenh-theo-dong')+'-'+d.date_from+'-'+d.date_to+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    $('opNotice').textContent='✅ Đã tải '+num(d.rows.length)+' dòng.';
+  }catch(e){$('opNotice').textContent='⚠️ '+e.message;}
+}
+document.addEventListener('click',e=>{
+  const v=e.target.closest('[data-op-view]');if(v){opView=v.dataset.opView;document.querySelectorAll('[data-op-view]').forEach(b=>b.classList.toggle('on',b===v));renderOpFilter();loadOrderPoints(true);return;}
+  if(e.target.closest('#opReload'))loadOrderPoints(false);
+  if(e.target.closest('#opCsv'))downloadOrderPointsCsv();
+  if(e.target.closest('#opPrev')){opPage=Math.max(1,opPage-1);loadOrderPoints(false);}
+  if(e.target.closest('#opNext')){opPage++;loadOrderPoints(false);}
+});
+document.addEventListener('change',e=>{if(e.target.id==='opFilter')loadOrderPoints(true);});
+document.addEventListener('input',e=>{if(e.target.id==='opSearch'){clearTimeout(opSearchTimer);opSearchTimer=setTimeout(()=>loadOrderPoints(true),400);}});
 // ---------- V70.41: giao thất bại ----------
 let fdData=null,fdToken=0;
 function fdRateCls(r){return r==null?'':r>=10?'fd-rate-bad':r>=5?'fd-rate-mid':'';}
@@ -4421,6 +4504,7 @@ const SUB_LOADERS={
   'gmv:customers':()=>loadCustomers(),
   'orders:returns':()=>loadReturns(),
   'orders:failed':()=>loadFailedDeliveries(),
+  'orders:points':()=>loadOrderPoints(true),
   'performance:listings':()=>loadListingPerformance(),
   'performance:health':()=>loadPerformance().catch(err=>{ $('perfSummary').innerHTML='⚠️ Không tải được hiệu quả shop: '+escapeHtml(err.message); }),
   'marketing:vouchers':()=>loadShopVouchers(),
