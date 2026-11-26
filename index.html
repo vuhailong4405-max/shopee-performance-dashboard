@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.42</title>
+  <title>Gooby BI Dashboard · V70.43</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -1472,7 +1472,7 @@
           <div class="field"><label>Số dòng/trang</label><select id="warehouseProductLimit"><option>20</option><option selected>50</option><option>100</option><option>500</option></select></div>
           <button class="ghost" id="warehouseProductSearchBtn">Tìm SKU</button>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>Barcode</th><th>SKU</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Nhóm sản phẩm</th><th class="right">Giá</th><th class="right">Điểm quà</th><th>Thương hiệu</th><th>Đơn vị</th><th>Trạng thái</th></tr></thead><tbody id="warehouseProductRows"><tr><td colspan="13" class="empty">Chưa tải danh mục sản phẩm.</td></tr></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Barcode</th><th>SKU</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Nhóm sản phẩm</th><th class="right">Giá niêm yết</th><th class="right" title="Điểm đổi quà (gift_points)">Điểm quà</th><th class="right" title="Điểm khách tích khi mua 1 đơn vị (points_per_unit)">Điểm/đơn vị</th><th>Thương hiệu</th><th>Đơn vị</th><th>Trạng thái</th></tr></thead><tbody id="warehouseProductRows"><tr><td colspan="13" class="empty">Chưa tải danh mục sản phẩm.</td></tr></tbody></table></div>
         <div class="warehouse-pagination"><button class="ghost" id="warehouseProductPrevBtn">← Trước</button><span class="muted" id="warehouseProductPageInfo">-</span><button class="ghost" id="warehouseProductNextBtn">Sau →</button></div>
       </section>
 
@@ -3507,8 +3507,8 @@ function renderWarehouseComboTable(){
 function renderWarehouseProductTable(){
   const rows=warehouseProductRowsAll;
   $('warehouseProductRows').innerHTML=rows.map(r=>`<tr>
-    <td class="combo-code">${escapeHtml(r.barcode||'-')}</td><td>${escapeHtml(r.sku_code||'-')}</td><td><div class="product-name">${escapeHtml(r.name||'-')}</div></td>
-    <td>${warehouseCategoryChip(r.category_label||r.category||r.product_group)}</td><td>${escapeHtml(r.product_group||'-')}</td><td class="right">${Number(r.price)>0?moneyExact(r.price):'<span class="muted">chưa có</span>'}</td><td class="right">${r.gift_points==null?'<span class="muted">–</span>':num(r.gift_points)}</td><td>${escapeHtml(r.brand||'-')}</td>
+    <td class="combo-code">${escapeHtml(r.barcode||'-')}</td><td>${escapeHtml(r.sku_code||'-')}</td><td><div class="product-name">${escapeHtml(r.name||'-')}</div>${r.cat||r.subcat?'<small class="muted">'+escapeHtml([r.cat,r.subcat].filter(Boolean).join(' · '))+(r.items_per_set>1?' · '+num(r.items_per_set)+' cái/bộ':'')+'</small>':''}</td>
+    <td>${warehouseCategoryChip(r.category_label||r.category||r.product_group)}</td><td>${escapeHtml(r.product_group||'-')}</td><td class="right">${Number(r.price)>0?moneyExact(r.price):'<span class="muted">chưa có</span>'}</td><td class="right">${r.gift_points==null?'<span class="muted">–</span>':'<b>'+Number(r.gift_points).toLocaleString('vi-VN')+'</b>'}</td><td class="right">${r.points_per_unit==null?'<span class="muted">–</span>':Number(r.points_per_unit).toLocaleString('vi-VN')}</td><td>${escapeHtml(r.brand||'-')}</td>
     <td>${escapeHtml(r.unit||'-')}</td><td>${warehouseStatusChip(r.is_active)}</td>
   </tr>`).join('')||'<tr><td colspan="13" class="empty">Không có SKU phù hợp bộ lọc.</td></tr>';
   $('warehouseProductPageInfo').textContent=`Trang ${warehouseProductPage} · ${num(rows.length)} SKU`;
