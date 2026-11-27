@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.44.4</title>
+  <title>Gooby BI Dashboard · V70.45</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -1468,7 +1468,7 @@
         </div>
         <div class="catalog-toolbar">
           <div class="field search-field"><label>Tìm combo</label><input id="warehouseSearch" placeholder="Mã combo, tên hoặc thương hiệu"></div>
-          <div class="field"><label>Trạng thái</label><select id="warehouseStatus"><option value="">Tất cả</option><option value="ACTIVE">Đang hoạt động</option><option value="DEACTIVE">Ngừng hoạt động</option></select></div>
+          <div class="field"><label>Trạng thái</label><select id="warehouseStatus"><option value="">Tất cả</option><option value="ACTIVE">Đang hoạt động</option><option value="DEACTIVE">Ngừng hoạt động</option><option value="DELETED">Đã xoá</option></select></div>
           <div class="field"><label>Số combo/trang</label><select id="warehouseComboLimit"><option>20</option><option selected>50</option><option>100</option><option>200</option></select></div>
           <button class="ghost" id="warehouseSearchBtn">Tìm kiếm</button>
         </div>
@@ -3567,6 +3567,7 @@ function warehouseCategoryChip(label){
   return `<span class="category-chip ${text==='Chưa phân loại'?'unclassified':''}">${escapeHtml(text)}</span>`;
 }
 function warehouseStatusChip(status){
+  if(String(status||'').toUpperCase()==='DELETED')return '<span class="status-chip locked" title="Combo đã xoá bên EAZ; vẫn giữ thành phần lúc xoá để tính điểm cho đơn cũ">Đã xoá</span>';
   const active=String(status||'').toUpperCase()==='ACTIVE'||status===true;
   return `<span class="status-chip ${active?'active':'locked'}">${active?'Đang hoạt động':'Ngừng hoạt động'}</span>`;
 }
