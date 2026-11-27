@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Gooby BI Dashboard · V70.44.3</title>
+  <title>Gooby BI Dashboard · V70.44.4</title>
   <style>
     :root{
       --bg:#f1f3f8;--surface:#ffffff;--text:#0f172a;--muted:#64748b;--muted2:#94a3b8;--line:#e3e7ef;--ink:#1d2939;
@@ -1519,7 +1519,7 @@
 
     <section class="card" data-subpanel="orders:points" id="pointsPanel">
       <div class="section-title"><div><h2>Điểm quà &amp; giá chênh theo đơn</h2><p>Ghép từng dòng đơn Shopee với combo / SKU lẻ trong <b>Master SKU</b>. Điểm bỉm = mỗi bịch bỉm 1 điểm (theo điểm/đơn vị); điểm quà = điểm quà của các món quà trong combo; <b>chênh = điểm bỉm − điểm quà</b> (dương: bỉm nhiều hơn quà, âm: quà vượt điểm bỉm); đơn <b>tích điểm</b> (tờ rơi ZL / phân loại "Tích điểm") chênh = 0. Giá chênh = <b>GMV của dòng − giá theo SKU</b>; GMV dòng = <b>giá gốc trên đơn − Người bán trợ giá</b> (không trừ mã giảm giá của shop); giá theo SKU = giá niêm yết × số bịch trong combo. Bỏ đơn hủy và chưa thanh toán.</p></div>
-        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="opReload">↻ Tải lại</button><button class="ghost" id="opCsv" title="Tải toàn bộ dữ liệu của kỳ và shop đang chọn, cả 2 bảng, không theo bộ lọc">⬇ Tải toàn bộ (2 file CSV)</button></div></div>
+        <div class="mini-actions" style="margin-top:0"><button class="ghost" id="opReload">↻ Tải lại</button><button class="ghost" id="opCsv" title="Tải toàn bộ dữ liệu của kỳ và shop đang chọn, cả 2 bảng, không theo bộ lọc">⬇ Tải toàn bộ (2 file CSV)</button><button class="ghost" id="opMissing" title="Danh sách mã SKU bán trên Shopee nhưng chưa có combo/SKU trong Master SKU, để gửi EAZ bổ sung">⬇ Mã combo thiếu (gửi EAZ)</button></div></div>
       <div id="opNotice" class="notice">Chọn shop và kỳ ở bộ lọc phía trên (tối đa 62 ngày).</div>
       <div class="ops-kpis">
         <div class="ops-kpi"><span>Điểm bỉm gốc</span><b id="opBim">-</b><small id="opBimNote">-</small></div>
@@ -2878,7 +2878,7 @@ async function loadOrderPoints(reset){
 function renderOrderPoints(d,multi){
   const t=d.totals||{};
   $('opBim').textContent=opPts(t.bim_points);$('opBimNote').innerHTML=num(t.orders)+' đơn · '+num(t.lines)+' dòng sản phẩm'+(t.incomplete_orders?'<br><b style="color:#b42318">🔴 '+num(t.incomplete_orders)+' đơn chưa tính được điểm</b>':'');
-  $('opGift').textContent=opPts(t.gift_points);$('opGiftNote').textContent=t.lines_missing_gift_points?num(t.lines_missing_gift_points)+' dòng có quà chưa có điểm':'Quà đều có điểm';
+  $('opGift').textContent=opPts(t.gift_points);$('opGiftNote').textContent=(t.addon_gift_lines?'gồm '+opPts(t.addon_gift_points)+' điểm quà mua kèm ('+num(t.addon_gift_lines)+' dòng) · ':'')+(t.lines_missing_gift_points?num(t.lines_missing_gift_points)+' dòng có quà chưa có điểm':'Quà đều có điểm');
   $('opDiff').innerHTML=opSign(t.point_diff);$('opDiffNote').textContent=num(t.orders_negative)+' đơn âm ('+opPts(t.negative_points)+' điểm) · '+num(t.orders_positive)+' dương · '+num(t.orders_zero)+' bằng';
   $('opPrice').innerHTML=opMoneySign(t.price_diff);$('opPriceNote').textContent='GMV '+money(t.gmv_matched)+' − giá SKU '+money(t.sku_total)+' · người bán trợ giá '+money(t.seller_subsidy)+(t.lines_estimated?' · '+num(t.lines_estimated)+' dòng chưa có Income (ước tính)':'')+(t.lines_missing_price?' · '+num(t.lines_missing_price)+' dòng SKU thiếu giá':'');
   const shopCol=multi?'<th>Shop</th>':'';const shopCell=x=>multi?'<td>'+escapeHtml((()=>{const sh=(availableShops||[]).find(z=>String(z.shop_id)===String(x.shop_id));return sh?(sh.channel_name||sh.shop_name||sh.shop_id):String(x.shop_id);})())+'</td>':'';
@@ -2887,7 +2887,7 @@ function renderOrderPoints(d,multi){
     $('opRows').innerHTML=(d.rows||[]).map(o=>'<tr'+(o.points_incomplete?' class="op-bad" title="Chưa tính được điểm"':'')+'><td><b>'+escapeHtml(o.order_sn)+'</b>'+(o.points_incomplete?'<span class="op-issue">Chưa tính được điểm: '+escapeHtml((o.point_issues||[]).join('; '))+'</span>':'')+'</td><td>'+vnDateLabel(o.create_date)+'</td>'+shopCell(o)+'<td class="right">'+opPts(o.bim_points)+'</td><td class="right">'+opPts(o.gift_points)+(o.missing_gift_points?' <small title="Có quà chưa có điểm trong Master SKU">⚠</small>':'')+'</td><td class="right">'+opSign(o.point_diff)+(o.loyalty?'<br><small title="Đơn tích điểm (tờ rơi ZL / Tích điểm): điểm chênh tính 0">tích điểm</small>':'')+'</td><td><small>'+escapeHtml(o.gifts||'–')+'</small></td></tr>').join('')||'<tr><td colspan="7" class="empty">Không có đơn phù hợp.</td></tr>';
   }else{
     $('opHead').innerHTML='<tr><th>Mã đơn hàng</th>'+shopCol+'<th>Phân loại sản phẩm</th><th class="right">SL</th><th class="right">Giá gốc trên đơn</th><th class="right">Người bán trợ giá</th><th class="right">GMV (giá gốc − trợ giá)</th><th class="right">Giá theo SKU (combo bỉm)</th><th class="right">Chênh lệch (GMV − SKU)</th></tr>';
-    $('opRows').innerHTML=(d.rows||[]).map(l=>'<tr'+(l.points_incomplete?' class="op-bad"':'')+'><td><b>'+escapeHtml(l.order_sn)+'</b>'+(l.points_incomplete?'<span class="op-issue">Chưa tính được điểm: '+escapeHtml((l.point_issues||[]).join('; '))+'</span>':'')+'<br><small>'+vnDateLabel(l.create_date)+' · '+escapeHtml(l.sku||'(không SKU)')+'</small></td>'+shopCell(l)+'<td>'+escapeHtml(l.model_name||'–')+(l.main_names?'<br><small>'+escapeHtml(l.main_names)+'</small>':'')+(l.match==='none'?'<br><small class="op-neg">Không khớp combo/SKU trong Master SKU</small>':l.missing_price?'<br><small class="op-neg">Có SKU chưa có giá niêm yết</small>':'')+'</td><td class="right">'+num(l.qty)+'</td><td class="right">'+moneyExact(l.original_total)+'<br><small>'+moneyExact(l.original_price)+' × '+num(l.qty)+'</small></td><td class="right">'+(l.seller_subsidy?'−'+moneyExact(l.seller_subsidy):'0đ')+'</td><td class="right"><b>'+moneyExact(l.gmv)+'</b>'+(l.gmv_source==='estimate'?'<br><small title="Đơn chưa có Income: tạm tính theo giá sau giảm, chưa trừ voucher shop">ước tính</small>':'')+'</td><td class="right">'+(l.sku_total==null?'<span class="muted">–</span>':moneyExact(l.sku_total))+'</td><td class="right">'+opMoneySign(l.price_diff)+'</td></tr>').join('')||'<tr><td colspan="9" class="empty">Không có dòng phù hợp.</td></tr>';
+    $('opRows').innerHTML=(d.rows||[]).map(l=>'<tr'+(l.points_incomplete?' class="op-bad"':'')+'><td><b>'+escapeHtml(l.order_sn)+'</b>'+(l.points_incomplete?'<span class="op-issue">Chưa tính được điểm: '+escapeHtml((l.point_issues||[]).join('; '))+'</span>':'')+'<br><small>'+vnDateLabel(l.create_date)+' · '+escapeHtml(l.sku||'(không SKU)')+'</small></td>'+shopCell(l)+'<td>'+escapeHtml(l.model_name||'–')+(l.main_names?'<br><small>'+escapeHtml(l.main_names)+'</small>':'')+(l.match==='addon_gift'?'<br><small>🎁 Quà mua kèm: tính điểm quà, không tính giá chênh</small>':l.match==='none'?'<br><small class="op-neg">Không khớp combo/SKU trong Master SKU</small>':l.missing_price?'<br><small class="op-neg">Có SKU chưa có giá niêm yết</small>':'')+'</td><td class="right">'+num(l.qty)+'</td><td class="right">'+moneyExact(l.original_total)+'<br><small>'+moneyExact(l.original_price)+' × '+num(l.qty)+'</small></td><td class="right">'+(l.seller_subsidy?'−'+moneyExact(l.seller_subsidy):'0đ')+'</td><td class="right"><b>'+moneyExact(l.gmv)+'</b>'+(l.gmv_source==='estimate'?'<br><small title="Đơn chưa có Income: tạm tính theo giá sau giảm, chưa trừ voucher shop">ước tính</small>':'')+'</td><td class="right">'+(l.sku_total==null?'<span class="muted">–</span>':moneyExact(l.sku_total))+'</td><td class="right">'+opMoneySign(l.price_diff)+'</td></tr>').join('')||'<tr><td colspan="9" class="empty">Không có dòng phù hợp.</td></tr>';
   }
   const pages=Math.max(1,Math.ceil((d.total_rows||0)/(d.page_size||100)));
   $('opPage').textContent='Trang '+d.page+'/'+pages+' · '+num(d.total_rows)+' '+(opView==='orders'?'đơn':'dòng');
@@ -2911,7 +2911,23 @@ async function downloadOrderPointsCsv(){
     $('opNotice').textContent='✅ Đã tải 2 file: '+num(o.rows.length)+' đơn (bảng điểm quà) và '+num(l.rows.length)+' dòng (bảng giá chênh) của toàn kỳ.'+(cut?' ⚠️ Kỳ quá lớn, file bị cắt — hãy chọn kỳ ngắn hơn.':'');
   }catch(e){$('opNotice').textContent='⚠️ '+e.message;}
 }
+// V70.44.4: danh sách mã SKU đang bán nhưng chưa có trong Master SKU (gộp theo mã) để gửi EAZ bổ sung combo.
+async function downloadMissingCombos(){
+  $('opNotice').textContent='Đang lập danh sách mã combo thiếu…';
+  try{
+    const d=await api('/api/orders/points?'+opParams({all:'1',view:'lines',filter:'unmatched',q:'',page:'1'}));
+    const by=new Map();
+    for(const l of d.rows){const k=l.sku||'(trống)';const x=by.get(k)||{sku:k,lines:0,qty:0,models:new Set(),shops:new Set(),first:l.create_date,last:l.create_date,sample:l.order_sn};x.lines++;x.qty+=Number(l.qty||0);if(l.model_name&&x.models.size<5)x.models.add(l.model_name);x.shops.add(l.shop_id);if(l.create_date<x.first)x.first=l.create_date;if(l.create_date>x.last)x.last=l.create_date;by.set(k,x);}
+    const list=[...by.values()].sort((a,b)=>b.lines-a.lines);
+    const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    const rows=list.map(x=>[x.sku,[...x.models].join(' | '),x.lines,x.qty,[...x.shops].join(' '),x.first,x.last,x.sample].map(q).join(','));
+    const blob=new Blob(['\ufeff'+[['Mã SKU trên Shopee','Tên phân loại (mẫu)','Số dòng bán','Số lượng bán','Shop','Bán từ ngày','Đến ngày','Mã đơn ví dụ'].join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ma-combo-thieu-gui-EAZ-'+d.date_from+'-'+d.date_to+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    $('opNotice').textContent='✅ Đã tải danh sách '+num(list.length)+' mã thiếu ('+num(d.rows.length)+' dòng bán) — gửi EAZ để thêm vào hệ thống combo.';
+  }catch(e){$('opNotice').textContent='⚠️ '+e.message;}
+}
 document.addEventListener('click',e=>{
+  if(e.target.closest('#opMissing'))downloadMissingCombos();
   const v=e.target.closest('[data-op-view]');if(v){opView=v.dataset.opView;document.querySelectorAll('[data-op-view]').forEach(b=>b.classList.toggle('on',b===v));renderOpFilter();loadOrderPoints(true);return;}
   if(e.target.closest('#opReload'))loadOrderPoints(false);
   if(e.target.closest('#opCsv'))downloadOrderPointsCsv();
